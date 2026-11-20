@@ -1,0 +1,3 @@
+snell://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpRQTpFeGFjdCtLZXkvRm9yPVNuZWxs@edge.example:443?version=6&userkey=fixture-user#Edge
+snell://strong-password@v5.example:443?version=5&plugin=obfs-local;obfs%3Dhttp#V5
+snell://strong-password@v6.example:443?version=6&obfs=http#V6Obfs

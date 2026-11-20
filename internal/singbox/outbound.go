@@ -132,6 +132,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 		out = proxy.Merge(base, model.New(
 			"type", "snell",
 			"psk", o.String("psk"),
+			"userkey", o.String("userkey"),
 			"version", version,
 			"udp", version >= 3,
 		))
@@ -139,6 +140,9 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 			out.Set("mode", mode)
 		}
 		if obfs := o.String("obfs_mode"); obfs != "" {
+			if version >= 6 {
+				return nil, "Snell v6 has no obfs"
+			}
 			out.Set("obfs-opts", model.New("mode", obfs, "host", o.String("obfs_host")))
 		}
 	case "ssh":

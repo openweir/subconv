@@ -467,17 +467,23 @@ func snell(line string) (model.Object, string) {
 	out := proxy.Merge(proxy.Base(or(fragment(u), u.Hostname()), u.Hostname(), port), model.New(
 		"type", "snell",
 		"psk", psk,
+		"userkey", q.Get("userkey"),
 		"version", version,
 		"udp", version >= 3,
 	))
 	if mode := q.Get("mode"); version == 6 && mode != "" && mode != "default" {
 		out.Set("mode", mode)
 	}
+	obfs := q.Get("obfs")
 	if plugin := q.Get("plugin"); plugin != "" {
 		_, options, _ := strings.Cut(plugin, ";")
-		if obfs := proxy.PluginOptions(options)["obfs"]; obfs != "" {
-			out = proxy.Merge(out, model.New("obfs-opts", model.New("mode", obfs, "host", q.Get("obfs-host"))))
+		obfs = or(proxy.PluginOptions(options)["obfs"], obfs)
+	}
+	if obfs != "" {
+		if version >= 6 {
+			return nil, "Snell v6 has no obfs"
 		}
+		out = proxy.Merge(out, model.New("obfs-opts", model.New("mode", obfs, "host", q.Get("obfs-host"))))
 	}
 	return finish(out, q)
 }

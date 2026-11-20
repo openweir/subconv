@@ -1,0 +1,36 @@
+{
+  "format": "links",
+  "proxies": [
+    {
+      "name": "Edge",
+      "type": "snell",
+      "server": "edge.example",
+      "port": 443,
+      "psk": "QA:Exact+Key/For=Snell",
+      "userkey": "fixture-user",
+      "version": 6,
+      "udp": true
+    },
+    {
+      "name": "V5",
+      "type": "snell",
+      "server": "v5.example",
+      "port": 443,
+      "psk": "strong-password",
+      "version": 5,
+      "udp": true,
+      "obfs-opts": {
+        "mode": "http"
+      }
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "V6Obfs: Snell v6 has no obfs"
+    }
+  ]
+}
