@@ -1,0 +1,87 @@
+{
+  "format": "sing-box",
+  "proxies": [
+    {
+      "name": "Node",
+      "type": "vmess",
+      "server": "v.example.com",
+      "port": 80,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "cipher": "auto",
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Node"
+      ]
+    },
+    {
+      "name": "Streaming",
+      "type": "select",
+      "proxies": [
+        "Proxy",
+        "DIRECT"
+      ]
+    }
+  ],
+  "rule-providers": {
+    "geosite-netflix": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs",
+      "path": "./ruleset/geosite-netflix.mrs",
+      "interval": 86400
+    },
+    "cn-ip": {
+      "type": "http",
+      "behavior": "ipcidr",
+      "format": "mrs",
+      "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs",
+      "path": "./ruleset/cn-ip.mrs",
+      "interval": 86400
+    },
+    "lan": {
+      "type": "inline",
+      "behavior": "classical",
+      "payload": [
+        "DOMAIN-SUFFIX,lan",
+        "DOMAIN-SUFFIX,local",
+        "IP-CIDR,192.168.0.0/16,no-resolve"
+      ]
+    }
+  },
+  "rules": [
+    "DOMAIN-SUFFIX,google.com,Proxy",
+    "DOMAIN-SUFFIX,youtube.com,Proxy",
+    "AND,((DOMAIN,example.org),(DOMAIN-KEYWORD,track)),REJECT",
+    "IP-CIDR,8.8.8.8/32,Proxy,no-resolve",
+    "IP-CIDR6,2001:4860::/32,Proxy,no-resolve",
+    "RULE-SET,geosite-netflix,Streaming",
+    "RULE-SET,lan,DIRECT",
+    "OR,((DST-PORT,22),(DST-PORT,6000-6100)),DIRECT",
+    "NOT,((AND,((NETWORK,udp),(DST-PORT,443)))),Proxy",
+    "PROCESS-NAME,Telegram,Proxy",
+    "GEOIP,private,DIRECT,no-resolve",
+    "RULE-SET,cn-ip,DIRECT",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_rule_set",
+      "detail": "ads: a remote sing-box rule set that is not one of MetaCubeX's geosite or geoip sets"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "a rule with rule set ads, which was left out"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "a rule with wifi_ssid"
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "format": "sing-box",
+  "proxies": [
+    {
+      "name": "香港 01",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0",
+      "udp": true,
+      "smux": {
+        "enabled": true,
+        "protocol": "h2mux",
+        "max-connections": 4,
+        "padding": true
+      },
+      "tfo": true
+    },
+    {
+      "name": "SS obfs",
+      "type": "ss",
+      "server": "1.2.3.4",
+      "port": 443,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      }
+    },
+    {
+      "name": "VMess gRPC",
+      "type": "vmess",
+      "server": "v.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "cipher": "auto",
+      "udp": true,
+      "xudp": true,
+      "tls": true,
+      "servername": "v.example.com",
+      "alpn": [
+        "h2"
+      ],
+      "client-fingerprint": "firefox",
+      "network": "grpc",
+      "grpc-opts": {
+        "grpc-service-name": "gun"
+      }
+    },
+    {
+      "name": "VLESS REALITY",
+      "type": "vless",
+      "server": "203.0.113.5",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "packet-encoding": "xudp",
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "VLESS XHTTP",
+      "type": "vless",
+      "server": "x.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+      "udp": true,
+      "tls": true,
+      "servername": "x.example.com",
+      "network": "xhttp",
+      "xhttp-opts": {
+        "path": "/stream",
+        "host": "x.example.com",
+        "mode": "auto"
+      }
+    },
+    {
+      "name": "Trojan WS",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "t.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ws",
+        "headers": {
+          "Host": "t.example.com"
+        },
+        "max-early-data": 2048,
+        "early-data-header-name": "Sec-WebSocket-Protocol"
+      },
+      "dialer-proxy": "香港 01"
+    },
+    {
+      "name": "Trojan upgrade",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "t.example.com",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/up",
+        "headers": {
+          "Host": "t.example.com"
+        },
+        "v2ray-http-upgrade": true
+      }
+    },
+    {
+      "name": "Hy2",
+      "type": "hysteria2",
+      "server": "h.example.com",
+      "port": 443,
+      "password": "hy",
+      "ports": "20000-30000",
+      "hop-interval": 30,
+      "up": "50 Mbps",
+      "down": "200 Mbps",
+      "obfs": "salamander",
+      "obfs-password": "ob",
+      "sni": "h.example.com",
+      "alpn": [
+        "h3"
+      ]
+    },
+    {
+      "name": "TUIC",
+      "type": "tuic",
+      "server": "u.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+      "password": "tu",
+      "congestion-controller": "bbr",
+      "udp-relay-mode": "native",
+      "reduce-rtt": true,
+      "heartbeat-interval": 10000,
+      "sni": "u.example.com",
+      "alpn": [
+        "h3"
+      ]
+    },
+    {
+      "name": "AnyTLS REALITY",
+      "type": "anytls",
+      "server": "a.example.com",
+      "port": 443,
+      "password": "an",
+      "udp": true,
+      "sni": "cover.example.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PK2",
+        "short-id": "01"
+      }
+    },
+    {
+      "name": "Naive QUIC",
+      "type": "naive",
+      "server": "n.example.com",
+      "port": 443,
+      "username": "1",
+      "password": "np",
+      "sni": "n.example.com",
+      "quic": true
+    },
+    {
+      "name": "HTTPS",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 443,
+      "username": "u",
+      "password": "p",
+      "tls": true,
+      "sni": "p.example.com"
+    },
+    {
+      "name": "SOCKS",
+      "type": "socks5",
+      "server": "127.0.0.1",
+      "port": 1080
+    },
+    {
+      "name": "WG",
+      "type": "wireguard",
+      "server": "w.example.com",
+      "port": 51820,
+      "ip": "10.0.0.2",
+      "ipv6": "fd00::2",
+      "private-key": "PRIV",
+      "public-key": "PUB",
+      "allowed-ips": [
+        "0.0.0.0/0",
+        "::/0"
+      ],
+      "reserved": [
+        1,
+        2,
+        3
+      ],
+      "mtu": 1408,
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "VLESS REALITY",
+        "Auto",
+        "香港 01"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "香港 01",
+        "Trojan WS",
+        "Hy2"
+      ],
+      "url": "https://cp.cloudflare.com",
+      "interval": 300,
+      "tolerance": 50
+    },
+    {
+      "name": "Balance",
+      "type": "load-balance",
+      "proxies": [
+        "香港 01",
+        "Hy2"
+      ],
+      "strategy": "consistent-hashing",
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": 180
+    },
+    {
+      "name": "Empty",
+      "type": "select",
+      "proxies": [
+        "DIRECT"
+      ]
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "SOCKS4: SOCKS4 (mihomo speaks SOCKS5)"
+    },
+    {
+      "code": "unsupported_proxy",
+      "detail": "ShadowTLS: type shadowtls"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "VMess ECH: TLS ECH"
+    },
+    {
+      "code": "unknown_reference",
+      "detail": "Proxy: member Unknown"
+    },
+    {
+      "code": "empty_group",
+      "detail": "Empty: no members left; using DIRECT"
+    }
+  ]
+}

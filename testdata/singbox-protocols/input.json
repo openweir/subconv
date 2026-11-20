@@ -1,0 +1,80 @@
+{
+  "log": { "level": "warn" },
+  "outbounds": [
+    { "type": "selector", "tag": "Proxy", "outbounds": ["Auto", "香港 01", "VLESS REALITY", "Unknown"], "default": "VLESS REALITY" },
+    { "type": "urltest", "tag": "Auto", "outbounds": ["香港 01", "Trojan WS", "Hy2"], "url": "https://cp.cloudflare.com", "interval": "5m", "tolerance": 50 },
+    { "type": "loadbalance", "tag": "Balance", "outbounds": ["香港 01", "Hy2"] },
+    { "type": "selector", "tag": "Empty", "outbounds": ["ShadowTLS"] },
+    {
+      "type": "shadowsocks", "tag": "香港 01", "server": "hk.example.com", "server_port": 8388,
+      "method": "2022-blake3-aes-128-gcm", "password": "c2VjcmV0", "tcp_fast_open": true,
+      "multiplex": { "enabled": true, "protocol": "h2mux", "max_connections": 4, "padding": true }
+    },
+    {
+      "type": "shadowsocks", "tag": "SS obfs", "server": "1.2.3.4", "server_port": 443, "method": "aes-128-gcm",
+      "password": "p", "plugin": "obfs-local", "plugin_opts": "obfs=http;obfs-host=bing.com", "network": "tcp"
+    },
+    {
+      "type": "vmess", "tag": "VMess gRPC", "server": "v.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "security": "auto", "packet_encoding": "xudp",
+      "tls": { "enabled": true, "server_name": "v.example.com", "alpn": ["h2"], "utls": { "enabled": true, "fingerprint": "firefox" } },
+      "transport": { "type": "grpc", "service_name": "gun" }
+    },
+    {
+      "type": "vless", "tag": "VLESS REALITY", "server": "203.0.113.5", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision", "packet_encoding": "xudp",
+      "tls": { "enabled": true, "server_name": "www.microsoft.com", "reality": { "enabled": true, "public_key": "PUBKEY", "short_id": "abcd" } }
+    },
+    {
+      "type": "vless", "tag": "VLESS XHTTP", "server": "x.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+      "tls": { "enabled": true, "server_name": "x.example.com" },
+      "transport": { "type": "xhttp", "path": "/stream", "host": "x.example.com", "mode": "auto" }
+    },
+    {
+      "type": "trojan", "tag": "Trojan WS", "server": "t.example.com", "server_port": 443, "password": "pw", "detour": "香港 01",
+      "tls": { "enabled": true, "server_name": "t.example.com", "insecure": true },
+      "transport": { "type": "ws", "path": "/ws", "headers": { "Host": "t.example.com" }, "max_early_data": 2048, "early_data_header_name": "Sec-WebSocket-Protocol" }
+    },
+    {
+      "type": "trojan", "tag": "Trojan upgrade", "server": "t.example.com", "server_port": 443, "password": "pw",
+      "tls": { "enabled": true, "server_name": "t.example.com" },
+      "transport": { "type": "httpupgrade", "host": "t.example.com", "path": "/up" }
+    },
+    {
+      "type": "hysteria2", "tag": "Hy2", "server": "h.example.com", "server_port": 443, "server_ports": ["20000:30000"], "hop_interval": "30s",
+      "password": "hy", "up_mbps": 50, "down_mbps": 200, "obfs": { "type": "salamander", "password": "ob" },
+      "tls": { "enabled": true, "server_name": "h.example.com", "alpn": ["h3"] }
+    },
+    {
+      "type": "tuic", "tag": "TUIC", "server": "u.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000004", "password": "tu",
+      "congestion_control": "bbr", "udp_relay_mode": "native", "zero_rtt_handshake": true, "heartbeat": "10s",
+      "tls": { "enabled": true, "server_name": "u.example.com", "alpn": ["h3"] }
+    },
+    {
+      "type": "anytls", "tag": "AnyTLS REALITY", "server": "a.example.com", "server_port": 443, "password": "an",
+      "tls": { "enabled": true, "server_name": "cover.example.com", "utls": { "enabled": true, "fingerprint": "chrome" }, "reality": { "enabled": true, "public_key": "PK2", "short_id": "01" } }
+    },
+    {
+      "type": "naive", "tag": "Naive QUIC", "server": "n.example.com", "server_port": 443, "username": "1", "password": "np", "quic": true,
+      "tls": { "enabled": true, "server_name": "n.example.com" }
+    },
+    { "type": "http", "tag": "HTTPS", "server": "p.example.com", "server_port": 443, "username": "u", "password": "p", "tls": { "enabled": true, "server_name": "p.example.com" } },
+    { "type": "socks", "tag": "SOCKS", "server": "127.0.0.1", "server_port": 1080, "version": "5", "network": "tcp" },
+    { "type": "socks", "tag": "SOCKS4", "server": "127.0.0.1", "server_port": 1081, "version": "4" },
+    { "type": "shadowtls", "tag": "ShadowTLS", "server": "s.example.com", "server_port": 443, "version": 3, "password": "st" },
+    {
+      "type": "vmess", "tag": "VMess ECH", "server": "e.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000005",
+      "tls": { "enabled": true, "server_name": "e.example.com", "ech": { "enabled": true } }
+    },
+    { "type": "direct", "tag": "direct" },
+    { "type": "block", "tag": "block" },
+    { "type": "dns", "tag": "dns-out" }
+  ],
+  "endpoints": [
+    {
+      "type": "wireguard", "tag": "WG", "address": ["10.0.0.2/32", "fd00::2/128"], "private_key": "PRIV", "mtu": 1408,
+      "peers": [{ "address": "w.example.com", "port": 51820, "public_key": "PUB", "allowed_ips": ["0.0.0.0/0", "::/0"], "reserved": [1, 2, 3] }]
+    }
+  ],
+  "route": { "final": "Proxy" }
+}

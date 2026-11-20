@@ -1,0 +1,33 @@
+mixed-port: 7890
+mode: rule
+proxies:
+  - name: 香港 01
+    type: ss
+    server: hk.example.com
+    port: 8388
+    cipher: aes-128-gcm
+    password: p
+    udp: true
+  - &base
+    name: Nowhere
+    type: nowhere
+    server: nw.example.com
+    port: 2000
+    password: 0123456789abcdef0123456789abcdef
+    morph: false
+proxy-groups:
+  - name: Proxy
+    type: select
+    proxies: [香港 01, Nowhere, DIRECT]
+rule-providers:
+  ads:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://example.com/ads.mrs
+    path: ./ruleset/ads.mrs
+    interval: 86400
+rules:
+  - RULE-SET,ads,REJECT
+  - DOMAIN-SUFFIX,google.com,Proxy
+  - MATCH,Proxy

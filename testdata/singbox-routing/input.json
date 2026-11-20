@@ -1,0 +1,35 @@
+{
+  "outbounds": [
+    { "type": "selector", "tag": "Proxy", "outbounds": ["Node"] },
+    { "type": "selector", "tag": "Streaming", "outbounds": ["Proxy", "direct"] },
+    { "type": "vmess", "tag": "Node", "server": "v.example.com", "server_port": 80, "uuid": "7c8c8c0e-0000-4000-8000-000000000001" },
+    { "type": "direct", "tag": "direct" },
+    { "type": "block", "tag": "block" }
+  ],
+  "route": {
+    "rule_set": [
+      { "tag": "geosite-netflix", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-netflix.srs" },
+      { "tag": "cn-ip", "type": "remote", "format": "binary", "url": "https://example.com/rule-set/geoip-cn.srs", "update_interval": "24h" },
+      { "tag": "ads", "type": "remote", "format": "source", "url": "https://example.com/ads.json" },
+      { "tag": "lan", "type": "inline", "rules": [{ "domain_suffix": [".lan", "local"] }, { "ip_cidr": ["192.168.0.0/16"] }] }
+    ],
+    "rules": [
+      { "action": "sniff" },
+      { "protocol": "dns", "action": "hijack-dns" },
+      { "clash_mode": "Direct", "outbound": "direct" },
+      { "domain_suffix": ["google.com", ".youtube.com"], "outbound": "Proxy" },
+      { "domain": "example.org", "domain_keyword": "track", "action": "reject" },
+      { "ip_cidr": ["8.8.8.8/32", "2001:4860::/32"], "outbound": "Proxy" },
+      { "rule_set": ["geosite-netflix"], "outbound": "Streaming" },
+      { "rule_set": "ads", "action": "reject", "method": "drop" },
+      { "rule_set": "lan", "outbound": "direct" },
+      { "type": "logical", "mode": "or", "rules": [{ "port": 22 }, { "port_range": ["6000:6100"] }], "outbound": "direct" },
+      { "network": "udp", "port": 443, "invert": true, "outbound": "Proxy" },
+      { "process_name": ["Telegram"], "outbound": "Proxy" },
+      { "ip_is_private": true, "outbound": "direct" },
+      { "wifi_ssid": ["Home"], "outbound": "direct" },
+      { "rule_set": "cn-ip", "outbound": "direct" }
+    ],
+    "final": "Proxy"
+  }
+}
