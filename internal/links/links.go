@@ -37,8 +37,22 @@ func Convert(data []byte) (*model.Result, error) {
 	}
 	result := &model.Result{Format: model.FormatLinks}
 	found := false
+	var lines []string
 	for line := range strings.SplitSeq(text, "\n") {
 		line = strings.TrimSpace(line)
+		if rest, ok := strings.CutPrefix(strings.ToLower(line), "mieru://"); ok && !strings.Contains(rest, "@") {
+			expanded, reason := mieruProfiles(line)
+			if expanded == nil {
+				found = true
+				// The payload holds the credentials; name the scheme only.
+				result.Warn(model.WarnUnsupportedOption, "mieru: %s", reason)
+			}
+			lines = append(lines, expanded...)
+			continue
+		}
+		lines = append(lines, line)
+	}
+	for _, line := range lines {
 		scheme, _, ok := strings.Cut(line, "://")
 		if !ok || line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -179,7 +193,9 @@ func parse(scheme, line string) (model.Object, string) {
 			"transport", strings.ToUpper(or(q.Get("protocol"), "TCP")),
 			"username", u.User.Username(),
 			"password", password,
-			"multiplexing", "MULTIPLEXING_LOW",
+			"multiplexing", or(q.Get("multiplexing"), "MULTIPLEXING_LOW"),
+			"handshake-mode", q.Get("handshake-mode"),
+			"traffic-pattern", q.Get("traffic-pattern"),
 			"udp", true,
 		))
 		if strings.ContainsAny(ports, "-,") {

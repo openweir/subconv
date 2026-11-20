@@ -1,0 +1,25 @@
+{
+  "format": "links",
+  "proxies": [
+    {
+      "name": "edge",
+      "type": "mieru",
+      "server": "edge.example",
+      "transport": "UDP",
+      "username": "demo",
+      "password": "pass",
+      "multiplexing": "MULTIPLEXING_MIDDLE",
+      "udp": true,
+      "port": 443
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "mieru: Mieru profile without one server"
+    }
+  ]
+}

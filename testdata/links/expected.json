@@ -206,6 +206,7 @@
       "username": "mi",
       "password": "mi",
       "multiplexing": "MULTIPLEXING_LOW",
+      "traffic-pattern": "CgA=",
       "udp": true,
       "port": 2999
     },
