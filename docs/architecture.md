@@ -13,6 +13,9 @@ internal/model/        what every format shares: Result, Warning and its codes, 
 internal/singbox/      sing-box → mihomo: outbounds and endpoints (outbound.go), groups and
                        references (singbox.go), rule sets and rules (rules.go)
 internal/clash/        Clash and mihomo YAML, taken as they are
+internal/links/        share links and Base64 lists of them
+internal/proxy/        proxy building blocks every format shares: the leading keys, merging,
+                       Shadowsocks plugins, port ranges, unique names
 cmd/subconv/           a command-line tool for trying subscriptions
 testdata/<case>/       shared vectors: input.* and the expected.json it converts to
 ```
@@ -52,7 +55,8 @@ each an `OR` of its values.
 
 ## Extending
 
-- **A protocol**: add a case to `proxy` in `internal/singbox/outbound.go`, reusing `withTLS`,
+- **A protocol**: add a case to `proxy` in `internal/singbox/outbound.go` and to `parse` in
+  `internal/links/links.go`, reusing `withTLS`,
   `withStream` and `withMux`. Return a reason instead of a proxy when an option cannot be
   represented. Follow the field names of OpenWeir mihomo (and of api-edge's `clients.ts`, which
   writes the same proxies from the panel's side).

@@ -1,0 +1,105 @@
+{
+  "format": "links",
+  "proxies": [
+    {
+      "name": "香港 01",
+      "type": "vless",
+      "server": "203.0.113.5",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "VLESS XHTTP",
+      "type": "vless",
+      "server": "x.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+      "udp": true,
+      "tls": true,
+      "servername": "x.example.com",
+      "network": "xhttp",
+      "xhttp-opts": {
+        "path": "/stream",
+        "host": "x.example.com",
+        "mode": "auto"
+      }
+    },
+    {
+      "name": "Trojan WS",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "t.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ws",
+        "headers": {
+          "Host": "t.example.com"
+        }
+      },
+      "tfo": true
+    },
+    {
+      "name": "VMess WS",
+      "type": "vmess",
+      "server": "vm.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "servername": "vm.example.com",
+      "alpn": [
+        "h2",
+        "http/1.1"
+      ],
+      "client-fingerprint": "chrome",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "vm.example.com"
+        }
+      }
+    },
+    {
+      "name": "SS obfs",
+      "type": "ss",
+      "server": "1.2.3.4",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p@ss",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      }
+    },
+    {
+      "name": "SS 2022",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0",
+      "udp": true
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": null
+}

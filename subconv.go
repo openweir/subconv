@@ -14,9 +14,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/openweir/subconv/internal/clash"
+	"github.com/openweir/subconv/internal/links"
 	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/internal/singbox"
 	"go.yaml.in/yaml/v3"
@@ -102,7 +102,7 @@ func Convert(data []byte) (*Result, error) {
 	case FormatClash:
 		return clash.Convert(data)
 	default:
-		return nil, fmt.Errorf("%s subscriptions are not supported yet", format)
+		return links.Convert(data)
 	}
 }
 

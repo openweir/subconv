@@ -2,6 +2,7 @@ package singbox
 
 import (
 	"github.com/openweir/subconv/internal/model"
+	"github.com/openweir/subconv/internal/proxy"
 
 	"strconv"
 	"strings"
@@ -10,13 +11,7 @@ import (
 // proxy converts a sing-box outbound into an OpenWeir mihomo proxy. It returns nil and a reason
 // when an option cannot be represented, or nil and "" when the type has no counterpart.
 func (c *singBox) proxy(o model.Object) (model.Object, string) {
-	// Every proxy starts name, type, server, port; merge fills the type in its place.
-	base := model.Object{
-		{Key: "name", Value: o.String("tag")},
-		{Key: "type", Value: ""},
-		{Key: "server", Value: o.String("server")},
-		{Key: "port", Value: model.AsInt(o.Value("server_port"))},
-	}
+	base := proxy.Base(o.String("tag"), o.String("server"), model.AsInt(o.Value("server_port")))
 	tls := model.AsObject(o.Value("tls"))
 	var out model.Object
 	reason := ""
@@ -24,7 +19,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 	case "shadowsocks":
 		out, reason = shadowsocks(base, o)
 	case "vmess":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "vmess",
 			"uuid", o.String("uuid"),
 			"alterId", model.AsInt(o.Value("alter_id")),
@@ -38,7 +33,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 			out = withMux(out, o)
 		}
 	case "vless":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "vless",
 			"uuid", o.String("uuid"),
 			"flow", o.String("flow"),
@@ -50,7 +45,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 			out = withMux(out, o)
 		}
 	case "trojan":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "trojan",
 			"password", o.String("password"),
 			"udp", o.String("network") != "tcp",
@@ -59,30 +54,30 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 			out = withMux(out, o)
 		}
 	case "hysteria2":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "hysteria2",
 			"password", o.String("password"),
-			"ports", portRanges(model.AsStrings(o.Value("server_ports"))),
+			"ports", proxy.PortRanges(model.AsStrings(o.Value("server_ports"))),
 			"hop-interval", seconds(o.String("hop_interval"), 0),
 			"up", mbps(o.Value("up_mbps")),
 			"down", mbps(o.Value("down_mbps")),
 		))
 		if obfs := model.AsObject(o.Value("obfs")); obfs.String("type") == "salamander" {
-			out = merge(out, model.New("obfs", "salamander", "obfs-password", obfs.String("password")))
+			out = proxy.Merge(out, model.New("obfs", "salamander", "obfs-password", obfs.String("password")))
 		}
 		out, reason = withTLS(out, tls, "sni", false)
 	case "hysteria":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "hysteria",
 			"auth-str", or(o.String("auth_str"), o.String("auth")),
 			"up", mbps(o.Value("up_mbps")),
 			"down", mbps(o.Value("down_mbps")),
 			"obfs", o.String("obfs"),
-			"ports", portRanges(model.AsStrings(o.Value("server_ports"))),
+			"ports", proxy.PortRanges(model.AsStrings(o.Value("server_ports"))),
 		))
 		out, reason = withTLS(out, tls, "sni", false)
 	case "tuic":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "tuic",
 			"uuid", o.String("uuid"),
 			"password", o.String("password"),
@@ -93,14 +88,14 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 		))
 		out, reason = withTLS(out, tls, "sni", false)
 	case "anytls":
-		out = merge(base, model.New("type", "anytls", "password", o.String("password"), "udp", true))
+		out = proxy.Merge(base, model.New("type", "anytls", "password", o.String("password"), "udp", true))
 		out, reason = withTLS(out, tls, "sni", true)
 	case "naive":
 		// OpenWeir mihomo's native Naive; Cronet verifies the server and negotiates ALPN itself.
 		if model.AsBool(tls.Value("insecure")) {
 			return nil, "Naive cannot skip certificate verification"
 		}
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "naive",
 			"username", o.String("username"),
 			"password", o.String("password"),
@@ -109,7 +104,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 			"quic-congestion-control", o.String("quic_congestion_control"),
 		))
 	case "http":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "http",
 			"username", o.String("username"),
 			"password", o.String("password"),
@@ -121,7 +116,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 		if version := o.String("version"); version != "" && version != "5" {
 			return nil, "SOCKS" + version + " (mihomo speaks SOCKS5)"
 		}
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "socks5",
 			"username", o.String("username"),
 			"password", o.String("password"),
@@ -130,7 +125,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 	case "wireguard":
 		out, reason = wireguard(base, o)
 	case "ssh":
-		out = merge(base, model.New(
+		out = proxy.Merge(base, model.New(
 			"type", "ssh",
 			"username", o.String("user"),
 			"password", o.String("password"),
@@ -157,39 +152,18 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 }
 
 func shadowsocks(base, o model.Object) (model.Object, string) {
-	out := merge(base, model.New(
+	out := proxy.Merge(base, model.New(
 		"type", "ss",
 		"cipher", o.String("method"),
 		"password", o.String("password"),
 		"udp", o.String("network") != "tcp",
 		"udp-over-tcp", model.AsBool(o.Value("udp_over_tcp")),
 	))
-	switch plugin := o.String("plugin"); plugin {
-	case "":
-	case "obfs-local":
-		options := pluginOptions(o.String("plugin_opts"))
-		out = merge(out, model.New("plugin", "obfs", "plugin-opts", model.New(
-			"mode", options["obfs"],
-			"host", options["obfs-host"],
-		)))
-	case "v2ray-plugin":
-		options := pluginOptions(o.String("plugin_opts"))
-		mode := or(options["mode"], "websocket")
-		if mode != "websocket" {
-			return nil, "v2ray-plugin mode " + mode
-		}
-		_, tls := options["tls"]
-		_, mux := options["mux"]
-		out = merge(out, model.New("plugin", "v2ray-plugin", "plugin-opts", model.New(
-			"mode", "websocket",
-			"tls", tls,
-			"host", options["host"],
-			"path", options["path"],
-			"mux", mux && options["mux"] != "0",
-		)))
-	default:
-		return nil, "plugin " + plugin
+	plugin, reason := proxy.ShadowsocksPlugin(o.String("plugin"), proxy.PluginOptions(o.String("plugin_opts")))
+	if reason != "" {
+		return nil, reason
 	}
+	out = proxy.Merge(out, plugin)
 	return withMux(out, o), ""
 }
 
@@ -221,7 +195,7 @@ func wireguard(base, o model.Object) (model.Object, string) {
 	if len(reserved) == 0 {
 		reserved = model.AsList(o.Value("reserved"))
 	}
-	out := merge(base, model.New(
+	out := proxy.Merge(base, model.New(
 		"type", "wireguard",
 		"server", server,
 		"port", port,
@@ -252,7 +226,7 @@ func withStream(out, tls model.Object, transport any, nameKey string) (model.Obj
 	case "":
 	case "ws":
 		headers := model.AsObject(t.Value("headers"))
-		out = merge(out, model.New("network", "ws", "ws-opts", model.New(
+		out = proxy.Merge(out, model.New("network", "ws", "ws-opts", model.New(
 			"path", t.String("path"),
 			"headers", headers,
 			"max-early-data", model.AsInt(t.Value("max_early_data")),
@@ -260,25 +234,25 @@ func withStream(out, tls model.Object, transport any, nameKey string) (model.Obj
 		)))
 	case "httpupgrade":
 		headers := model.New("Host", t.String("host"))
-		out = merge(out, model.New("network", "ws", "ws-opts", model.New(
+		out = proxy.Merge(out, model.New("network", "ws", "ws-opts", model.New(
 			"path", t.String("path"),
 			"headers", headers,
 			"v2ray-http-upgrade", true,
 		)))
 	case "grpc":
-		out = merge(out, model.New("network", "grpc", "grpc-opts", model.New(
+		out = proxy.Merge(out, model.New("network", "grpc", "grpc-opts", model.New(
 			"grpc-service-name", t.String("service_name"),
 		)))
 	case "http":
 		hosts := model.AsStrings(t.Value("host"))
 		if _, secure := out.Get("tls"); secure || out.String("type") == "trojan" {
-			out = merge(out, model.New("network", "h2", "h2-opts", model.New(
+			out = proxy.Merge(out, model.New("network", "h2", "h2-opts", model.New(
 				"host", hosts,
 				"path", t.String("path"),
 			)))
 		} else {
 			paths := []string{or(t.String("path"), "/")}
-			out = merge(out, model.New("network", "http", "http-opts", model.New(
+			out = proxy.Merge(out, model.New("network", "http", "http-opts", model.New(
 				"method", t.String("method"),
 				"path", paths,
 				"headers", model.New("Host", hosts),
@@ -289,7 +263,7 @@ func withStream(out, tls model.Object, transport any, nameKey string) (model.Obj
 		if out.String("type") != "vless" {
 			return nil, "XHTTP on " + out.String("type")
 		}
-		out = merge(out, model.New("network", "xhttp", "xhttp-opts", model.New(
+		out = proxy.Merge(out, model.New("network", "xhttp", "xhttp-opts", model.New(
 			"path", t.String("path"),
 			"host", t.String("host"),
 			"mode", t.String("mode"),
@@ -313,7 +287,7 @@ func withTLS(out, tls model.Object, nameKey string, fingerprints bool) (model.Ob
 	case "vmess", "vless":
 		out.Set("tls", true)
 	}
-	out = merge(out, model.New(
+	out = proxy.Merge(out, model.New(
 		nameKey, tls.String("server_name"),
 		"alpn", model.AsStrings(tls.Value("alpn")),
 		"skip-cert-verify", model.AsBool(tls.Value("insecure")),
@@ -342,7 +316,7 @@ func withMux(out, o model.Object) model.Object {
 	if !model.AsBool(mux.Value("enabled")) {
 		return out
 	}
-	return merge(out, model.New("smux", model.New(
+	return proxy.Merge(out, model.New("smux", model.New(
 		"enabled", true,
 		"protocol", mux.String("protocol"),
 		"max-connections", model.AsInt(mux.Value("max_connections")),
@@ -350,44 +324,6 @@ func withMux(out, o model.Object) model.Object {
 		"max-streams", model.AsInt(mux.Value("max_streams")),
 		"padding", model.AsBool(mux.Value("padding")),
 	)))
-}
-
-// merge sets the fields of extra on base, keeping base's order for keys it has.
-func merge(base, extra model.Object) model.Object {
-	out := make(model.Object, 0, len(base)+len(extra))
-	for _, field := range base {
-		if value, set := extra.Get(field.Key); set {
-			out = append(out, model.Field{Key: field.Key, Value: value})
-		} else if !model.Empty(field.Value) {
-			out = append(out, field)
-		}
-	}
-	for _, field := range extra {
-		if _, set := out.Get(field.Key); !set {
-			out = append(out, field)
-		}
-	}
-	return out
-}
-
-func pluginOptions(text string) map[string]string {
-	options := map[string]string{}
-	for part := range strings.SplitSeq(text, ";") {
-		key, value, _ := strings.Cut(strings.TrimSpace(part), "=")
-		if key != "" {
-			options[key] = value
-		}
-	}
-	return options
-}
-
-// portRanges turns sing-box's "1000:2000" into mihomo's "1000-2000", comma separated.
-func portRanges(ranges []string) string {
-	out := make([]string, 0, len(ranges))
-	for _, r := range ranges {
-		out = append(out, strings.ReplaceAll(r, ":", "-"))
-	}
-	return strings.Join(out, ",")
 }
 
 func mbps(value any) string {

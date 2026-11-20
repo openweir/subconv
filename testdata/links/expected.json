@@ -1,0 +1,273 @@
+{
+  "format": "links",
+  "proxies": [
+    {
+      "name": "香港 01",
+      "type": "vless",
+      "server": "203.0.113.5",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "VLESS XHTTP",
+      "type": "vless",
+      "server": "x.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+      "udp": true,
+      "tls": true,
+      "servername": "x.example.com",
+      "network": "xhttp",
+      "xhttp-opts": {
+        "path": "/stream",
+        "host": "x.example.com",
+        "mode": "auto"
+      }
+    },
+    {
+      "name": "Trojan WS",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "t.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ws",
+        "headers": {
+          "Host": "t.example.com"
+        }
+      },
+      "tfo": true
+    },
+    {
+      "name": "VMess WS",
+      "type": "vmess",
+      "server": "vm.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "servername": "vm.example.com",
+      "alpn": [
+        "h2",
+        "http/1.1"
+      ],
+      "client-fingerprint": "chrome",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "vm.example.com"
+        }
+      }
+    },
+    {
+      "name": "SS obfs",
+      "type": "ss",
+      "server": "1.2.3.4",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p@ss",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      }
+    },
+    {
+      "name": "SS semicolons",
+      "type": "ss",
+      "server": "1.2.3.5",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "tls",
+        "host": "cdn.example.com"
+      }
+    },
+    {
+      "name": "SS 2022",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0",
+      "udp": true
+    },
+    {
+      "name": "Legacy SS",
+      "type": "ss",
+      "server": "legacy.example.com",
+      "port": 8389,
+      "cipher": "aes-256-gcm",
+      "password": "legacypass",
+      "udp": true
+    },
+    {
+      "name": "SSR 节点",
+      "type": "ssr",
+      "server": "ssr.example.com",
+      "port": 8443,
+      "cipher": "aes-128-cfb",
+      "password": "shared",
+      "protocol": "auth_chain_a",
+      "protocol-param": "1:7c8c8c0e",
+      "obfs": "plain",
+      "udp": true
+    },
+    {
+      "name": "Hy2",
+      "type": "hysteria2",
+      "server": "h.example.com",
+      "port": 443,
+      "password": "hy",
+      "ports": "20000-30000",
+      "sni": "h.example.com",
+      "obfs": "salamander",
+      "obfs-password": "ob"
+    },
+    {
+      "name": "TUIC",
+      "type": "tuic",
+      "server": "u.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+      "password": "tu",
+      "sni": "u.example.com",
+      "alpn": [
+        "h3"
+      ],
+      "congestion-controller": "bbr"
+    },
+    {
+      "name": "AnyTLS REALITY",
+      "type": "anytls",
+      "server": "a.example.com",
+      "port": 443,
+      "password": "an",
+      "udp": true,
+      "sni": "cover.example.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PK2",
+        "short-id": "01"
+      }
+    },
+    {
+      "name": "Naive QUIC",
+      "type": "naive",
+      "server": "n.example.com",
+      "port": 443,
+      "username": "1",
+      "password": "np",
+      "sni": "n.example.com",
+      "quic": true
+    },
+    {
+      "name": "SOCKS",
+      "type": "socks5",
+      "server": "127.0.0.1",
+      "port": 1080,
+      "username": "u",
+      "password": "p",
+      "udp": true
+    },
+    {
+      "name": "HTTPS",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 443,
+      "username": "u",
+      "password": "p",
+      "tls": true
+    },
+    {
+      "name": "Mieru",
+      "type": "mieru",
+      "server": "m.example.com",
+      "transport": "UDP",
+      "username": "mi",
+      "password": "mi",
+      "multiplexing": "MULTIPLEXING_LOW",
+      "port": 2999
+    },
+    {
+      "name": "Nowhere",
+      "type": "nowhere",
+      "server": "nw.example.com",
+      "port": 2000,
+      "password": "0123456789abcdef0123456789abcdef",
+      "network": "udp",
+      "udp": true,
+      "sni": "nw.example.com",
+      "morph": false
+    },
+    {
+      "name": "Snell v5",
+      "type": "snell",
+      "server": "sn.example.com",
+      "port": 6160,
+      "psk": "snellpsk",
+      "version": 5,
+      "udp": true,
+      "obfs-opts": {
+        "mode": "http"
+      }
+    },
+    {
+      "name": "WG",
+      "type": "wireguard",
+      "server": "w.example.com",
+      "port": 51820,
+      "private-key": "PRIV",
+      "public-key": "PUB",
+      "mtu": 1408,
+      "udp": true,
+      "ip": "10.0.0.2",
+      "ipv6": "fd00::2",
+      "reserved": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "Trojan WS 2",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "Telegram: a Telegram proxy, which only Telegram uses"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "QUIC VLESS: transport quic"
+    }
+  ]
+}

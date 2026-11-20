@@ -21,7 +21,7 @@ go run ./cmd/subconv -json subscription.json    # the whole result as JSON
 ## Usage
 
 ```go
-result, err := subconv.Convert(body) // detects sing-box JSON or Clash YAML
+result, err := subconv.Convert(body) // detects sing-box JSON, Clash YAML or share links
 if err != nil { ... }
 fragment, err := result.YAML()       // proxies, proxy-groups, rule-providers, rules
 for _, w := range result.Warnings {  // what the conversion left out: a stable code and the item
@@ -38,8 +38,14 @@ and merging subscriptions are the caller's job.
 | --- | --- |
 | Clash / mihomo YAML | The four parts are taken as they are; the client validates them when it loads the config |
 | sing-box JSON (1.11+, including `endpoints`) | Proxies, groups, rule sets and rules are converted, as below |
-| Share links / Base64 | Detected, not converted yet (next) |
+| Share links / Base64 | Converted to proxies; a links subscription has no groups or rules |
 | Surge, Loon, Quantumult X | Planned |
+
+Share links: vless, trojan, vmess (v2rayN's Base64 JSON), ss (SIP002 and the legacy form, with
+obfs and v2ray-plugin), ssr, hysteria2/hy2, hysteria, tuic, anytls (with REALITY), naive+https and
+naive+quic, socks5, http/https, mierus, nowhere, snell (Shadowrocket's form) and wireguard, in the
+forms the common clients and the OpenWeir panel write. Telegram proxies (`tg://`) and transports
+mihomo lacks are left out with a warning; duplicate names get a number.
 
 How sing-box converts:
 
