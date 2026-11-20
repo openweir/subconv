@@ -1,0 +1,284 @@
+{
+  "outbounds": [
+    {
+      "tag": "VLESS REALITY",
+      "server": "vless.example.com",
+      "server_port": 443,
+      "type": "vless",
+      "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+      "flow": "xtls-rprx-vision",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.microsoft.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "PUBKEY",
+          "short_id": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "VLESS WS",
+      "server": "vless.example.com",
+      "server_port": 443,
+      "type": "vless",
+      "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "v.example.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/ws",
+        "headers": {
+          "Host": "v.example.com"
+        }
+      },
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "VLESS gRPC",
+      "server": "vless.example.com",
+      "server_port": 443,
+      "type": "vless",
+      "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "v.example.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": "gun"
+      },
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "VMess WS",
+      "server": "vmess.example.com",
+      "server_port": 443,
+      "type": "vmess",
+      "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+      "security": "auto",
+      "alter_id": 0,
+      "tls": {
+        "enabled": true,
+        "server_name": "vm.example.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/ray",
+        "headers": {
+          "Host": "vm.example.com"
+        }
+      },
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "VMess TCP",
+      "server": "vmess.example.com",
+      "server_port": 443,
+      "type": "vmess",
+      "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+      "security": "auto",
+      "alter_id": 0,
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "Trojan",
+      "server": "trojan.example.com",
+      "server_port": 443,
+      "type": "trojan",
+      "password": "01234567-89ab-cdef-0123-456789abcdef",
+      "tls": {
+        "enabled": true,
+        "server_name": "t.example.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "Trojan gRPC",
+      "server": "trojan.example.com",
+      "server_port": 443,
+      "type": "trojan",
+      "password": "01234567-89ab-cdef-0123-456789abcdef",
+      "tls": {
+        "enabled": true,
+        "server_name": "t.example.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": "gun"
+      },
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "SS",
+      "server": "shadowsocks.example.com",
+      "server_port": 443,
+      "type": "shadowsocks",
+      "method": "aes-128-gcm",
+      "password": "01234567-89ab-cdef-0123-456789abcdef",
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "SS 2022",
+      "server": "shadowsocks.example.com",
+      "server_port": 443,
+      "type": "shadowsocks",
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "YzJWeWRtVnlMV3RsZVMweE5tSjVkR1U9:MDEyMzQ1NjctODlhYi1jZA==",
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "Hy2",
+      "server": "hysteria2.example.com",
+      "server_port": 443,
+      "type": "hysteria2",
+      "password": "01234567-89ab-cdef-0123-456789abcdef",
+      "server_ports": [
+        "20000:30000"
+      ],
+      "obfs": {
+        "type": "salamander",
+        "password": "ob"
+      },
+      "tls": {
+        "enabled": true,
+        "server_name": "h.example.com",
+        "alpn": [
+          "h3"
+        ]
+      }
+    },
+    {
+      "tag": "TUIC",
+      "server": "tuic.example.com",
+      "server_port": 443,
+      "type": "tuic",
+      "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+      "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+      "congestion_control": "bbr",
+      "udp_relay_mode": "native",
+      "tls": {
+        "enabled": true,
+        "server_name": "u.example.com",
+        "alpn": [
+          "h3"
+        ]
+      }
+    },
+    {
+      "tag": "AnyTLS",
+      "server": "anytls.example.com",
+      "server_port": 443,
+      "type": "anytls",
+      "password": "01234567-89ab-cdef-0123-456789abcdef",
+      "tls": {
+        "enabled": true,
+        "server_name": "a.example.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "AnyTLS REALITY",
+      "server": "anytls.example.com",
+      "server_port": 443,
+      "type": "anytls",
+      "password": "01234567-89ab-cdef-0123-456789abcdef",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.microsoft.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "PUBKEY",
+          "short_id": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "HTTP",
+      "server": "http.example.com",
+      "server_port": 443,
+      "type": "http",
+      "username": "1",
+      "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "HTTPS",
+      "server": "https.example.com",
+      "server_port": 443,
+      "type": "http",
+      "username": "1",
+      "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+      "tls": {
+        "enabled": true,
+        "server_name": "p.example.com"
+      },
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "SOCKS",
+      "server": "socks5.example.com",
+      "server_port": 443,
+      "type": "socks",
+      "version": "5",
+      "username": "1",
+      "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "Snell v5",
+      "server": "snell.example.com",
+      "server_port": 443,
+      "type": "snell",
+      "version": 4,
+      "psk": "01234567-89ab-cdef-0123-456789abcdef",
+      "obfs_mode": "http",
+      "tcp_fast_open": true
+    },
+    {
+      "tag": "Snell v6",
+      "server": "snell.example.com",
+      "server_port": 443,
+      "type": "snell",
+      "version": 6,
+      "psk": "01234567-89ab-cdef-0123-456789abcdef",
+      "tcp_fast_open": true
+    }
+  ]
+}

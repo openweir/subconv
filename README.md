@@ -80,6 +80,17 @@ go test ./... -run TestVectors -update   # rewrite expected.json; review every d
 go test ./...
 ```
 
+### Panel cross-check
+
+`testdata/panel/` holds what the OpenWeir panel ([api-edge](https://github.com/openweir/api-edge))
+writes for a set of its nodes: sing-box outbounds, share links, and its OpenWeir proxies.
+`TestPanelVectors` converts the first two and requires the third, apart from a short list of
+settings a format cannot carry. Regenerate the files after changing the panel's client formats:
+
+```bash
+bun scripts/panel-vectors.ts ../api-edge
+```
+
 ## Releases
 
 Other modules require a tagged version: `go get github.com/openweir/subconv@latest`. Every push to

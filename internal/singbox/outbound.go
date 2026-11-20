@@ -124,6 +124,23 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 		))
 	case "wireguard":
 		out, reason = wireguard(base, o)
+	case "snell":
+		version := model.AsInt(o.Value("version"))
+		if version == 0 {
+			version = 4
+		}
+		out = proxy.Merge(base, model.New(
+			"type", "snell",
+			"psk", o.String("psk"),
+			"version", version,
+			"udp", version >= 3,
+		))
+		if mode := o.String("mode"); version == 6 && mode != "" && mode != "default" {
+			out.Set("mode", mode)
+		}
+		if obfs := o.String("obfs_mode"); obfs != "" {
+			out.Set("obfs-opts", model.New("mode", obfs, "host", o.String("obfs_host")))
+		}
 	case "ssh":
 		out = proxy.Merge(base, model.New(
 			"type", "ssh",

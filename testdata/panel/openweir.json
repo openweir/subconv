@@ -1,0 +1,323 @@
+[
+  {
+    "name": "VLESS REALITY",
+    "server": "vless.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "vless",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "flow": "xtls-rprx-vision",
+    "tls": true,
+    "servername": "www.microsoft.com",
+    "client-fingerprint": "chrome",
+    "reality-opts": {
+      "public-key": "PUBKEY",
+      "short-id": "abcd"
+    }
+  },
+  {
+    "name": "VLESS WS",
+    "server": "vless.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "vless",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "network": "ws",
+    "ws-opts": {
+      "path": "/ws",
+      "headers": {
+        "Host": "v.example.com"
+      }
+    },
+    "tls": true,
+    "servername": "v.example.com",
+    "client-fingerprint": "chrome",
+    "tfo": true
+  },
+  {
+    "name": "VLESS gRPC",
+    "server": "vless.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "vless",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "network": "grpc",
+    "grpc-opts": {
+      "grpc-service-name": "gun"
+    },
+    "tls": true,
+    "servername": "v.example.com",
+    "client-fingerprint": "chrome",
+    "tfo": true
+  },
+  {
+    "name": "VLESS XHTTP",
+    "server": "vless.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "vless",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "network": "xhttp",
+    "xhttp-opts": {
+      "path": "/stream",
+      "host": "x.example.com",
+      "mode": "auto"
+    },
+    "tls": true,
+    "servername": "x.example.com",
+    "client-fingerprint": "chrome",
+    "tfo": true
+  },
+  {
+    "name": "VMess WS",
+    "server": "vmess.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "vmess",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "alterId": 0,
+    "cipher": "auto",
+    "network": "ws",
+    "ws-opts": {
+      "path": "/ray",
+      "headers": {
+        "Host": "vm.example.com"
+      }
+    },
+    "tls": true,
+    "servername": "vm.example.com",
+    "client-fingerprint": "chrome",
+    "tfo": true
+  },
+  {
+    "name": "VMess TCP",
+    "server": "vmess.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "vmess",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "alterId": 0,
+    "cipher": "auto",
+    "tfo": true
+  },
+  {
+    "name": "Trojan",
+    "server": "trojan.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "trojan",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "sni": "t.example.com",
+    "client-fingerprint": "chrome",
+    "tfo": true
+  },
+  {
+    "name": "Trojan gRPC",
+    "server": "trojan.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "trojan",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "sni": "t.example.com",
+    "client-fingerprint": "chrome",
+    "network": "grpc",
+    "grpc-opts": {
+      "grpc-service-name": "gun"
+    },
+    "tfo": true
+  },
+  {
+    "name": "SS",
+    "server": "shadowsocks.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "ss",
+    "cipher": "aes-128-gcm",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "tfo": true
+  },
+  {
+    "name": "SS 2022",
+    "server": "shadowsocks.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "ss",
+    "cipher": "2022-blake3-aes-128-gcm",
+    "password": "YzJWeWRtVnlMV3RsZVMweE5tSjVkR1U9:MDEyMzQ1NjctODlhYi1jZA==",
+    "tfo": true
+  },
+  {
+    "name": "SS obfs",
+    "server": "shadowsocks.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "ss",
+    "cipher": "aes-128-gcm",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "plugin": "obfs",
+    "plugin-opts": {
+      "mode": "http",
+      "host": "bing.com"
+    },
+    "tfo": true
+  },
+  {
+    "name": "SSR",
+    "server": "shadowsocksr.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "ssr",
+    "cipher": "aes-128-cfb",
+    "password": "shared",
+    "protocol": "auth_chain_a",
+    "protocol-param": "1:01234567-89ab-cdef-0123-456789abcdef",
+    "obfs": "plain",
+    "tfo": true
+  },
+  {
+    "name": "Hy2",
+    "server": "hysteria2.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "hysteria2",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "ports": "20000-30000",
+    "sni": "h.example.com",
+    "obfs": "salamander",
+    "obfs-password": "ob"
+  },
+  {
+    "name": "TUIC",
+    "server": "tuic.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "tuic",
+    "uuid": "01234567-89ab-cdef-0123-456789abcdef",
+    "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+    "sni": "u.example.com",
+    "alpn": [
+      "h3"
+    ],
+    "congestion-controller": "bbr",
+    "udp-relay-mode": "native"
+  },
+  {
+    "name": "AnyTLS",
+    "server": "anytls.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "anytls",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "sni": "a.example.com",
+    "client-fingerprint": "chrome"
+  },
+  {
+    "name": "AnyTLS REALITY",
+    "server": "anytls.example.com",
+    "port": 443,
+    "type": "anytls",
+    "udp": true,
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "sni": "www.microsoft.com",
+    "client-fingerprint": "chrome",
+    "reality-opts": {
+      "public-key": "PUBKEY",
+      "short-id": "abcd"
+    }
+  },
+  {
+    "name": "Naive",
+    "server": "naive.example.com",
+    "port": 443,
+    "type": "naive",
+    "username": "1",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "sni": "n.example.com"
+  },
+  {
+    "name": "Naive QUIC",
+    "server": "naive.example.com",
+    "port": 443,
+    "type": "naive",
+    "username": "1",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "sni": "n.example.com",
+    "quic": true
+  },
+  {
+    "name": "HTTP",
+    "server": "http.example.com",
+    "port": 443,
+    "type": "http",
+    "username": "1",
+    "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+    "tfo": true
+  },
+  {
+    "name": "HTTPS",
+    "server": "https.example.com",
+    "port": 443,
+    "type": "http",
+    "username": "1",
+    "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+    "tls": true,
+    "sni": "p.example.com",
+    "tfo": true
+  },
+  {
+    "name": "SOCKS",
+    "server": "socks5.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "socks5",
+    "username": "1",
+    "password": "N9Za3_0TWlW0l4Sko-VSpKrz",
+    "tfo": true
+  },
+  {
+    "name": "Snell v5",
+    "server": "snell.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "snell",
+    "psk": "01234567-89ab-cdef-0123-456789abcdef",
+    "version": 5,
+    "obfs-opts": {
+      "mode": "http"
+    },
+    "tfo": true
+  },
+  {
+    "name": "Snell v6",
+    "server": "snell.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "snell",
+    "psk": "01234567-89ab-cdef-0123-456789abcdef",
+    "version": 6,
+    "tfo": true
+  },
+  {
+    "name": "Mieru",
+    "server": "mieru.example.com",
+    "port": 443,
+    "udp": true,
+    "type": "mieru",
+    "transport": "TCP",
+    "username": "01234567-89ab-cdef-0123-456789abcdef",
+    "password": "01234567-89ab-cdef-0123-456789abcdef",
+    "multiplexing": "MULTIPLEXING_LOW",
+    "tfo": true
+  },
+  {
+    "name": "Nowhere",
+    "server": "nowhere.example.com",
+    "port": 443,
+    "type": "nowhere",
+    "password": "0123456789abcdef0123456789abcdef",
+    "network": "tcp",
+    "udp": true,
+    "sni": "nw.example.com",
+    "morph": false
+  }
+]

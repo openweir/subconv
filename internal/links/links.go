@@ -180,6 +180,7 @@ func parse(scheme, line string) (model.Object, string) {
 			"username", u.User.Username(),
 			"password", password,
 			"multiplexing", "MULTIPLEXING_LOW",
+			"udp", true,
 		))
 		if strings.ContainsAny(ports, "-,") {
 			out = proxy.Merge(out, model.New("port-range", ports))
@@ -309,7 +310,8 @@ func finish(out model.Object, q url.Values) (model.Object, string) {
 	if q.Get("udp") == "1" {
 		out.Set("udp", true)
 	}
-	if q.Get("tfo") == "1" || q.Get("fastopen") == "1" {
+	// Naive's Cronet opens its own connections; fast open is not its option.
+	if (q.Get("tfo") == "1" || q.Get("fastopen") == "1") && out.String("type") != "naive" {
 		out.Set("tfo", true)
 	}
 	if port, _ := out.Get("port"); model.AsInt(port) == 0 {
@@ -468,8 +470,8 @@ func snell(line string) (model.Object, string) {
 		"version", version,
 		"udp", version >= 3,
 	))
-	if version == 6 {
-		out.Set("mode", q.Get("mode"))
+	if mode := q.Get("mode"); version == 6 && mode != "" && mode != "default" {
+		out.Set("mode", mode)
 	}
 	if plugin := q.Get("plugin"); plugin != "" {
 		_, options, _ := strings.Cut(plugin, ";")

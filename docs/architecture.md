@@ -18,6 +18,8 @@ internal/proxy/        proxy building blocks every format shares: the leading ke
                        Shadowsocks plugins, port ranges, unique names
 cmd/subconv/           a command-line tool for trying subscriptions
 testdata/<case>/       shared vectors: input.* and the expected.json it converts to
+testdata/panel/        the panel's sing-box outbounds, links and OpenWeir proxies for the
+                       same nodes (scripts/panel-vectors.ts), checked by TestPanelVectors
 ```
 
 Clients import only `github.com/openweir/subconv`. Everything under `internal/` can change without
@@ -63,6 +65,8 @@ each an `OR` of its values.
 - **A rule field**: add a case to `atoms` in `internal/singbox/rules.go`.
 - **A format**: add a package under `internal/`, a `Format` constant in `internal/model`, a branch
   in `Detect` and `Convert`, and a vector.
+- A protocol the panel writes has a fixture in `scripts/panel-vectors.ts`; regenerate
+  `testdata/panel/` so `TestPanelVectors` holds both sides to the same proxies.
 - Every change to the output updates the vectors: `go test ./... -run TestVectors -update`, then
   review the diff.
 
