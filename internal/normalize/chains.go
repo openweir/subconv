@@ -55,7 +55,9 @@ func (s *state) reaches(from, target string, seen map[string]bool) bool {
 			continue
 		}
 		members := texts(o.Value("proxies"))
-		if all, _ := o.Value("include-all").(bool); all || o.Value("include-all-proxies") == true {
+		all, _ := model.Bool(o.Value("include-all"))
+		proxies, _ := model.Bool(o.Value("include-all-proxies"))
+		if all || proxies {
 			filter := o.String("filter")
 			for name := range s.proxies {
 				if matches(filter, name) {

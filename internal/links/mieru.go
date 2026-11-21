@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/openweir/subconv/internal/body"
 )
 
 // mieruProfiles expands Mieru's standard link, mieru://base64(ClientConfig protobuf), into one
@@ -14,7 +16,7 @@ import (
 // link rather than dropping part of a profile.
 func mieruProfiles(line string) ([]string, string) {
 	_, tail, _ := strings.Cut(line, "://")
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(tail))
+	raw, err := body.Base64(tail)
 	if err != nil || len(raw) == 0 {
 		return nil, "not a Mieru client config"
 	}

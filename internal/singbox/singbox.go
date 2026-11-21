@@ -19,7 +19,8 @@ var builtIn = []string{"DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", 
 const defaultTestURL = "https://www.gstatic.com/generate_204"
 
 type singBox struct {
-	result *model.Result
+	options model.Options
+	result  *model.Result
 	// The Clash name of each sing-box tag: a proxy or group name, DIRECT or REJECT. A tag the
 	// conversion left out maps to "".
 	names map[string]string
@@ -29,7 +30,7 @@ type singBox struct {
 }
 
 // Convert converts a sing-box config.
-func Convert(data []byte) (*model.Result, error) {
+func Convert(data []byte, options model.Options) (*model.Result, error) {
 	value, err := model.Decode(data)
 	if err != nil {
 		return nil, fmt.Errorf("sing-box: %w", err)
@@ -39,9 +40,10 @@ func Convert(data []byte) (*model.Result, error) {
 		return nil, fmt.Errorf("sing-box: %w", errNotAConfig)
 	}
 	c := &singBox{
-		result: &model.Result{Format: model.FormatSingBox},
-		names:  map[string]string{},
-		dns:    map[string]bool{},
+		options: options,
+		result:  &model.Result{Format: model.FormatSingBox},
+		names:   map[string]string{},
+		dns:     map[string]bool{},
 	}
 	var groups []model.Object
 	// Endpoints (sing-box 1.11) carry WireGuard and Tailscale; they are outbounds to the router.

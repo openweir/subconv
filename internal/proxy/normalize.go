@@ -206,66 +206,92 @@ func (n *normalizer) keys() *Problem {
 	return nil
 }
 
-// values converts each known key to the type mihomo decodes it into.
+// values converts what mihomo's decoder (common/structure) refuses or misreads into the type
+// it decodes a key into. It reads numbers as booleans and numeric strings as numbers, so those
+// stay as written.
 func (n *normalizer) values(kind string) *Problem {
 	for index := 0; index < len(n.p); index++ {
 		key, value := n.p[index].Key, n.p[index].Value
+		converted, keep := value, true
 		switch {
 		case key == "hop-interval":
-			// Seconds; Hysteria 2 also takes a range of them as a string.
-			if seconds, ok := duration(value); ok {
-				n.p[index].Value = seconds
-			} else if text, ok := value.(string); !ok || kind != "hysteria2" || text == "" {
-				n.remove(key, "is not a number of seconds")
-				index--
-			}
-		case boolKeys[key]:
-			if b, ok := model.Bool(value); ok {
-				n.p[index].Value = b
-			} else {
-				n.remove(key, "is not a boolean")
-				index--
+			// Seconds; Hysteria 2 also takes a range of them, "10-30".
+			text, isText := value.(string)
+			switch {
+			case kind == "hysteria2" && isText && strings.Trim(text, "0123456789-") == "" && text != "":
+			case AcceptedInt(value) && !isText:
+			default:
+				converted, keep = duration(value)
 			}
 		case key == "heartbeat-interval":
-			// Milliseconds; sing-box-style durations are converted.
-			if i, ok := model.Int(value); ok {
-				n.p[index].Value = i
-			} else if d, err := time.ParseDuration(text(value)); err == nil && d > 0 {
-				n.p[index].Value = int(d / time.Millisecond)
-			} else {
-				n.remove(key, "is not a number")
-				index--
+			// Milliseconds.
+			if !AcceptedInt(value) {
+				d, err := time.ParseDuration(text(value))
+				converted, keep = int(d/time.Millisecond), err == nil && d > 0
+			}
+		case boolKeys[key]:
+			if _, ok := value.(bool); !ok && !isInt(value) {
+				converted, keep = model.Bool(value)
 			}
 		case intKeys[key]:
-			if i, ok := model.Int(value); ok {
-				n.p[index].Value = i
-			} else if seconds, ok := duration(value); ok && key != "port" {
-				n.p[index].Value = seconds
-			} else if key == "port" {
-				return invalid("port " + describe(value))
-			} else {
-				n.remove(key, "is not a number")
-				index--
+			if !AcceptedInt(value) {
+				if converted, keep = model.Int(value); !keep && key != "port" {
+					converted, keep = duration(value)
+				}
+				if !keep && key == "port" {
+					return invalid("port " + describe(value))
+				}
 			}
 		case textKeys[key]:
-			if text, ok := model.Text(value); ok {
-				n.p[index].Value = text
-			} else if key == "name" {
-				n.p[index].Value = "" // named later, among the others
-			} else if value == nil {
-				n.p.Delete(key)
-				index--
-			} else if key == "server" {
-				return invalid("server " + describe(value))
-			} else {
-				n.remove(key, "is not text")
-				index--
+			switch value.(type) {
+			case string, int:
+			case nil:
+				if key == "name" {
+					converted = ""
+				} else {
+					n.p.Delete(key)
+					index--
+					continue
+				}
+			default:
+				converted, keep = model.Text(value)
+				if !keep && key == "name" {
+					converted, keep = "", true // named later, among the others
+				} else if !keep && key == "server" {
+					return invalid("server " + describe(value))
+				}
 			}
 		case listKeys[key]:
-			n.p[index].Value = strings_(value)
+			if _, ok := value.([]any); !ok {
+				converted = strings_(value)
+			}
 		}
+		if !keep {
+			n.remove(key, "has a value mihomo cannot read")
+			index--
+			continue
+		}
+		n.p[index].Value = converted
 	}
 	return nil
+}
+
+func isInt(value any) bool {
+	_, ok := value.(int)
+	return ok
+}
+
+// AcceptedInt reports a number mihomo's decoder reads: a number, or a string strconv.ParseInt
+// reads in base 0.
+func AcceptedInt(value any) bool {
+	switch v := value.(type) {
+	case int, float64:
+		return true
+	case string:
+		_, err := strconv.ParseInt(v, 0, 64)
+		return err == nil
+	}
+	return false
 }
 
 // local removes the options a subscription must not set: the client's own interface and
@@ -358,13 +384,13 @@ func (n *normalizer) legacy(kind string) {
 		}
 		p.Delete("servername")
 	}
-	if alpn := strings_(p.Value("alpn")); alpn != nil {
-		p.Set("alpn", alpn)
+	if alpn, ok := p.Value("alpn").(string); ok {
+		p.Set("alpn", strings_(alpn))
 	}
 	if reality := model.AsObject(p.Value("reality-opts")); reality != nil {
 		reality = renameKeys(reality, map[string]string{"publickey": "public-key", "public-key": "public-key", "pbk": "public-key", "shortid": "short-id", "short-id": "short-id", "sid": "short-id"})
-		if id, ok := model.Text(reality.Value("short-id")); ok {
-			reality.Set("short-id", id)
+		if id, ok := reality.Value("short-id").(float64); ok {
+			reality.Set("short-id", strconv.FormatFloat(id, 'f', -1, 64))
 		}
 		p.Set("reality-opts", reality)
 		if _, set := p.Get("client-fingerprint"); !set {
@@ -382,17 +408,15 @@ func (n *normalizer) transport() {
 		if headers := model.AsObject(ws.Value("headers")); headers != nil {
 			ws.Set("headers", singleHeaders(headers))
 		}
-		for _, key := range []string{"max-early-data"} {
-			if value, set := ws.Get(key); set {
-				if i, ok := model.Int(value); ok {
-					ws.Set(key, i)
-				} else {
-					ws.Delete(key)
-				}
+		if value, set := ws.Get("max-early-data"); set && !AcceptedInt(value) {
+			if i, ok := model.Int(value); ok {
+				ws.Set("max-early-data", i)
+			} else {
+				ws.Delete("max-early-data")
 			}
 		}
 		for _, key := range []string{"v2ray-http-upgrade", "v2ray-http-upgrade-fast-open"} {
-			if value, set := ws.Get(key); set {
+			if value, ok := ws.Value(key).(string); ok {
 				b, _ := model.Bool(value)
 				ws.Set(key, b)
 			}
@@ -401,20 +425,23 @@ func (n *normalizer) transport() {
 	}
 	if h2 := model.AsObject(p.Value("h2-opts")); h2 != nil {
 		h2 = h2.Clone()
-		if host := strings_(h2.Value("host")); host != nil {
-			h2.Set("host", host)
+		if host, ok := h2.Value("host").(string); ok {
+			h2.Set("host", strings_(host))
 		}
 		p.Set("h2-opts", h2)
 	}
 	if http := model.AsObject(p.Value("http-opts")); http != nil {
 		http = http.Clone()
-		if path := strings_(http.Value("path")); path != nil {
-			http.Set("path", path)
+		if path, ok := http.Value("path").(string); ok {
+			http.Set("path", []string{path})
 		}
 		if headers := model.AsObject(http.Value("headers")); headers != nil {
 			lists := make(model.Object, 0, len(headers))
 			for _, field := range headers {
-				lists = append(lists, model.Field{Key: field.Key, Value: strings_(field.Value)})
+				if value, ok := field.Value.(string); ok {
+					field.Value = []string{value}
+				}
+				lists = append(lists, field)
 			}
 			http.Set("headers", lists)
 		}
@@ -457,19 +484,21 @@ func (n *normalizer) typed(kind string) *Problem {
 			p.Set("cipher", ssCipher(cipher))
 		}
 	case "vmess":
+		// mihomo requires both; it reads the cipher in any case.
 		if _, set := p.Get("alterId"); !set {
 			p.InsertAfter("uuid", "alterId", 0)
 		}
-		if cipher := strings.ToLower(p.String("cipher")); cipher == "" {
+		if p.String("cipher") == "" {
 			p.InsertAfter("alterId", "cipher", "auto")
-		} else {
-			p.Set("cipher", cipher)
-		}
-	case "vless":
-		if flow := p.String("flow"); flow == "none" {
-			p.Delete("flow")
 		}
 	case "snell":
+		// Snell takes a psk, and v6 a userkey; a password is another client's word for one of them.
+		if _, set := p.Get("password"); set {
+			if p.String("psk") == "" {
+				return &Problem{model.WarnInvalidCredential, "a password but no psk"}
+			}
+			n.remove("password", "is not a Snell field")
+		}
 		if mode := p.String("obfs"); mode != "" {
 			if _, set := p.Get("obfs-opts"); !set {
 				p.Set("obfs-opts", model.New("mode", mode, "host", p.String("obfs-host")))
@@ -478,8 +507,8 @@ func (n *normalizer) typed(kind string) *Problem {
 			p.Delete("obfs-host")
 		}
 	case "hysteria", "hysteria2":
-		if ports := p.String("ports"); ports != "" {
-			p.Set("ports", PortRanges(strings.FieldsFunc(ports, func(r rune) bool { return r == ',' || r == '/' })))
+		if ports := p.String("ports"); strings.Contains(ports, ":") {
+			p.Set("ports", strings.ReplaceAll(strings.ReplaceAll(ports, ":", "-"), " ", ""))
 		}
 		if p.String("ports") == "" {
 			p.Delete("ports")
@@ -595,13 +624,12 @@ func (n *normalizer) wireguard() *Problem {
 				}
 			}
 		}
-		if port, ok := model.Int(peer.Value("port")); ok {
-			peer.Set("port", port)
-		}
-		if ips := strings_(peer.Value("allowed-ips")); ips != nil {
-			peer.Set("allowed-ips", ips)
-		} else {
-			peer.Set("allowed-ips", []string{"0.0.0.0/0", "::/0"})
+		switch ips := peer.Value("allowed-ips").(type) {
+		case []any:
+		case string:
+			peer.Set("allowed-ips", strings_(ips))
+		default:
+			peer.Set("allowed-ips", []string{"0.0.0.0/0", "::/0"}) // mihomo requires them
 		}
 		if reserved := reservedBytes(peer.Value("reserved")); reserved != nil {
 			peer.Set("reserved", reserved)
@@ -616,27 +644,19 @@ func (n *normalizer) wireguard() *Problem {
 			return invalid("no usable WireGuard peer")
 		}
 		p.Set("peers", kept)
-		// The proxy's own address is the first peer's, which clients show.
-		first := model.AsObject(kept[0])
-		if p.String("server") == "" {
-			p.InsertAfter("type", "server", first.String("server"))
-			p.InsertAfter("server", "port", first.Value("port"))
-		}
 	} else {
 		if p.String("public-key") == "" {
-			return invalid("no public key")
+			return &Problem{model.WarnInvalidCredential, "no public key"}
 		}
-		if ips := strings_(p.Value("allowed-ips")); ips != nil {
-			p.Set("allowed-ips", ips)
+		if ips, ok := p.Value("allowed-ips").(string); ok {
+			p.Set("allowed-ips", strings_(ips))
 		}
+	}
+	if p.String("ip") == "" && p.String("ipv6") == "" {
+		return invalid("no local address (ip or ipv6)")
 	}
 	if reserved := reservedBytes(p.Value("reserved")); reserved != nil {
 		p.Set("reserved", reserved)
-	}
-	for _, key := range []string{"ip", "ipv6"} {
-		if address := p.String(key); strings.Contains(address, "/") {
-			p.Set(key, address[:strings.Index(address, "/")])
-		}
 	}
 	return nil
 }
@@ -644,7 +664,8 @@ func (n *normalizer) wireguard() *Problem {
 // required checks the fields mihomo cannot do without.
 func (n *normalizer) required(kind string) *Problem {
 	p := n.p
-	if !serverless[kind] {
+	peers := kind == "wireguard" && p.Value("peers") != nil
+	if !serverless[kind] && !peers {
 		server := p.String("server")
 		if server == "" {
 			return invalid("no server")
@@ -656,7 +677,6 @@ func (n *normalizer) required(kind string) *Problem {
 		ranged := p.String("ports") != "" || p.String("port-range") != ""
 		switch {
 		case port == 0 && ranged && (kind == "hysteria" || kind == "hysteria2" || kind == "mieru"):
-			p.Delete("port")
 		case port < 1 || port > 65535:
 			if _, set := p.Get("port"); !set {
 				return invalid("no port")
@@ -664,18 +684,19 @@ func (n *normalizer) required(kind string) *Problem {
 			return invalid("port " + strconv.Itoa(port))
 		}
 	}
+	plain := kind == "ss" && isPlain(strings.ToLower(p.String("cipher")))
 	for _, key := range credentials[kind] {
 		value, set := p.Get(key)
-		text, isText := value.(string)
+		empty := !set || value == ""
 		switch {
-		case !set:
-			if key == "password" && kind == "ss" && isPlain(p.String("cipher")) {
-				n.p.Set("password", "")
-				continue
+		case empty && key == "password" && plain:
+			if !set {
+				n.p.Set("password", "") // mihomo requires the key
 			}
+		case empty && (key == "cipher" || key == "up" || key == "down" || key == "transport"):
 			return invalid("no " + key)
-		case isText && text == "" && !(key == "password" && kind == "ss" && isPlain(p.String("cipher"))):
-			return invalid("no " + key)
+		case empty:
+			return &Problem{model.WarnInvalidCredential, "no " + key}
 		}
 	}
 	return nil
@@ -806,10 +827,9 @@ func singleHeaders(headers model.Object) model.Object {
 				s, _ := model.Text(v[0])
 				out = append(out, model.Field{Key: field.Key, Value: s})
 			}
+		case nil:
 		default:
-			if s, ok := model.Text(v); ok {
-				out = append(out, model.Field{Key: field.Key, Value: s})
-			}
+			out = append(out, field)
 		}
 	}
 	return out

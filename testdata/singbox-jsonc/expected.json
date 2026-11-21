@@ -1,0 +1,29 @@
+{
+  "format": "sing-box",
+  "proxies": [
+    {
+      "name": "SS",
+      "type": "ss",
+      "server": "ss.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "a//b/*c*/",
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "SS",
+        "DIRECT"
+      ]
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "MATCH,Proxy"
+  ],
+  "warnings": null
+}

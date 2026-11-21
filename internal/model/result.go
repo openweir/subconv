@@ -13,13 +13,19 @@ type Format string
 const (
 	FormatSingBox Format = "sing-box"
 	FormatClash   Format = "clash"
-	FormatLinks   Format = "links"
-	// Surge, Surfboard and Loon configs and their [Proxy] lists.
-	FormatSurge Format = "surge"
-	// Quantumult X configs and their server_local lists.
-	FormatQuantumultX Format = "quantumult-x"
-	// Shadowsocks SIP008 JSON and SSD.
-	FormatShadowsocks Format = "shadowsocks"
+	// Stash's dialect of Clash.
+	FormatStash Format = "stash"
+	// Share links, one per line, often Base64 as a whole.
+	FormatLinks        Format = "links"
+	FormatSurge        Format = "surge"
+	FormatSurfboard    Format = "surfboard"
+	FormatLoon         Format = "loon"
+	FormatShadowrocket Format = "shadowrocket"
+	FormatQuantumultX  Format = "quantumultx"
+	// Shadowsocks's JSON server list (SIP008).
+	FormatSIP008 Format = "sip008"
+	// ShadowsocksD's ssd:// subscription.
+	FormatSSD Format = "ssd"
 	// Xray and V2Ray JSON configs.
 	FormatXray Format = "xray"
 )
@@ -38,9 +44,11 @@ const (
 	WarnUnsupportedProxy = "unsupported_proxy"
 	// An option of a supported proxy that cannot be represented; the proxy is left out.
 	WarnUnsupportedOption = "unsupported_option"
-	// A proxy that is broken: no server, port or credentials, or a value mihomo refuses. It is
-	// left out.
+	// A proxy that is broken: no server or port, or a value mihomo refuses. It is left out.
 	WarnInvalidProxy = "invalid_proxy"
+	// A proxy whose credentials are missing or not of its protocol (a password where Snell
+	// takes a psk); it is left out.
+	WarnInvalidCredential = "invalid_credential"
 	// An option that was removed while the item it belongs to was kept: an option the client
 	// decides (interface-name, routing-mark), a local file, or a value mihomo refuses.
 	WarnIgnoredOption = "ignored_option"
@@ -49,8 +57,11 @@ const (
 	WarnUnsupportedRule = "unsupported_rule"
 	// A rule set mihomo cannot read or reach; the rules that use it are left out.
 	WarnUnsupportedRuleSet = "unsupported_rule_set"
-	// A proxy provider that cannot be used, such as a local file; groups stop using it.
+	// A proxy provider that cannot be used, such as one without a web URL; groups stop using it.
 	WarnUnsupportedProvider = "unsupported_provider"
+	// A proxy or rule provider that reads a file on the client's disk. It is kept; the client
+	// decides whether to allow it.
+	WarnLocalProvider = "local_provider"
 	// A group of a type mihomo lacks, or a relay that cannot become a dialer-proxy chain; it is
 	// left out and references to it are removed.
 	WarnUnsupportedGroup = "unsupported_group"

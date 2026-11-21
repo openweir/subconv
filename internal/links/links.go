@@ -10,7 +10,6 @@ package links
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,22 +18,44 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/openweir/subconv/internal/body"
 	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/internal/proxy"
 )
 
 var errNoLinks = errors.New("no share links")
 
-// Convert converts a share-link subscription.
-func Convert(data []byte) (*model.Result, error) {
-	text := string(bytes.TrimSpace(bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))))
-	if !strings.Contains(text, "://") {
-		decoded, err := decodeBase64(text)
-		if err != nil {
-			return nil, errNoLinks
+// Is reports text with a line that starts with a URL scheme, as share links do.
+func Is(text []byte) bool {
+	for line := range strings.SplitSeq(string(text), "\n") {
+		if scheme(strings.TrimSpace(line)) != "" {
+			return true
 		}
-		text = string(decoded)
 	}
+	return false
+}
+
+// scheme returns the scheme a line starts with, or "".
+func scheme(line string) string {
+	name, _, found := strings.Cut(line, "://")
+	if !found || name == "" {
+		return ""
+	}
+	for index, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z':
+		case index > 0 && (r >= '0' && r <= '9' || r == '+' || r == '-' || r == '.'):
+		default:
+			return ""
+		}
+	}
+	return strings.ToLower(name)
+}
+
+// Convert converts a share-link subscription, one link per line. Lines that are not links are
+// skipped.
+func Convert(data []byte) (*model.Result, error) {
+	text := string(data)
 	result := &model.Result{Format: model.FormatLinks}
 	found := false
 	var lines []string
@@ -53,16 +74,16 @@ func Convert(data []byte) (*model.Result, error) {
 		lines = append(lines, line)
 	}
 	for _, line := range lines {
-		scheme, _, ok := strings.Cut(line, "://")
-		if !ok || line == "" || strings.HasPrefix(line, "#") {
+		kind := scheme(line)
+		if kind == "" {
 			continue
 		}
 		found = true
-		p, reason := parse(strings.ToLower(scheme), line)
+		p, reason := parse(kind, line)
 		if p == nil {
 			code := model.WarnUnsupportedOption
 			if reason == "" {
-				code, reason = model.WarnUnsupportedProxy, "scheme "+scheme
+				code, reason = model.WarnUnsupportedProxy, "scheme "+kind
 			}
 			result.Warn(code, "%s: %s", label(line), reason)
 			continue
@@ -339,7 +360,7 @@ func finish(out model.Object, q url.Values) (model.Object, string) {
 
 // vmess reads v2rayN's Base64 JSON.
 func vmess(line string) (model.Object, string) {
-	data, err := decodeBase64(strings.TrimPrefix(line, line[:len("vmess://")]))
+	data, err := body.Base64(strings.TrimPrefix(line, line[:len("vmess://")]))
 	if err != nil {
 		return nil, "not v2rayN's Base64 JSON"
 	}
@@ -394,7 +415,7 @@ func shadowsocks(line string) (model.Object, string) {
 		rest = rest[:index]
 	}
 	if !strings.Contains(rest, "@") {
-		decoded, err := decodeBase64(strings.SplitN(rest, "?", 2)[0])
+		decoded, err := body.Base64(strings.SplitN(rest, "?", 2)[0])
 		if err != nil {
 			return nil, "not a SIP002 link"
 		}
@@ -407,7 +428,7 @@ func shadowsocks(line string) (model.Object, string) {
 	method, password := u.User.Username(), ""
 	if pass, set := u.User.Password(); set {
 		password = pass
-	} else if decoded, err := decodeBase64(method); err == nil {
+	} else if decoded, err := body.Base64(method); err == nil {
 		method, password, _ = strings.Cut(string(decoded), ":")
 	}
 	port, _ := strconv.Atoi(u.Port())
@@ -431,7 +452,7 @@ func shadowsocks(line string) (model.Object, string) {
 
 // shadowsocksR reads ssr://base64url(host:port:protocol:method:obfs:base64(password)/?params).
 func shadowsocksR(line string) (model.Object, string) {
-	decoded, err := decodeBase64(line[len("ssr://"):])
+	decoded, err := body.Base64(line[len("ssr://"):])
 	if err != nil {
 		return nil, "not an SSR link"
 	}
@@ -443,10 +464,10 @@ func shadowsocksR(line string) (model.Object, string) {
 	// The host may be IPv6 and contain colons: the last five fields are fixed.
 	n := len(parts)
 	host := strings.Join(parts[:n-5], ":")
-	password, _ := decodeBase64(parts[n-1])
+	password, _ := body.Base64(parts[n-1])
 	q, _ := url.ParseQuery(params)
 	text := func(key string) string {
-		value, _ := decodeBase64(q.Get(key))
+		value, _ := body.Base64(q.Get(key))
 		return string(value)
 	}
 	out := proxy.Merge(proxy.Base(or(text("remarks"), host), host, atoi(parts[n-5])), model.New(
@@ -470,7 +491,7 @@ func snell(line string) (model.Object, string) {
 		return nil, "not a Snell link"
 	}
 	psk := u.User.Username()
-	if decoded, err := decodeBase64(psk); err == nil {
+	if decoded, err := body.Base64(psk); err == nil {
 		_, key, found := strings.Cut(string(decoded), ":")
 		if found {
 			psk = key
@@ -521,16 +542,6 @@ func query(u *url.URL) url.Values {
 	return values
 }
 
-func decodeBase64(text string) ([]byte, error) {
-	text = strings.TrimSpace(text)
-	text = strings.NewReplacer("\r", "", "\n", "", " ", "").Replace(text)
-	text = strings.TrimRight(text, "=")
-	if strings.ContainsAny(text, "-_") {
-		return base64.RawURLEncoding.DecodeString(text)
-	}
-	return base64.RawStdEncoding.DecodeString(text)
-}
-
 func fragment(u *url.URL) string {
 	if u.Fragment != "" {
 		return u.Fragment
@@ -558,7 +569,7 @@ func credentials(u *url.URL) (string, string) {
 	if password, set := u.User.Password(); set {
 		return u.User.Username(), password
 	}
-	if decoded, err := decodeBase64(u.User.Username()); err == nil && bytes.Contains(decoded, []byte(":")) {
+	if decoded, err := body.Base64(u.User.Username()); err == nil && bytes.Contains(decoded, []byte(":")) {
 		user, password, _ := strings.Cut(string(decoded), ":")
 		return user, password
 	}
@@ -571,13 +582,15 @@ func label(line string) string {
 			return name
 		}
 	}
-	if u, err := url.Parse(line); err == nil && u.Host != "" {
-		return net.JoinHostPort(u.Hostname(), u.Port())
+	kind := scheme(line)
+	// Only a host name or address: a Base64 payload where the host goes holds credentials.
+	if u, err := url.Parse(line); err == nil && strings.ContainsAny(u.Hostname(), ".:") && len(u.Host) <= 64 {
+		if u.Port() == "" {
+			return kind + " " + u.Hostname()
+		}
+		return kind + " " + net.JoinHostPort(u.Hostname(), u.Port())
 	}
-	if len(line) > 40 {
-		return line[:40] + "…"
-	}
-	return line
+	return kind + " link"
 }
 
 func flag(q url.Values, keys ...string) bool {

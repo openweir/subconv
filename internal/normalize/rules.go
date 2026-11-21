@@ -60,7 +60,7 @@ func (s *state) rules() {
 	for _, line := range s.r.Rules {
 		rule, problem := s.rule(line)
 		if problem != "" {
-			s.r.Warn(model.WarnUnsupportedRule, "%s: %s", shorten(line), problem)
+			s.r.Warn(model.WarnUnsupportedRule, "%s: %s", line, problem)
 			if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(line)), "MATCH,") || strings.HasPrefix(strings.ToUpper(strings.TrimSpace(line)), "FINAL,") {
 				out = append(out, "MATCH,DIRECT")
 				final = true
@@ -187,8 +187,8 @@ func (s *state) condition(kind, payload string, depth int) (string, string) {
 		// mihomo matches the suffix after a dot; a leading dot or "+." would match nothing.
 		return strings.TrimPrefix(strings.TrimPrefix(payload, "+"), "."), ""
 	case "IP-CIDR", "IP-CIDR6", "SRC-IP-CIDR", "IP-SUFFIX", "SRC-IP-SUFFIX":
-		if prefix, err := netip.ParsePrefix(payload); err == nil {
-			return prefix.String(), ""
+		if _, err := netip.ParsePrefix(payload); err == nil {
+			return payload, ""
 		}
 		if addr, err := netip.ParseAddr(payload); err == nil {
 			return netip.PrefixFrom(addr, addr.BitLen()).String(), ""
@@ -204,9 +204,9 @@ func (s *state) condition(kind, payload string, depth int) (string, string) {
 		}
 		return ports, ""
 	case "NETWORK":
-		switch network := strings.ToLower(payload); network {
+		switch strings.ToLower(payload) {
 		case "tcp", "udp":
-			return network, ""
+			return payload, ""
 		}
 		return "", "network " + payload
 	case "DOMAIN-REGEX", "PROCESS-NAME-REGEX", "PROCESS-PATH-REGEX":
@@ -300,11 +300,4 @@ func subRules(payload string) ([]string, bool) {
 func port(text string) bool {
 	n, err := strconv.Atoi(strings.TrimSpace(text))
 	return err == nil && n >= 0 && n <= 65535
-}
-
-func shorten(line string) string {
-	if len(line) > 120 {
-		return line[:117] + "..."
-	}
-	return line
 }

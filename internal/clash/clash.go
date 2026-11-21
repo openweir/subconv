@@ -5,6 +5,7 @@ package clash
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/openweir/subconv/internal/model"
 )
@@ -22,6 +23,7 @@ func Convert(data []byte) (*model.Result, error) {
 	if config == nil {
 		return nil, fmt.Errorf("clash: %w", errNotAConfig)
 	}
+	config = sections(config)
 	result := &model.Result{Format: model.FormatClash}
 	for index, item := range model.AsList(config.Value("proxies")) {
 		if proxy := model.AsObject(item); proxy != nil {
@@ -45,4 +47,33 @@ func Convert(data []byte) (*model.Result, error) {
 		}
 	}
 	return result, nil
+}
+
+// Clash's early names for the sections, before it settled on lowercase.
+var sectionNames = map[string]string{
+	"proxies":         "proxies",
+	"proxy":           "proxies",
+	"proxy-providers": "proxy-providers",
+	"proxy-groups":    "proxy-groups",
+	"proxy group":     "proxy-groups",
+	"proxy-group":     "proxy-groups",
+	"rule-providers":  "rule-providers",
+	"rules":           "rules",
+	"rule":            "rules",
+}
+
+// sections returns the config's sections under their current names; the current name wins.
+func sections(config model.Object) model.Object {
+	out := model.Object{}
+	for _, field := range config {
+		name, ok := sectionNames[strings.ToLower(field.Key)]
+		if !ok {
+			continue
+		}
+		if _, set := out.Get(name); set && field.Key != name {
+			continue
+		}
+		out.Set(name, field.Value)
+	}
+	return out
 }

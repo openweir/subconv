@@ -1,0 +1,74 @@
+{
+  "format": "links",
+  "proxies": [
+    {
+      "name": "🇭🇰 HK 01",
+      "type": "vless",
+      "server": "203.0.113.5",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "🇯🇵 JP 01",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "t.example.com",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ws",
+        "headers": {
+          "Host": "t.example.com"
+        }
+      }
+    },
+    {
+      "name": "🇭🇰 HK 01 2",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "udp": true
+    },
+    {
+      "name": "Hy2",
+      "type": "hysteria2",
+      "server": "h.example.com",
+      "port": 443,
+      "password": "hy",
+      "ports": "20000-30000",
+      "sni": "h.example.com",
+      "obfs": "salamander",
+      "obfs-password": "ob"
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "vmess link: not v2rayN's Base64 JSON"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "tg link: a Telegram proxy, which only Telegram uses"
+    },
+    {
+      "code": "renamed",
+      "detail": "🇭🇰 HK 01: renamed 🇭🇰 HK 01 2"
+    }
+  ]
+}

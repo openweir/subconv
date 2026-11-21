@@ -4,14 +4,16 @@ import (
 	"strings"
 
 	"github.com/openweir/subconv/internal/model"
+	"github.com/openweir/subconv/internal/proxy"
 	"github.com/openweir/subconv/internal/ruleset"
 )
 
 // Provider names mihomo reserves.
 const reservedProvider = "default"
 
-// proxyProviders keeps the providers a client may download: http with a web URL and inline.
-// Local files are left out; cache paths are the client's, so they are removed.
+// proxyProviders keeps the providers a client can use: http with a web URL, inline, and local
+// files, which the client decides on. Cache paths of http providers are the client's, so they
+// are removed.
 func (s *state) proxyProviders() {
 	var out model.Object
 	for _, field := range s.r.ProxyProviders {
@@ -57,7 +59,10 @@ func (s *state) proxyProvider(name string, p model.Object) (model.Object, string
 		}
 		p.Set("payload", toAnyObjects(kept))
 	case "file":
-		return nil, "a local file"
+		if p.String("path") == "" {
+			return nil, "a local file without a path"
+		}
+		s.r.Warn(model.WarnLocalProvider, "%s: %s", name, p.String("path"))
 	default:
 		return nil, "type " + kind
 	}
@@ -80,7 +85,7 @@ func (s *state) proxyProvider(name string, p model.Object) (model.Object, string
 	if check := model.AsObject(p.Value("health-check")); check != nil {
 		check = check.Clone()
 		for _, key := range []string{"enable", "lazy"} {
-			if value, set := check.Get(key); set {
+			if value, ok := check.Value(key).(string); ok {
 				b, _ := model.Bool(value)
 				check.Set(key, b)
 			}
@@ -165,7 +170,10 @@ func (s *state) ruleProvider(name string, p model.Object) (model.Object, string)
 		p.Set("payload", toAny(payload))
 		format = ""
 	case "file":
-		return nil, "a local file"
+		if p.String("path") == "" {
+			return nil, "a local file without a path"
+		}
+		s.r.Warn(model.WarnLocalProvider, "%s: %s", name, p.String("path"))
 	default:
 		return nil, "type " + kind
 	}
@@ -204,10 +212,11 @@ func providerType(p model.Object) string {
 	return kind
 }
 
-// interval converts a number of seconds written as a duration or string; anything else goes.
+// interval converts a number of seconds written as a duration ("1h"); mihomo reads numbers and
+// numeric strings itself, and anything else goes.
 func (s *state) interval(at string, p *model.Object, key string) {
 	value, set := p.Get(key)
-	if !set {
+	if !set || proxy.AcceptedInt(value) {
 		return
 	}
 	if n, ok := seconds(value); ok {

@@ -1,0 +1,18 @@
+// sing-box reads JSON with comments and trailing commas, and so do the editors people use.
+{
+  /* the log is the client's */
+  "log": { "level": "warn", },
+  "outbounds": [
+    {
+      "type": "shadowsocks", // a plain Shadowsocks node
+      "tag": "SS",
+      "server": "ss.example.com",
+      "server_port": 8388,
+      "method": "aes-128-gcm",
+      "password": "a//b/*c*/", // the comment marks inside strings stay
+    },
+    { "type": "selector", "tag": "Proxy", "outbounds": ["SS", "direct",], },
+    { "type": "direct", "tag": "direct" },
+  ],
+  "route": { "final": "Proxy", },
+}

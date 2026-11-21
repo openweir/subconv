@@ -120,7 +120,9 @@ func (s *state) group(index int, raw model.Object) *group {
 		}
 	}
 	for _, key := range []string{"lazy", "disable-udp", "hidden", "include-all", "include-all-proxies", "include-all-providers"} {
-		if value, set := o.Get(key); set {
+		switch value := o.Value(key).(type) {
+		case nil, bool, int:
+		default:
 			if b, ok := model.Bool(value); ok {
 				o.Set(key, b)
 			} else {
@@ -228,7 +230,7 @@ func (s *state) members(g *group) {
 
 // empty reports a group mihomo would refuse for having nothing to choose from.
 func (s *state) empty(g *group) bool {
-	flag := func(key string) bool { b, _ := g.o.Value(key).(bool); return b }
+	flag := func(key string) bool { b, _ := model.Bool(g.o.Value(key)); return b }
 	return len(g.proxies) == 0 && len(g.use) == 0 && !flag("include-all") && !flag("include-all-proxies") &&
 		!(flag("include-all-providers") && len(s.providers) > 0)
 }

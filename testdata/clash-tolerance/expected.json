@@ -5,7 +5,7 @@
       "name": "HK 01",
       "type": "ss",
       "server": "hk.example.com",
-      "port": 8388,
+      "port": "8388",
       "cipher": "aes-128-gcm",
       "password": "p",
       "udp": true
@@ -16,7 +16,7 @@
       "server": "hk2.example.com",
       "port": 8389,
       "cipher": "chacha20-ietf-poly1305",
-      "password": "123456",
+      "password": 123456,
       "plugin": "obfs",
       "plugin-opts": {
         "mode": "http",
@@ -30,7 +30,7 @@
       "port": 443,
       "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
       "alterId": 0,
-      "cipher": "auto",
+      "cipher": "Auto",
       "tls": true,
       "servername": "vm.example.com",
       "skip-cert-verify": true,
@@ -53,7 +53,7 @@
       "client-fingerprint": "chrome",
       "reality-opts": {
         "public-key": "PUBKEY",
-        "short-id": "1234"
+        "short-id": 1234
       },
       "network": "grpc",
       "grpc-opts": {
@@ -79,8 +79,8 @@
       "ports": "20000-30000",
       "password": "hy",
       "hop-interval": 30,
-      "up": "50",
-      "down": "200"
+      "up": 50,
+      "down": 200
     },
     {
       "name": "SS none",
@@ -105,10 +105,8 @@
     {
       "name": "WG",
       "type": "wireguard",
-      "server": "w.example.com",
-      "port": 51820,
       "private-key": "PRIV",
-      "ip": "10.0.0.2",
+      "ip": "10.0.0.2/32",
       "udp": true,
       "peers": [
         {
@@ -168,7 +166,7 @@
       "client-fingerprint": "chrome",
       "reality-opts": {
         "public-key": "PUBKEY",
-        "short-id": "1234"
+        "short-id": 1234
       },
       "network": "grpc",
       "grpc-opts": {
@@ -198,9 +196,13 @@
       "health-check": {
         "enable": true,
         "url": "https://www.gstatic.com/generate_204",
-        "interval": 300
+        "interval": "300"
       },
       "filter": "(?i)hk|sg"
+    },
+    "local": {
+      "type": "file",
+      "path": "./local.yaml"
     }
   },
   "proxy-groups": [
@@ -215,7 +217,8 @@
         "Chain"
       ],
       "use": [
-        "airport"
+        "airport",
+        "local"
       ]
     },
     {
@@ -228,7 +231,7 @@
       ],
       "url": "https://cp.cloudflare.com",
       "interval": 300,
-      "tolerance": 50
+      "tolerance": "50"
     },
     {
       "name": "Loop",
@@ -273,6 +276,11 @@
       "format": "mrs",
       "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs"
     },
+    "local": {
+      "type": "file",
+      "behavior": "domain",
+      "path": "./local.yaml"
+    },
     "lan": {
       "type": "inline",
       "behavior": "classical",
@@ -286,11 +294,13 @@
     "RULE-SET,reject,REJECT",
     "RULE-SET,cn,DIRECT,no-resolve",
     "RULE-SET,geosite-cn,DIRECT",
+    "RULE-SET,local,DIRECT",
     "RULE-SET,lan,DIRECT",
     "DOMAIN-SUFFIX,google.com,Proxy",
     "IP-CIDR,8.8.8.8/32,Proxy,no-resolve",
     "DST-PORT,6000-6100,Chain",
-    "AND,((NETWORK,udp),(DST-PORT,443)),REJECT",
+    "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT",
+    "OR,((DOMAIN,a.com),(RULE-SET,local)),Proxy",
     "DOMAIN,d.com,Proxy",
     "MATCH,Proxy"
   ],
@@ -340,8 +350,8 @@
       "detail": "Client cert: private-key is a local file"
     },
     {
-      "code": "unsupported_provider",
-      "detail": "local: a local file"
+      "code": "local_provider",
+      "detail": "local: ./local.yaml"
     },
     {
       "code": "unsupported_provider",
@@ -380,8 +390,8 @@
       "detail": "custom: a sing-box rule set mihomo cannot read"
     },
     {
-      "code": "unsupported_rule_set",
-      "detail": "local: a local file"
+      "code": "local_provider",
+      "detail": "local: ./local.yaml"
     },
     {
       "code": "unsupported_rule",
@@ -389,15 +399,7 @@
     },
     {
       "code": "unsupported_rule",
-      "detail": "RULE-SET,local,DIRECT: rule set local was left out"
-    },
-    {
-      "code": "unsupported_rule",
       "detail": "IP-CIDR,not-an-ip,Proxy: IP range not-an-ip"
-    },
-    {
-      "code": "unsupported_rule",
-      "detail": "OR,((DOMAIN,a.com),(RULE-SET,local)),Proxy: rule set local was left out"
     },
     {
       "code": "unsupported_rule",

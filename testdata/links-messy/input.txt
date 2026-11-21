@@ -1,0 +1,13 @@
+﻿STATUS=剩余流量：100GB.♥.过期时间：2026-12-31
+
+# exported by a client
+vless://7c8c8c0e-0000-4000-8000-000000000002@203.0.113.5:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=PUBKEY&sid=abcd&type=tcp#%F0%9F%87%AD%F0%9F%87%B0%20HK%2001
+   
+<br>
+trojan://pw@t.example.com:443?sni=t.example.com&type=ws&path=%2Fws&host=t.example.com#%F0%9F%87%AF%F0%9F%87%B5%20JP%2001   
+not a link at all
+ss://YWVzLTEyOC1nY206cA@hk.example.com:8388#%F0%9F%87%AD%F0%9F%87%B0%20HK%2001
+vmess://not-base64-json!!
+tg://proxy?server=1.2.3.4&port=443&secret=abc
+hysteria2://hy@h.example.com:443?sni=h.example.com&obfs=salamander&obfs-password=ob&mport=20000-30000#Hy2
+
