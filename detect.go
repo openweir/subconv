@@ -136,10 +136,10 @@ func clashYAML(text []byte) Format {
 		return ""
 	}
 	value, err := model.Decode(text)
-	if err != nil {
-		return ""
-	}
 	config := model.AsObject(value)
+	if err != nil {
+		config, _ = clash.Recover(text) // YAML broken in places
+	}
 	for _, field := range config {
 		switch strings.ToLower(field.Key) {
 		case "proxies", "proxy", "proxy-providers":

@@ -1,0 +1,56 @@
+{
+  "format": "clash",
+  "proxies": [
+    {
+      "name": "HK 01",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p"
+    },
+    {
+      "name": "JP 01",
+      "type": "trojan",
+      "server": "jp.example.com",
+      "port": 443,
+      "password": "pw",
+      "sni": "tab-indented.example.com"
+    },
+    {
+      "name": "US 01",
+      "type": "vmess",
+      "server": "us.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto"
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "HK 01",
+        "JP 01",
+        "US 01"
+      ]
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "DOMAIN-SUFFIX,google.com,Proxy",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "invalid_proxy",
+      "detail": "proxies item at line 10: not YAML"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "rules item at line 28: not YAML"
+    }
+  ]
+}

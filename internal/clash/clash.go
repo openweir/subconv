@@ -16,14 +16,15 @@ var errNotAConfig = errors.New("not a Clash config")
 // providers and rules.
 func Convert(data []byte) (*model.Result, error) {
 	value, err := model.Decode(data)
-	if err != nil {
-		return nil, fmt.Errorf("clash: %w", err)
-	}
 	config := model.AsObject(value)
+	var recovered []model.Warning
+	if err != nil {
+		config, recovered = Recover(data)
+	}
 	if config == nil {
 		return nil, fmt.Errorf("clash: %w", errNotAConfig)
 	}
-	result := &model.Result{Format: Dialect(config)}
+	result := &model.Result{Format: Dialect(config), Warnings: recovered}
 	if rewrites := model.AsList(model.AsObject(config.Value("http")).Value("rewrite")); len(rewrites) > 0 {
 		// Stash's URL rewrites block and redirect requests, which mihomo's rules cannot.
 		result.Warn(model.WarnUnsupportedRule, "http rewrite: %d rules", len(rewrites))
