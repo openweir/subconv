@@ -17,9 +17,17 @@ var rejects = map[string]string{
 }
 
 // rules keeps the rules mihomo can parse whose policies and rule sets exist, ends them with one
-// MATCH, and counts them.
+// MATCH, and counts them. A final rule that is missing or gone sends traffic to the first group,
+// as Clash configs do, or DIRECT when there is none.
 func (s *state) rules() {
+	fallback := "MATCH,DIRECT"
+	if len(s.r.Groups) > 0 {
+		fallback = "MATCH," + s.r.Groups[0].String("name")
+	}
 	if len(s.r.Rules) == 0 {
+		if len(s.r.Groups) > 0 {
+			s.r.Rules = []string{fallback}
+		}
 		return
 	}
 	stats := &s.r.RuleStats
@@ -35,7 +43,7 @@ func (s *state) rules() {
 			if !match {
 				continue
 			}
-			rule = "MATCH,DIRECT"
+			rule = fallback
 		} else {
 			stats.Match = match
 		}
@@ -47,8 +55,7 @@ func (s *state) rules() {
 		}
 	}
 	if !final {
-		// mihomo sends what no rule matches DIRECT; say so.
-		out = append(out, "MATCH,DIRECT")
+		out = append(out, fallback)
 	}
 	s.r.Rules = out
 }

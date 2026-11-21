@@ -75,7 +75,32 @@ const (
 	WarnEmptyGroup = "empty_group"
 	// An empty, duplicate or reserved name that was given a unique one.
 	WarnRenamed = "renamed"
+	// Build replaced the subscription's groups and rules with the routing template; the detail
+	// says why (a Template* reason).
+	WarnTemplateApplied = "template_applied"
+	// Build would have applied the routing template but has none: no host served it and the
+	// cache holds none, or it was invalid. The subscription's own groups and rules stay.
+	WarnTemplateUnavailable = "template_unavailable"
 )
+
+// Why Build applied the routing template: TemplateUse.Reason and the detail of
+// WarnTemplateApplied.
+const (
+	TemplateRequested = "requested"     // Options.Rules asked for it
+	TemplateNoRules   = "no_rules"      // the subscription has no rules
+	TemplateNoMatch   = "no_match"      // its final rule did not survive
+	TemplateDropped   = "dropped_rules" // more than a tenth of its rules were left out
+)
+
+// TemplateUse reports the routing template Build applied.
+type TemplateUse struct {
+	// Version is the rules branch's manifest version the template comes from.
+	Version int64 `json:"version"`
+	// Reason is one of the Template* reasons.
+	Reason string `json:"reason"`
+	// Cached says no host served the template, and the client's cached copy was used.
+	Cached bool `json:"cached,omitempty"`
+}
 
 // Result holds the converted parts, ready to place in a mihomo config.
 type Result struct {
@@ -88,6 +113,11 @@ type Result struct {
 	Warnings       []Warning `json:"warnings"`
 	// How many of the subscription's rules the conversion kept.
 	RuleStats RuleStats `json:"rule_stats"`
+	// The routing template Build applied, if any.
+	Template *TemplateUse `json:"template,omitempty"`
+	// Head, from Build with Options.Head, is the settings YAML renders before the parts, making
+	// a complete config.
+	Head string `json:"head,omitempty"`
 }
 
 // RuleStats count a subscription's rules, for a client to judge whether to use them or a
@@ -115,7 +145,7 @@ func (r *Result) DropRule() {
 	r.RuleStats.Dropped++
 }
 
-// YAML renders the parts as a mihomo config fragment.
+// YAML renders the parts as a mihomo config fragment, after the head if there is one.
 func (r *Result) YAML() ([]byte, error) {
 	document := New(
 		"proxies", toAny(r.Proxies),
@@ -133,7 +163,18 @@ func (r *Result) YAML() ([]byte, error) {
 	if err := encoder.Close(); err != nil {
 		return nil, err
 	}
-	return Readable(buffer.Bytes()), nil
+	parts := Readable(buffer.Bytes())
+	switch {
+	case r.Head == "":
+		return parts, nil
+	case len(document) == 0:
+		parts = nil // not "{}" after the head
+	}
+	head := r.Head
+	if head[len(head)-1] != '\n' {
+		head += "\n"
+	}
+	return append([]byte(head), parts...), nil
 }
 
 func toAny(objects []Object) []any {

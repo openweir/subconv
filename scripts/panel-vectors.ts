@@ -5,9 +5,10 @@
 //
 // For a set of panel nodes it writes the sing-box outbounds (singbox.json), the share links
 // (links.txt) and the panel's OpenWeir proxies (openweir.json). TestPanelVectors converts the
-// first two and compares the proxies with the third.
+// first two and compares the proxies with the third. It also copies the head of the panel's
+// OpenWeir template (openweir-head.yaml), which TestHead holds subconv's head to.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const apiEdge = resolve(process.argv[2] ?? "../api-edge");
@@ -76,4 +77,12 @@ writeFileSync(
 	join(out, "openweir.json"),
 	json(formats.flatMap((f: { openweir: unknown }) => (f.openweir ? [f.openweir] : []))),
 );
+// The template's settings before its proxies, without its Liquid lines.
+const template = readFileSync(join(apiEdge, "resources/subscriptions/openweir.liquid.txt"), "utf8");
+const head = template
+	.slice(0, template.indexOf("\nproxies:") + 1)
+	.split("\n")
+	.filter((line) => !line.includes("{%") && !line.includes("{{"))
+	.join("\n");
+writeFileSync(join(out, "openweir-head.yaml"), head);
 console.log(`wrote ${out}`);
