@@ -1,0 +1,53 @@
+{
+  "format": "stash",
+  "proxies": [
+    {
+      "name": "HK",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p"
+    },
+    {
+      "name": "Hy1",
+      "type": "hysteria",
+      "server": "h.example.com",
+      "port": 443,
+      "auth-str": "a",
+      "up-speed": 30,
+      "down-speed": 100,
+      "protocol": "udp",
+      "up": "30 Mbps",
+      "down": "100 Mbps"
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "HK",
+        "Hy1"
+      ],
+      "url": "http://www.gstatic.com/generate_204",
+      "timeout": 5000,
+      "interval": 300
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "DOMAIN-SUFFIX,google.com,Auto",
+    "MATCH,DIRECT"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_rule",
+      "detail": "http rewrite: 1 rules"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "SCRIPT,quic,REJECT: rule type SCRIPT"
+    }
+  ]
+}

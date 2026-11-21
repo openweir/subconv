@@ -91,7 +91,7 @@ func ConvertWith(data []byte, options Options) (*Result, error) {
 	switch format {
 	case FormatSingBox:
 		result, err = singbox.Convert(payload, options)
-	case FormatClash:
+	case FormatClash, FormatStash:
 		result, err = clash.Convert(payload)
 	case FormatSurge, FormatSurfboard, FormatLoon, FormatShadowrocket, FormatQuantumultX:
 		result, err = surge.Convert(payload, format, options)

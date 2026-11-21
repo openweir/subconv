@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/openweir/subconv/internal/body"
+	"github.com/openweir/subconv/internal/clash"
 	"github.com/openweir/subconv/internal/links"
 	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/internal/shadowsocks"
@@ -71,8 +72,8 @@ func detect(data []byte, depth int) (Format, []byte, error) {
 	if format := surge.Detect(text); format != "" {
 		return format, text, nil
 	}
-	if clashYAML(text) {
-		return FormatClash, text, nil
+	if format := clashYAML(text); format != "" {
+		return format, text, nil
 	}
 	if shadowsocks.IsSSD(text) {
 		return FormatSSD, text, nil
@@ -105,7 +106,7 @@ func jsonFormat(value any) Format {
 	case config.Value("outbounds") != nil || config.Value("endpoints") != nil:
 		return FormatSingBox
 	case config.Value("proxies") != nil || config.Value("proxy-providers") != nil:
-		return FormatClash
+		return clash.Dialect(config)
 	case shadowsocks.IsSIP008(value):
 		return FormatSIP008
 	}
@@ -128,21 +129,22 @@ func jsonMessage(value any) string {
 	return ""
 }
 
-// clashYAML reports a YAML mapping with Clash's proxies or providers, in any of the spellings
-// Clash has used.
-func clashYAML(text []byte) bool {
+// clashYAML names the dialect of a YAML mapping with Clash's proxies or providers, in any of
+// the spellings Clash has used, or returns "".
+func clashYAML(text []byte) Format {
 	if !bytes.Contains(text, []byte("roxies")) && !bytes.Contains(text, []byte("roxy")) {
-		return false
+		return ""
 	}
 	value, err := model.Decode(text)
 	if err != nil {
-		return false
+		return ""
 	}
-	for _, field := range model.AsObject(value) {
+	config := model.AsObject(value)
+	for _, field := range config {
 		switch strings.ToLower(field.Key) {
 		case "proxies", "proxy", "proxy-providers":
-			return true
+			return clash.Dialect(config)
 		}
 	}
-	return false
+	return ""
 }
