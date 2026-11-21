@@ -273,6 +273,12 @@ func AsList(value any) []any {
 	switch v := value.(type) {
 	case []any:
 		return v
+	case []string:
+		out := make([]any, len(v))
+		for index, item := range v {
+			out[index] = item
+		}
+		return out
 	case nil:
 		return nil
 	default:

@@ -1,0 +1,313 @@
+{
+  "format": "sing-box",
+  "proxies": [
+    {
+      "name": "SS over ShadowTLS",
+      "type": "ss",
+      "server": "st.example.com",
+      "port": 443,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0",
+      "udp": true,
+      "udp-over-tcp": true,
+      "udp-over-tcp-version": 2,
+      "client-fingerprint": "chrome",
+      "plugin": "shadow-tls",
+      "plugin-opts": {
+        "host": "cover.example.com",
+        "password": "stpw",
+        "version": 3
+      }
+    },
+    {
+      "name": "VLESS over ShadowTLS",
+      "type": "vless",
+      "server": "st.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "udp": true,
+      "tls": true,
+      "servername": "cover.example.com",
+      "client-fingerprint": "chrome",
+      "shadow-tls-opts": {
+        "password": "stpw",
+        "version": 3
+      }
+    },
+    {
+      "name": "Trojan ECH",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "t.example.com",
+      "ech-opts": {
+        "enable": true,
+        "config": "AEX+DQBBAAEAIAAgDo9eO5S8X5ofLJuKfW5fSjssHQ6fintsXU4/KhsMnY4ABAABAAEADnNlY3JldC5leGFtcGxlAAA="
+      },
+      "fingerprint": "9e26352d9ef5a17e3c70380b7f4dfc9f5205484d7208ca9e4682ba1f81f3a366",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/up",
+        "headers": {
+          "User-Agent": "Mozilla/5.0",
+          "Host": "t.example.com"
+        },
+        "v2ray-http-upgrade": true
+      },
+      "smux": {
+        "enabled": true,
+        "protocol": "h2mux",
+        "brutal-opts": {
+          "enabled": true,
+          "up": "50 Mbps",
+          "down": "200 Mbps"
+        }
+      },
+      "mptcp": true
+    },
+    {
+      "name": "VMess http",
+      "type": "vmess",
+      "server": "v.example.com",
+      "port": 80,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto",
+      "udp": true,
+      "packet-addr": true,
+      "network": "http",
+      "http-opts": {
+        "method": "GET",
+        "path": [
+          "/x"
+        ],
+        "headers": {
+          "Accept": [
+            "*/*"
+          ],
+          "Host": [
+            "a.example.com",
+            "b.example.com"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Hy1",
+      "type": "hysteria",
+      "server": "h1.example.com",
+      "port": 443,
+      "auth": "c2VjcmV0",
+      "up": "30 Mbps",
+      "down": "100 Mbps",
+      "obfs": "xplus",
+      "recv-window-conn": 15728640,
+      "disable-mtu-discovery": true,
+      "sni": "h1.example.com",
+      "alpn": [
+        "hysteria"
+      ]
+    },
+    {
+      "name": "Hy2 hopping",
+      "type": "hysteria2",
+      "server": "h2.example.com",
+      "password": "hy",
+      "ports": "20000-30000,40000-40100",
+      "hop-interval": 20,
+      "sni": "h2.example.com",
+      "ech-opts": {
+        "enable": true,
+        "query-server-name": "public.example.com"
+      }
+    },
+    {
+      "name": "TUIC",
+      "type": "tuic",
+      "server": "u.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+      "password": "tu",
+      "udp-over-stream": true,
+      "heartbeat-interval": 10000,
+      "disable-sni": true,
+      "sni": "u.example.com",
+      "alpn": [
+        "h3"
+      ]
+    },
+    {
+      "name": "AnyTLS",
+      "type": "anytls",
+      "server": "a.example.com",
+      "port": 443,
+      "password": "an",
+      "udp": true,
+      "idle-session-check-interval": 30,
+      "idle-session-timeout": 60,
+      "min-idle-session": 2,
+      "sni": "a.example.com",
+      "client-fingerprint": "safari"
+    },
+    {
+      "name": "Naive",
+      "type": "naive",
+      "server": "n.example.com",
+      "port": 443,
+      "username": "u",
+      "password": "p",
+      "sni": "n.example.com",
+      "headers": {
+        "X-Padding": "1"
+      },
+      "insecure-concurrency": 2,
+      "udp": true,
+      "udp-over-tcp": true
+    },
+    {
+      "name": "HTTP headers",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 8080,
+      "headers": {
+        "Proxy-Authorization": "Basic dTpw"
+      }
+    },
+    {
+      "name": "WG multi",
+      "type": "wireguard",
+      "ip": "10.0.0.2",
+      "ipv6": "fd00::2",
+      "private-key": "PRIV",
+      "peers": [
+        {
+          "server": "w1.example.com",
+          "port": 51820,
+          "public-key": "PUB1",
+          "allowed-ips": [
+            "10.1.0.0/16"
+          ]
+        },
+        {
+          "server": "w2.example.com",
+          "port": 51821,
+          "public-key": "PUB2",
+          "pre-shared-key": "PSK",
+          "allowed-ips": [
+            "0.0.0.0/0"
+          ],
+          "reserved": [
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "persistent-keepalive": 25,
+      "mtu": 1280,
+      "udp": true
+    },
+    {
+      "name": "TS",
+      "type": "tailscale",
+      "hostname": "router",
+      "auth-key": "tskey-auth-example",
+      "accept-routes": true,
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Hy1",
+        "SS over ShadowTLS",
+        "VLESS over ShadowTLS",
+        "Trojan ECH",
+        "Hy2 hopping",
+        "WG multi",
+        "TS"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "Trojan ECH",
+        "Hy1"
+      ],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": 180,
+      "tolerance": 50
+    }
+  ],
+  "rule-providers": {
+    "cn": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs",
+      "interval": 86400,
+      "proxy": "Proxy"
+    },
+    "cn-ip": {
+      "type": "http",
+      "behavior": "ipcidr",
+      "format": "mrs",
+      "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs",
+      "interval": 86400
+    }
+  },
+  "rules": [
+    "RULE-SET,cn,DIRECT",
+    "DOMAIN-SUFFIX,example.cn,DIRECT",
+    "RULE-SET,cn-ip,DIRECT,src",
+    "GEOSITE,category-ads-all,REJECT",
+    "GEOIP,lan,DIRECT,no-resolve",
+    "AND,((SRC-GEOIP,lan),(DST-PORT,53)),DIRECT",
+    "UID,1000,Proxy",
+    "NOT,((AND,((IP-CIDR,1.1.1.1/32,no-resolve),(NETWORK,udp)))),Auto",
+    "MATCH,DIRECT"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "VLESS QUIC: transport quic"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "SSH key file: the private key is a local file"
+    },
+    {
+      "code": "unsupported_proxy",
+      "detail": "Tor: type tor"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "WG multi: address 10.0.0.3/32 (mihomo takes one IPv4 and one IPv6 address)"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "custom: a remote sing-box rule set that is not a well-known geosite or geoip set"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "local: a local rule set file"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "rule 7 to Proxy: rule set custom was left out"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "rule 8: outbound Missing does not exist"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "final: outbound Gone does not exist; DIRECT instead"
+    }
+  ]
+}

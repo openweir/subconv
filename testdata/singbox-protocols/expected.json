@@ -195,6 +195,21 @@
       "port": 1080
     },
     {
+      "name": "VMess ECH",
+      "type": "vmess",
+      "server": "e.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000005",
+      "alterId": 0,
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "servername": "e.example.com",
+      "ech-opts": {
+        "enable": true
+      }
+    },
+    {
       "name": "WG",
       "type": "wireguard",
       "server": "w.example.com",
@@ -248,13 +263,6 @@
       "strategy": "consistent-hashing",
       "url": "https://www.gstatic.com/generate_204",
       "interval": 180
-    },
-    {
-      "name": "Empty",
-      "type": "select",
-      "proxies": [
-        "DIRECT"
-      ]
     }
   ],
   "rule-providers": {},
@@ -268,11 +276,7 @@
     },
     {
       "code": "unsupported_proxy",
-      "detail": "ShadowTLS: type shadowtls"
-    },
-    {
-      "code": "unsupported_option",
-      "detail": "VMess ECH: TLS ECH"
+      "detail": "ShadowTLS: ShadowTLS on its own; mihomo adds it to the proxy that dials through it"
     },
     {
       "code": "unknown_reference",
@@ -280,7 +284,7 @@
     },
     {
       "code": "empty_group",
-      "detail": "Empty: no members left; using DIRECT"
+      "detail": "Empty: no members left"
     }
   ]
 }

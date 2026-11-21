@@ -625,7 +625,7 @@ func (n *normalizer) wireguard() *Problem {
 			}
 		}
 		switch ips := peer.Value("allowed-ips").(type) {
-		case []any:
+		case []any, []string:
 		case string:
 			peer.Set("allowed-ips", strings_(ips))
 		default:

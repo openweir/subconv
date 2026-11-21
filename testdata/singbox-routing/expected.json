@@ -57,7 +57,8 @@
   "rules": [
     "DOMAIN-SUFFIX,google.com,Proxy",
     "DOMAIN-SUFFIX,youtube.com,Proxy",
-    "AND,((DOMAIN,example.org),(DOMAIN-KEYWORD,track)),REJECT",
+    "DOMAIN,example.org,REJECT",
+    "DOMAIN-KEYWORD,track,REJECT",
     "IP-CIDR,8.8.8.8/32,Proxy,no-resolve",
     "IP-CIDR6,2001:4860::/32,Proxy,no-resolve",
     "RULE-SET,geosite-netflix,Streaming",
@@ -65,22 +66,22 @@
     "OR,((DST-PORT,22),(DST-PORT,6000-6100)),DIRECT",
     "NOT,((AND,((NETWORK,udp),(DST-PORT,443)))),Proxy",
     "PROCESS-NAME,Telegram,Proxy",
-    "GEOIP,private,DIRECT,no-resolve",
+    "GEOIP,lan,DIRECT,no-resolve",
     "RULE-SET,cn-ip,DIRECT",
     "MATCH,Proxy"
   ],
   "warnings": [
     {
       "code": "unsupported_rule_set",
-      "detail": "ads: a remote sing-box rule set that is not one of MetaCubeX's geosite or geoip sets"
+      "detail": "ads: a remote sing-box rule set that is not a well-known geosite or geoip set"
     },
     {
       "code": "unsupported_rule",
-      "detail": "a rule with rule set ads, which was left out"
+      "detail": "rule 8 to REJECT-DROP: rule set ads was left out"
     },
     {
       "code": "unsupported_rule",
-      "detail": "a rule with wifi_ssid"
+      "detail": "rule 14 to DIRECT: a rule with wifi_ssid"
     }
   ]
 }

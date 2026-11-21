@@ -1,0 +1,404 @@
+{
+ "outbounds": [
+  {
+   "type": "selector",
+   "tag": "Proxy",
+   "outbounds": [
+    "SS over ShadowTLS",
+    "VLESS over ShadowTLS",
+    "Trojan ECH",
+    "Hy1",
+    "Hy2 hopping",
+    "WG multi",
+    "TS"
+   ],
+   "default": "Hy1"
+  },
+  {
+   "type": "urltest",
+   "tag": "Auto",
+   "outbounds": [
+    "Trojan ECH",
+    "Hy1"
+   ]
+  },
+  {
+   "type": "shadowtls",
+   "tag": "stls",
+   "server": "st.example.com",
+   "server_port": 443,
+   "version": 3,
+   "password": "stpw",
+   "tls": {
+    "enabled": true,
+    "server_name": "cover.example.com",
+    "utls": {
+     "enabled": true,
+     "fingerprint": "chrome"
+    }
+   }
+  },
+  {
+   "type": "shadowsocks",
+   "tag": "SS over ShadowTLS",
+   "server": "127.0.0.1",
+   "server_port": 1,
+   "method": "2022-blake3-aes-128-gcm",
+   "password": "c2VjcmV0",
+   "detour": "stls",
+   "udp_over_tcp": {
+    "enabled": true,
+    "version": 2
+   }
+  },
+  {
+   "type": "vless",
+   "tag": "VLESS over ShadowTLS",
+   "server": "127.0.0.1",
+   "server_port": 1,
+   "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+   "detour": "stls"
+  },
+  {
+   "type": "trojan",
+   "tag": "Trojan ECH",
+   "server": "t.example.com",
+   "server_port": 443,
+   "password": "pw",
+   "tcp_multi_path": true,
+   "tls": {
+    "enabled": true,
+    "server_name": "t.example.com",
+    "ech": {
+     "enabled": true,
+     "config": [
+      "-----BEGIN ECH CONFIGS-----",
+      "AEX+DQBBAAEAIAAgDo9eO5S8X5ofLJuKfW5fSjssHQ6fintsXU4/KhsMnY4ABAABAAEADnNlY3JldC5leGFtcGxlAAA=",
+      "-----END ECH CONFIGS-----"
+     ]
+    },
+    "certificate": [
+     "-----BEGIN CERTIFICATE-----",
+     "MIIBizCCATGgAwIBAgIUHwcbsedH+mfPpeb33CWN8MItMZUwCgYIKoZIzj0EAwIw",
+     "GzEZMBcGA1UEAwwQc2VsZi5leGFtcGxlLmNvbTAeFw0yNjExMjExNzE0MTNaFw0z",
+     "NjExMTgxNzE0MTNaMBsxGTAXBgNVBAMMEHNlbGYuZXhhbXBsZS5jb20wWTATBgcq",
+     "hkjOPQIBBggqhkjOPQMBBwNCAAQ4tCJTOll2Yd1bU8KJkYQOzwG+x+ZU//+sR657",
+     "6/cDpavJJk368h3fOR3SM3mCicL1/dkhzzNBe68lkqzdIMGNo1MwUTAdBgNVHQ4E",
+     "FgQUZM+onk8ZoyhijZoP3AJ4DSo+CMwwHwYDVR0jBBgwFoAUZM+onk8ZoyhijZoP",
+     "3AJ4DSo+CMwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiAb1mI1",
+     "vw6hR60AILixICDQHtlvmQzVD26UobdanS/0jwIhAM6BbKgATG2kDTE3fDLpe6xX",
+     "RBU7IOU3Tw8TKMkintr+",
+     "-----END CERTIFICATE-----"
+    ]
+   },
+   "transport": {
+    "type": "httpupgrade",
+    "host": "t.example.com",
+    "path": "/up",
+    "headers": {
+     "User-Agent": [
+      "Mozilla/5.0"
+     ]
+    }
+   },
+   "multiplex": {
+    "enabled": true,
+    "protocol": "h2mux",
+    "brutal": {
+     "enabled": true,
+     "up_mbps": 50,
+     "down_mbps": 200
+    }
+   }
+  },
+  {
+   "type": "vmess",
+   "tag": "VMess http",
+   "server": "v.example.com",
+   "server_port": 80,
+   "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+   "packet_encoding": "packetaddr",
+   "transport": {
+    "type": "http",
+    "host": [
+     "a.example.com",
+     "b.example.com"
+    ],
+    "path": "/x",
+    "method": "GET",
+    "headers": {
+     "Accept": "*/*"
+    }
+   }
+  },
+  {
+   "type": "vless",
+   "tag": "VLESS QUIC",
+   "server": "q.example.com",
+   "server_port": 443,
+   "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+   "tls": {
+    "enabled": true
+   },
+   "transport": {
+    "type": "quic"
+   }
+  },
+  {
+   "type": "hysteria",
+   "tag": "Hy1",
+   "server": "h1.example.com",
+   "server_port": 443,
+   "auth": "c2VjcmV0",
+   "up": "30 Mbps",
+   "down_mbps": 100,
+   "obfs": "xplus",
+   "recv_window_conn": 15728640,
+   "disable_mtu_discovery": true,
+   "tls": {
+    "enabled": true,
+    "server_name": "h1.example.com",
+    "alpn": [
+     "hysteria"
+    ]
+   }
+  },
+  {
+   "type": "hysteria2",
+   "tag": "Hy2 hopping",
+   "server": "h2.example.com",
+   "server_ports": [
+    "20000:30000",
+    "40000:40100"
+   ],
+   "hop_interval": "20s",
+   "password": "hy",
+   "tls": {
+    "enabled": true,
+    "server_name": "h2.example.com",
+    "ech": {
+     "enabled": true,
+     "query_server_name": "public.example.com"
+    }
+   }
+  },
+  {
+   "type": "tuic",
+   "tag": "TUIC",
+   "server": "u.example.com",
+   "server_port": 443,
+   "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+   "password": "tu",
+   "udp_over_stream": true,
+   "heartbeat": "10s",
+   "tls": {
+    "enabled": true,
+    "server_name": "u.example.com",
+    "disable_sni": true,
+    "alpn": [
+     "h3"
+    ]
+   }
+  },
+  {
+   "type": "anytls",
+   "tag": "AnyTLS",
+   "server": "a.example.com",
+   "server_port": 443,
+   "password": "an",
+   "idle_session_check_interval": "30s",
+   "idle_session_timeout": "1m",
+   "min_idle_session": 2,
+   "tls": {
+    "enabled": true,
+    "server_name": "a.example.com",
+    "utls": {
+     "enabled": true,
+     "fingerprint": "safari"
+    }
+   }
+  },
+  {
+   "type": "naive",
+   "tag": "Naive",
+   "server": "n.example.com",
+   "server_port": 443,
+   "username": "u",
+   "password": "p",
+   "insecure_concurrency": 2,
+   "extra_headers": {
+    "X-Padding": [
+     "1"
+    ]
+   },
+   "udp_over_tcp": true,
+   "tls": {
+    "enabled": true,
+    "server_name": "n.example.com"
+   }
+  },
+  {
+   "type": "ssh",
+   "tag": "SSH key file",
+   "server": "ssh.example.com",
+   "server_port": 22,
+   "user": "root",
+   "private_key_path": "/root/.ssh/id_ed25519"
+  },
+  {
+   "type": "http",
+   "tag": "HTTP headers",
+   "server": "p.example.com",
+   "server_port": 8080,
+   "headers": {
+    "Proxy-Authorization": "Basic dTpw"
+   }
+  },
+  {
+   "type": "tor",
+   "tag": "Tor"
+  },
+  {
+   "type": "direct",
+   "tag": "direct"
+  },
+  {
+   "type": "block",
+   "tag": "block"
+  }
+ ],
+ "endpoints": [
+  {
+   "type": "wireguard",
+   "tag": "WG multi",
+   "address": [
+    "10.0.0.2/32",
+    "fd00::2/128",
+    "10.0.0.3/32"
+   ],
+   "private_key": "PRIV",
+   "mtu": 1280,
+   "peers": [
+    {
+     "address": "w1.example.com",
+     "port": 51820,
+     "public_key": "PUB1",
+     "allowed_ips": [
+      "10.1.0.0/16"
+     ],
+     "persistent_keepalive_interval": 25
+    },
+    {
+     "address": "w2.example.com",
+     "port": 51821,
+     "public_key": "PUB2",
+     "pre_shared_key": "PSK",
+     "allowed_ips": [
+      "0.0.0.0/0"
+     ],
+     "reserved": [
+      1,
+      2,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "type": "tailscale",
+   "tag": "TS",
+   "auth_key": "tskey-auth-example",
+   "hostname": "router",
+   "accept_routes": true,
+   "state_directory": "/var/lib/ts"
+  }
+ ],
+ "route": {
+  "rule_set": [
+   {
+    "tag": "cn",
+    "type": "remote",
+    "format": "binary",
+    "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/cn.srs",
+    "download_detour": "Proxy"
+   },
+   {
+    "tag": "cn-ip",
+    "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo-lite/geoip/cn.srs"
+   },
+   {
+    "tag": "custom",
+    "type": "remote",
+    "format": "source",
+    "url": "https://example.com/custom.json"
+   },
+   {
+    "tag": "local",
+    "type": "local",
+    "path": "/etc/sing-box/local.srs"
+   }
+  ],
+  "rules": [
+   {
+    "rule_set": [
+     "cn"
+    ],
+    "domain_suffix": [
+     "example.cn"
+    ],
+    "outbound": "direct"
+   },
+   {
+    "rule_set": "cn-ip",
+    "rule_set_ip_cidr_match_source": true,
+    "outbound": "direct"
+   },
+   {
+    "geosite": [
+     "category-ads-all"
+    ],
+    "action": "reject"
+   },
+   {
+    "geoip": "private",
+    "outbound": "direct"
+   },
+   {
+    "source_ip_is_private": true,
+    "port": [
+     53
+    ],
+    "outbound": "direct"
+   },
+   {
+    "user_id": [
+     1000
+    ],
+    "outbound": "Proxy"
+   },
+   {
+    "rule_set": "custom",
+    "outbound": "Proxy"
+   },
+   {
+    "domain": "x.com",
+    "outbound": "Missing"
+   },
+   {
+    "type": "logical",
+    "mode": "and",
+    "rules": [
+     {
+      "ip_cidr": "1.1.1.1/32"
+     },
+     {
+      "network": "udp"
+     }
+    ],
+    "invert": true,
+    "outbound": "Auto"
+   }
+  ],
+  "final": "Gone"
+ }
+}

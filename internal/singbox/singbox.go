@@ -4,11 +4,11 @@ package singbox
 
 import (
 	"errors"
-	"github.com/openweir/subconv/internal/model"
-
 	"fmt"
 	"slices"
 	"time"
+
+	"github.com/openweir/subconv/internal/model"
 )
 
 var errNotAConfig = errors.New("not a sing-box config")
@@ -25,8 +25,10 @@ type singBox struct {
 	// conversion left out maps to "".
 	names map[string]string
 	// Tags of dns outbounds, which only route DNS: rules sending to them are dropped quietly.
-	dns   map[string]bool
-	first string // the first outbound, sing-box's final when route.final is unset
+	dns map[string]bool
+	// ShadowTLS outbounds by tag, which the proxies that dial through them absorb.
+	shadowTLS map[string]model.Object
+	first     string // the first outbound, sing-box's final when route.final is unset
 }
 
 // Convert converts a sing-box config.
@@ -40,19 +42,26 @@ func Convert(data []byte, options model.Options) (*model.Result, error) {
 		return nil, fmt.Errorf("sing-box: %w", errNotAConfig)
 	}
 	c := &singBox{
-		options: options,
-		result:  &model.Result{Format: model.FormatSingBox},
-		names:   map[string]string{},
-		dns:     map[string]bool{},
+		options:   options,
+		result:    &model.Result{Format: model.FormatSingBox},
+		names:     map[string]string{},
+		dns:       map[string]bool{},
+		shadowTLS: map[string]model.Object{},
 	}
-	var groups []model.Object
 	// Endpoints (sing-box 1.11) carry WireGuard and Tailscale; they are outbounds to the router.
+	var outbounds []model.Object
 	for _, item := range append(model.AsList(config.Value("outbounds")), model.AsList(config.Value("endpoints"))...) {
-		outbound := model.AsObject(item)
-		tag := outbound.String("tag")
-		if outbound == nil || tag == "" {
-			continue
+		if outbound := model.AsObject(item); outbound != nil && outbound.String("tag") != "" {
+			outbounds = append(outbounds, outbound)
+			if outbound.String("type") == "shadowtls" {
+				c.shadowTLS[outbound.String("tag")] = outbound
+			}
 		}
+	}
+	used := map[string]bool{}
+	var groups []model.Object
+	for _, outbound := range outbounds {
+		tag := outbound.String("tag")
 		if c.first == "" {
 			c.first = tag
 		}
@@ -63,6 +72,8 @@ func Convert(data []byte, options model.Options) (*model.Result, error) {
 			c.names[tag] = "REJECT"
 		case "dns":
 			c.dns[tag] = true
+		case "shadowtls":
+			c.names[tag] = ""
 		case "selector", "urltest", "loadbalance":
 			c.names[tag] = tag
 			groups = append(groups, outbound)
@@ -72,6 +83,7 @@ func Convert(data []byte, options model.Options) (*model.Result, error) {
 				c.names[tag] = ""
 				continue
 			}
+			used[outbound.String("detour")] = true
 			proxy, reason := c.proxy(outbound)
 			if proxy == nil {
 				code := model.WarnUnsupportedOption
@@ -86,18 +98,22 @@ func Convert(data []byte, options model.Options) (*model.Result, error) {
 			c.result.Proxies = append(c.result.Proxies, proxy)
 		}
 	}
+	for tag := range c.shadowTLS {
+		if !used[tag] {
+			c.result.Warn(model.WarnUnsupportedProxy, "%s: ShadowTLS on its own; mihomo adds it to the proxy that dials through it", tag)
+		}
+	}
 	// Detours name other outbounds, known only once all are read.
 	for index, proxy := range c.result.Proxies {
 		if detour := proxy.String("dialer-proxy"); detour != "" {
-			name := c.names[detour]
-			if name == "" || name == "DIRECT" {
-				if name == "" {
-					c.result.Warn(model.WarnUnknownReference, "%s: detour %s", proxy.String("name"), detour)
-				}
-				c.result.Proxies[index] = withoutKey(proxy, "dialer-proxy")
-				continue
+			name, known := c.names[detour]
+			switch {
+			case name == "DIRECT":
+				c.result.Proxies[index].Delete("dialer-proxy")
+			case known && name != "":
+				c.result.Proxies[index].Set("dialer-proxy", name)
 			}
-			c.result.Proxies[index].Set("dialer-proxy", name)
+			// An unknown or left-out detour stays as written; the normalization reports it.
 		}
 	}
 	for _, group := range groups {
@@ -114,14 +130,10 @@ func (c *singBox) group(outbound model.Object) model.Object {
 		name, known := c.names[member]
 		switch {
 		case !known:
-			c.result.Warn(model.WarnUnknownReference, "%s: member %s", tag, member)
+			members = append(members, member) // the normalization reports it
 		case name != "" && !slices.Contains(members, any(name)):
 			members = append(members, name)
 		}
-	}
-	if len(members) == 0 {
-		c.result.Warn(model.WarnEmptyGroup, "%s: no members left; using DIRECT", tag)
-		members = []any{"DIRECT"}
 	}
 	switch outbound.String("type") {
 	case "selector":
@@ -133,13 +145,17 @@ func (c *singBox) group(outbound model.Object) model.Object {
 		}
 		return model.New("name", tag, "type", "select", "proxies", members)
 	case "urltest":
+		tolerance := 50 // sing-box's default
+		if value, set := outbound.Get("tolerance"); set {
+			tolerance = model.AsInt(value)
+		}
 		return model.New(
 			"name", tag,
 			"type", "url-test",
 			"proxies", members,
 			"url", or(outbound.String("url"), defaultTestURL),
 			"interval", seconds(outbound.String("interval"), 180),
-			"tolerance", model.AsInt(outbound.Value("tolerance")),
+			"tolerance", tolerance,
 		)
 	default: // libbox's loadbalance: consistent hashing with health checks
 		return model.New(
@@ -153,17 +169,20 @@ func (c *singBox) group(outbound model.Object) model.Object {
 	}
 }
 
-// target returns the Clash policy of a rule's outbound, and whether to keep the rule.
-func (c *singBox) target(tag string) (string, bool) {
+// target returns the Clash policy of a rule's outbound, or a reason to leave the rule out; ""
+// and "" for rules sending to a dns outbound, which only routes DNS.
+func (c *singBox) target(tag string) (string, string) {
 	if c.dns[tag] {
-		return "", false
+		return "", ""
 	}
 	name, known := c.names[tag]
-	if !known || name == "" {
-		c.result.Warn(model.WarnUnknownReference, "rule target %s", tag)
-		return "", false
+	switch {
+	case !known:
+		return "", "outbound " + tag + " does not exist"
+	case name == "":
+		return "", "outbound " + tag + " was left out"
 	}
-	return name, true
+	return name, ""
 }
 
 func seconds(duration string, fallback int) int {
@@ -178,14 +197,4 @@ func or(value, fallback string) string {
 		return fallback
 	}
 	return value
-}
-
-func withoutKey(o model.Object, key string) model.Object {
-	out := make(model.Object, 0, len(o))
-	for _, field := range o {
-		if field.Key != key {
-			out = append(out, field)
-		}
-	}
-	return out
 }
