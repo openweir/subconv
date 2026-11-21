@@ -7,6 +7,7 @@
       "server": "v.example.com",
       "port": 80,
       "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
       "cipher": "auto",
       "udp": true
     }
@@ -34,7 +35,6 @@
       "behavior": "domain",
       "format": "mrs",
       "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/netflix.mrs",
-      "path": "./ruleset/geosite-netflix.mrs",
       "interval": 86400
     },
     "cn-ip": {
@@ -42,7 +42,6 @@
       "behavior": "ipcidr",
       "format": "mrs",
       "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/cn.mrs",
-      "path": "./ruleset/cn-ip.mrs",
       "interval": 86400
     },
     "lan": {

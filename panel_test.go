@@ -15,14 +15,14 @@ import (
 var panelExceptions = map[string]map[string][]string{
 	"sing-box": {
 		// The panel's Clash proxies leave out what is the default; sing-box writes it.
-		"*":   {"udp", "alterId", "packet-encoding"},
+		"*":   {"udp", "packet-encoding"},
 		"Hy2": {"alpn"},
 		// sing-box has v5 as v4, the same wire protocol; the panel's Clash proxy says 5.
 		"Snell v5": {"version"},
 	},
 	"links": {
 		// Links carry neither TCP Fast Open for VMess, SSR and Mieru nor these defaults.
-		"*":         {"udp", "alterId"},
+		"*":         {"udp"},
 		"VMess WS":  {"tfo"},
 		"VMess TCP": {"tfo"},
 		"SSR":       {"tfo"},
@@ -42,12 +42,21 @@ var panelAbsent = map[string][]string{
 func TestPanelVectors(t *testing.T) {
 	var want []map[string]any
 	readJSON(t, "testdata/panel/openweir.json", &want)
+	proxies, err := os.ReadFile("testdata/panel/openweir.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs := map[string][]byte{
+		// The panel's own proxies, as a Clash subscription, come back as they are.
+		"clash": append(append([]byte(`{"proxies":`), proxies...), '}'),
+	}
 	for format, file := range map[string]string{"sing-box": "singbox.json", "links": "links.txt"} {
+		if inputs[format], err = os.ReadFile("testdata/panel/" + file); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for format, data := range inputs {
 		t.Run(format, func(t *testing.T) {
-			data, err := os.ReadFile("testdata/panel/" + file)
-			if err != nil {
-				t.Fatal(err)
-			}
 			result, err := Convert(data)
 			if err != nil {
 				t.Fatal(err)

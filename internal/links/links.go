@@ -72,7 +72,6 @@ func Convert(data []byte) (*model.Result, error) {
 	if !found {
 		return nil, errNoLinks
 	}
-	proxy.UniqueNames(result.Proxies, "DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL")
 	return result, nil
 }
 

@@ -57,6 +57,7 @@
       "server": "vm.example.com",
       "port": 443,
       "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
       "cipher": "auto",
       "udp": true,
       "tls": true,

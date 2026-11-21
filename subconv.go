@@ -18,6 +18,7 @@ import (
 	"github.com/openweir/subconv/internal/clash"
 	"github.com/openweir/subconv/internal/links"
 	"github.com/openweir/subconv/internal/model"
+	"github.com/openweir/subconv/internal/normalize"
 	"github.com/openweir/subconv/internal/singbox"
 	"go.yaml.in/yaml/v3"
 )
@@ -96,14 +97,20 @@ func Convert(data []byte) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	var result *Result
 	switch format {
 	case FormatSingBox:
-		return singbox.Convert(data)
+		result, err = singbox.Convert(data)
 	case FormatClash:
-		return clash.Convert(data)
+		result, err = clash.Convert(data)
 	default:
-		return links.Convert(data)
+		result, err = links.Convert(data)
 	}
+	if err != nil {
+		return nil, err
+	}
+	normalize.Result(result, model.Options{})
+	return result, nil
 }
 
 func looksLikeLinks(data []byte) bool {

@@ -93,31 +93,3 @@ func PortRanges(ranges []string) string {
 	}
 	return strings.Join(out, ",")
 }
-
-// UniqueNames renames proxies that share a name, as mihomo refuses duplicates: the second
-// becomes "name 2", and so on.
-func UniqueNames(proxies []model.Object, taken ...string) {
-	seen := map[string]bool{}
-	for _, name := range taken {
-		seen[name] = true
-	}
-	for index, p := range proxies {
-		name := p.String("name")
-		unique := name
-		for n := 2; seen[unique]; n++ {
-			unique = name + " " + itoa(n)
-		}
-		seen[unique] = true
-		if unique != name {
-			proxies[index].Set("name", unique)
-		}
-	}
-}
-
-func itoa(n int) string {
-	digits := []byte{}
-	for ; n > 0; n /= 10 {
-		digits = append([]byte{byte('0' + n%10)}, digits...)
-	}
-	return string(digits)
-}

@@ -1,0 +1,419 @@
+{
+  "format": "clash",
+  "proxies": [
+    {
+      "name": "HK 01",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "udp": true
+    },
+    {
+      "name": "HK 01 2",
+      "type": "ss",
+      "server": "hk2.example.com",
+      "port": 8389,
+      "cipher": "chacha20-ietf-poly1305",
+      "password": "123456",
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      }
+    },
+    {
+      "name": "VMess legacy",
+      "type": "vmess",
+      "server": "vm.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto",
+      "tls": true,
+      "servername": "vm.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "vm.example.com"
+        }
+      }
+    },
+    {
+      "name": "VLESS REALITY",
+      "type": "vless",
+      "server": "2001:db8::1",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "1234"
+      },
+      "network": "grpc",
+      "grpc-opts": {
+        "grpc-service-name": "gun"
+      }
+    },
+    {
+      "name": "Trojan",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 8443,
+      "password": "pw",
+      "sni": "t.example.com",
+      "alpn": [
+        "h2",
+        "http/1.1"
+      ]
+    },
+    {
+      "name": "Hy2 hop",
+      "type": "hysteria2",
+      "server": "h.example.com",
+      "ports": "20000-30000",
+      "password": "hy",
+      "hop-interval": 30,
+      "up": "50",
+      "down": "200"
+    },
+    {
+      "name": "SS none",
+      "type": "ss",
+      "server": "none.example.com",
+      "port": 80,
+      "cipher": "none",
+      "password": ""
+    },
+    {
+      "name": "DIRECT 2",
+      "type": "socks5",
+      "server": "127.0.0.1",
+      "port": 1080
+    },
+    {
+      "name": "http p.example.com",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 3128
+    },
+    {
+      "name": "WG",
+      "type": "wireguard",
+      "server": "w.example.com",
+      "port": 51820,
+      "private-key": "PRIV",
+      "ip": "10.0.0.2",
+      "udp": true,
+      "peers": [
+        {
+          "server": "w.example.com",
+          "port": 51820,
+          "public-key": "PUB1",
+          "allowed-ips": [
+            "0.0.0.0/0"
+          ],
+          "reserved": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "server": "w2.example.com",
+          "port": 51820,
+          "public-key": "PUB2",
+          "allowed-ips": [
+            "10.0.0.0/8"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Naive",
+      "type": "naive",
+      "server": "n.example.com",
+      "port": 443,
+      "username": "u",
+      "password": "p"
+    },
+    {
+      "name": "Exit",
+      "type": "ss",
+      "server": "exit.example.com",
+      "port": 8388,
+      "cipher": "aes-256-gcm",
+      "password": "p"
+    },
+    {
+      "name": "Client cert",
+      "type": "trojan",
+      "server": "c.example.com",
+      "port": 443,
+      "password": "pw"
+    },
+    {
+      "name": "Chain / VLESS REALITY",
+      "type": "vless",
+      "server": "2001:db8::1",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "1234"
+      },
+      "network": "grpc",
+      "grpc-opts": {
+        "grpc-service-name": "gun"
+      },
+      "dialer-proxy": "HK 01"
+    },
+    {
+      "name": "Chain",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 8443,
+      "password": "pw",
+      "sni": "t.example.com",
+      "alpn": [
+        "h2",
+        "http/1.1"
+      ],
+      "dialer-proxy": "Chain / VLESS REALITY"
+    }
+  ],
+  "proxy-providers": {
+    "airport": {
+      "type": "http",
+      "url": "https://example.com/sub?token=t",
+      "interval": 3600,
+      "health-check": {
+        "enable": true,
+        "url": "https://www.gstatic.com/generate_204",
+        "interval": 300
+      },
+      "filter": "(?i)hk|sg"
+    }
+  },
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Auto",
+        "HK 01",
+        "HK 01 2",
+        "DIRECT",
+        "Chain"
+      ],
+      "use": [
+        "airport"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "HK 01",
+        "VMess legacy",
+        "Loop"
+      ],
+      "url": "https://cp.cloudflare.com",
+      "interval": 300,
+      "tolerance": 50
+    },
+    {
+      "name": "Loop",
+      "type": "select",
+      "proxies": [
+        "Trojan"
+      ]
+    },
+    {
+      "name": "Balance",
+      "type": "load-balance",
+      "strategy": "round-robin",
+      "proxies": [
+        "HK 01",
+        "Hy2 hop"
+      ]
+    },
+    {
+      "name": "All",
+      "type": "select",
+      "include-all": true,
+      "filter": "(?\u003c=HK)"
+    }
+  ],
+  "rule-providers": {
+    "reject": {
+      "type": "http",
+      "behavior": "domain",
+      "url": "https://example.com/reject.txt",
+      "interval": 86400,
+      "format": "text"
+    },
+    "cn": {
+      "type": "http",
+      "behavior": "ipcidr",
+      "url": "https://example.com/cn.mrs",
+      "format": "mrs"
+    },
+    "geosite-cn": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs"
+    },
+    "lan": {
+      "type": "inline",
+      "behavior": "classical",
+      "payload": [
+        "DOMAIN-SUFFIX,lan",
+        "IP-CIDR,192.168.0.0/16,no-resolve"
+      ]
+    }
+  },
+  "rules": [
+    "RULE-SET,reject,REJECT",
+    "RULE-SET,cn,DIRECT,no-resolve",
+    "RULE-SET,geosite-cn,DIRECT",
+    "RULE-SET,lan,DIRECT",
+    "DOMAIN-SUFFIX,google.com,Proxy",
+    "IP-CIDR,8.8.8.8/32,Proxy,no-resolve",
+    "DST-PORT,6000-6100,Chain",
+    "AND,((NETWORK,udp),(DST-PORT,443)),REJECT",
+    "DOMAIN,d.com,Proxy",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "invalid_proxy",
+      "detail": "proxy 17: not a mapping"
+    },
+    {
+      "code": "renamed",
+      "detail": "HK 01: renamed HK 01 2"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Trojan: interface-name is the client's setting"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Trojan: routing-mark is the client's setting"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Broken port: port 70000"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "No server: no server"
+    },
+    {
+      "code": "unsupported_proxy",
+      "detail": "Juicity: type juicity"
+    },
+    {
+      "code": "renamed",
+      "detail": "DIRECT: renamed DIRECT 2"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Naive: alpn is Cronet's own"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Client cert: certificate is a local file"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Client cert: private-key is a local file"
+    },
+    {
+      "code": "unsupported_provider",
+      "detail": "local: a local file"
+    },
+    {
+      "code": "unsupported_provider",
+      "detail": "broken: no web URL"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Balance: dialer-proxy belongs on proxies, not groups"
+    },
+    {
+      "code": "unsupported_group",
+      "detail": "Home: type ssid"
+    },
+    {
+      "code": "unknown_reference",
+      "detail": "Proxy: member Gone"
+    },
+    {
+      "code": "unknown_reference",
+      "detail": "Proxy: provider nowhere"
+    },
+    {
+      "code": "empty_group",
+      "detail": "Empty: no members left"
+    },
+    {
+      "code": "cyclic_reference",
+      "detail": "Loop: member Auto leads back to it"
+    },
+    {
+      "code": "unknown_reference",
+      "detail": "Exit: dialer-proxy Missing"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "custom: a sing-box rule set mihomo cannot read"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "local: a local file"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "RULE-SET,custom,Proxy: rule set custom was left out"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "RULE-SET,local,DIRECT: rule set local was left out"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "IP-CIDR,not-an-ip,Proxy: IP range not-an-ip"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "OR,((DOMAIN,a.com),(RULE-SET,local)),Proxy: rule set local was left out"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "USER-AGENT,Telegram*,Proxy: rule type USER-AGENT"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "DOMAIN,b.com,Empty: policy Empty was left out"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "DOMAIN,c.com,Nobody: policy Nobody does not exist"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "SUB-RULE,(NETWORK,tcp),sub: sub-rules are not carried over"
+    }
+  ]
+}

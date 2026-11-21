@@ -36,7 +36,6 @@
       "behavior": "domain",
       "format": "mrs",
       "url": "https://example.com/ads.mrs",
-      "path": "./ruleset/ads.mrs",
       "interval": 86400
     }
   },

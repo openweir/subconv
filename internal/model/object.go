@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -28,6 +31,69 @@ func (o *Object) Set(key string, value any) {
 		}
 	}
 	*o = append(*o, Field{key, value})
+}
+
+// Delete removes key.
+func (o *Object) Delete(key string) {
+	for index := range *o {
+		if (*o)[index].Key == key {
+			*o = append((*o)[:index], (*o)[index+1:]...)
+			return
+		}
+	}
+}
+
+// Rename gives a key another name in its place. A field already named to is dropped.
+func (o *Object) Rename(from, to string) {
+	if _, set := o.Get(from); !set || from == to {
+		return
+	}
+	o.Delete(to)
+	for index := range *o {
+		if (*o)[index].Key == from {
+			(*o)[index].Key = to
+		}
+	}
+}
+
+// InsertAfter sets key right after the key after, or appends it when after is missing.
+func (o *Object) InsertAfter(after, key string, value any) {
+	o.Delete(key)
+	for index := range *o {
+		if (*o)[index].Key == after {
+			*o = append((*o)[:index+1], append(Object{{key, value}}, (*o)[index+1:]...)...)
+			return
+		}
+	}
+	*o = append(*o, Field{key, value})
+}
+
+// Clone copies the object and every object and list in it.
+func (o Object) Clone() Object {
+	if o == nil {
+		return nil
+	}
+	out := make(Object, len(o))
+	for index, field := range o {
+		out[index] = Field{field.Key, clone(field.Value)}
+	}
+	return out
+}
+
+func clone(value any) any {
+	switch v := value.(type) {
+	case Object:
+		return v.Clone()
+	case []any:
+		out := make([]any, len(v))
+		for index, item := range v {
+			out[index] = clone(item)
+		}
+		return out
+	case []string:
+		return append([]string(nil), v...)
+	}
+	return value
 }
 
 // Value returns the value of key, or nil.
@@ -241,4 +307,60 @@ func AsInt(value any) int {
 func AsBool(value any) bool {
 	b, _ := value.(bool)
 	return b
+}
+
+// Int reads an integer written as a number or as a numeric string, as mihomo accepts.
+func Int(value any) (int, bool) {
+	switch v := value.(type) {
+	case int:
+		return v, true
+	case float64:
+		if v == math.Trunc(v) && math.Abs(v) < 1<<53 {
+			return int(v), true
+		}
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return n, true
+		}
+		if f, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err == nil && f == math.Trunc(f) && math.Abs(f) < 1<<53 {
+			return int(f), true
+		}
+	}
+	return 0, false
+}
+
+// Bool reads a boolean written as one, as 1 or 0, or as true/false, yes/no or on/off in any
+// case. mihomo itself takes only booleans and numbers.
+func Bool(value any) (bool, bool) {
+	switch v := value.(type) {
+	case bool:
+		return v, true
+	case int:
+		return v != 0, v == 0 || v == 1
+	case float64:
+		return v != 0, v == 0 || v == 1
+	case string:
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "true", "1", "yes", "on":
+			return true, true
+		case "false", "0", "no", "off", "":
+			return false, true
+		}
+	}
+	return false, false
+}
+
+// Text reads a scalar as a string: numbers in decimal, booleans as true or false.
+func Text(value any) (string, bool) {
+	switch v := value.(type) {
+	case string:
+		return v, true
+	case int:
+		return strconv.Itoa(v), true
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), true
+	case bool:
+		return strconv.FormatBool(v), true
+	}
+	return "", false
 }
