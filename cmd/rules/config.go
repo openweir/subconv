@@ -80,9 +80,9 @@ type tmpl struct {
 	// to it.
 	Layout      string `yaml:"layout"`
 	Description string `yaml:"description"`
-	// Retarget sends the layout's rules for one policy to another, for groups of the layout
-	// that the template folds into one.
-	Retarget map[string]string `yaml:"retarget"`
+	// Policies sends the layout's rules for one policy to a group of the template: one named
+	// otherwise, or one that takes several of the layout's groups.
+	Policies map[string]string `yaml:"policies"`
 	Groups   []rules.Group     `yaml:"groups"`
 }
 

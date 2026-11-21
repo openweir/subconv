@@ -126,6 +126,37 @@ func TestValidate(t *testing.T) {
 }
 
 // Client settings, like those of dler-io's Head*.yaml, never pass.
+// Group names with emoji, variation selectors included, as the branch's template has them, in
+// the quoting go-yaml writes and plain.
+func TestValidateEmojiNames(t *testing.T) {
+	template := `proxy-groups:
+  - name: "🚀 Proxy"
+    type: select
+    proxies: [♻️ Auto, DIRECT]
+    include-all: true
+  - name: ♻️ Auto
+    type: url-test
+    include-all: true
+  - name: "🕹️ miHoYo"
+    type: select
+    proxies: [DIRECT, "🚀 Proxy"]
+  - name: Ⓜ️ Microsoft
+    type: select
+    proxies: [DIRECT, "🚀 Proxy", ♻️ Auto]
+rules:
+  - "DOMAIN-SUFFIX,mihoyo.com,🕹️ miHoYo"
+  - DOMAIN-SUFFIX,microsoft.com,Ⓜ️ Microsoft
+  - "MATCH,🚀 Proxy"
+`
+	if err := Validate([]byte(template)); err != nil {
+		t.Fatal(err)
+	}
+	broken := strings.Replace(template, "MATCH,🚀 Proxy", "MATCH,🚀 Proxy\uFE0F", 1)
+	if err := Validate([]byte(broken)); !errors.Is(err, ErrInvalidTemplate) {
+		t.Errorf("a name with another variation selector: %v", err)
+	}
+}
+
 func TestValidateRefusesClientSettings(t *testing.T) {
 	for _, extra := range []string{
 		"port: 6152", "socks-port: 6153", "mixed-port: 8899", "redir-port: 7892", "tproxy-port: 7893",

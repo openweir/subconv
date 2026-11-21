@@ -130,7 +130,10 @@ func (r *Result) YAML() ([]byte, error) {
 	if err := encoder.Encode(document); err != nil {
 		return nil, err
 	}
-	return buffer.Bytes(), encoder.Close()
+	if err := encoder.Close(); err != nil {
+		return nil, err
+	}
+	return Readable(buffer.Bytes()), nil
 }
 
 func toAny(objects []Object) []any {

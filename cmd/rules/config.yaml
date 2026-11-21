@@ -36,67 +36,92 @@ template:
   description: >-
     Ad blocking, a group for every service of the layout, Apple and mainland China; everything
     else through Others.
-  # dler-io's Asian TV and Global TV pick a region for regional streaming services; without
-  # region groups, one Streaming group takes both.
-  retarget:
-    Asian TV: Streaming
-    Global TV: Streaming
+  # The layout's policies and the groups that take them. dler-io's Asian TV and Global TV pick a
+  # region for regional streaming services; without region groups, Streaming takes both.
+  policies:
+    Proxy: 🚀 Proxy
+    Domestic: 🎯 Domestic
+    Others: 🐟 Others
+    AdBlock: 🛑 AdBlock
+    AI Suite: 🤖 AI Suite
+    Asian TV: 🌍 Streaming
+    Global TV: 🌍 Streaming
+    Netflix: 🎥 Netflix
+    Disney Plus: 🏰 Disney Plus
+    YouTube: 📹 YouTube
+    Max: 🎬 Max
+    Spotify: 🎧 Spotify
+    TikTok: 🎵 TikTok
+    Telegram: ✈️ Telegram
+    Discord: 💬 Discord
+    Crypto: 💰 Crypto
+    PayPal: 💳 PayPal
+    Google FCM: 📢 Google FCM
+    Scholar: 🎓 Scholar
+    Speedtest: 📶 Speedtest
+    Steam: 🎮 Steam
+    miHoYo: 🕹️ miHoYo
+    Microsoft: Ⓜ️ Microsoft
+    Apple Services: 🍎 Apple Services
+    Apple Push: 🔔 Apple Push
+    Apple TV: 📺 Apple TV
+    CN Mainland TV: 🏮 CN Mainland TV
   groups:
-    - name: Proxy
+    - name: 🚀 Proxy
       type: select
-      proxies: [Auto, DIRECT]
+      proxies: [♻️ Auto, DIRECT]
       include-all: true
       exclude-filter: &info "{info}" # rules.InfoFilter: the pseudo-nodes showing traffic and expiry
-    - name: Auto
+    - name: ♻️ Auto
       type: url-test
       include-all: true
       exclude-filter: *info
       url: https://www.gstatic.com/generate_204
       interval: 300
       tolerance: 50
-    - name: Domestic
+    - name: 🎯 Domestic
       type: select
-      proxies: [DIRECT, Proxy]
-    - name: Others
+      proxies: [DIRECT, 🚀 Proxy]
+    - name: 🐟 Others
       type: select
-      proxies: [Proxy, Domestic]
-    - name: AdBlock
+      proxies: [🚀 Proxy, 🎯 Domestic]
+    - name: 🛑 AdBlock
       type: select
-      proxies: [REJECT, DIRECT, Proxy]
+      proxies: [REJECT, DIRECT, 🚀 Proxy]
     # Services: the main group, Auto, DIRECT, or any node.
     - &service
-      name: Netflix
+      name: 🎥 Netflix
       type: select
-      proxies: [Proxy, Auto, DIRECT]
+      proxies: [🚀 Proxy, ♻️ Auto, DIRECT]
       include-all: true
       exclude-filter: *info
-    - {<<: *service, name: Disney Plus}
-    - {<<: *service, name: YouTube}
-    - {<<: *service, name: Max}
-    - {<<: *service, name: Spotify}
-    - {<<: *service, name: Streaming}
-    - {<<: *service, name: Telegram}
-    - {<<: *service, name: Crypto}
-    - {<<: *service, name: Discord}
-    - {<<: *service, name: Google FCM}
-    - {<<: *service, name: AI Suite}
-    - {<<: *service, name: PayPal}
-    - {<<: *service, name: Scholar}
-    - {<<: *service, name: Speedtest}
-    - {<<: *service, name: Steam}
-    - {<<: *service, name: TikTok}
-    - {<<: *service, name: Apple TV}
+    - {<<: *service, name: 🏰 Disney Plus}
+    - {<<: *service, name: 📹 YouTube}
+    - {<<: *service, name: 🎬 Max}
+    - {<<: *service, name: 🎧 Spotify}
+    - {<<: *service, name: 🌍 Streaming}
+    - {<<: *service, name: ✈️ Telegram}
+    - {<<: *service, name: 💰 Crypto}
+    - {<<: *service, name: 💬 Discord}
+    - {<<: *service, name: 📢 Google FCM}
+    - {<<: *service, name: 🤖 AI Suite}
+    - {<<: *service, name: 💳 PayPal}
+    - {<<: *service, name: 🎓 Scholar}
+    - {<<: *service, name: 📶 Speedtest}
+    - {<<: *service, name: 🎮 Steam}
+    - {<<: *service, name: 🎵 TikTok}
+    - {<<: *service, name: 📺 Apple TV}
     # Services reachable from mainland China: DIRECT first.
     - &local
-      name: CN Mainland TV
+      name: 🏮 CN Mainland TV
       type: select
-      proxies: [DIRECT, Proxy, Auto]
+      proxies: [DIRECT, 🚀 Proxy, ♻️ Auto]
       include-all: true
       exclude-filter: *info
-    - {<<: *local, name: Microsoft}
-    - {<<: *local, name: Apple Push}
-    - {<<: *local, name: Apple Services}
-    - {<<: *local, name: miHoYo}
+    - {<<: *local, name: Ⓜ️ Microsoft}
+    - {<<: *local, name: 🔔 Apple Push}
+    - {<<: *local, name: 🍎 Apple Services}
+    - {<<: *local, name: 🕹️ miHoYo}
 
 notice: |
   # Notices

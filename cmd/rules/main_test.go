@@ -138,7 +138,7 @@ licenses:
 template:
   layout: https://fastly.jsdelivr.net/gh/dler/Rules@main/Clash/Rule.yaml
   description: Test.
-  retarget: {Local: DIRECT}
+  policies: {Local: DIRECT}
   groups:
     - {name: Proxy, type: select, proxies: [Auto, DIRECT], include-all: true}
     - {name: Auto, type: url-test, include-all: true, exclude-filter: "{info}"}
@@ -373,8 +373,8 @@ func TestBuildRefuses(t *testing.T) {
 		"unused group": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "    - {name: Others,", "    - {name: Spare, type: select, proxies: [Proxy]}\n    - {name: Others,", 1)
 		}, "group Spare is not used"},
-		"stale retarget": {func(u *upstream) {
-			u.config = strings.Replace(u.config, "retarget: {Local: DIRECT}", "retarget: {Local: DIRECT, Gone: Proxy}", 1)
+		"stale policy": {func(u *upstream) {
+			u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT, Gone: Proxy}", 1)
 		}, "no rule sends traffic to Gone"},
 		"foreign rule set": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "refs: [https://sukka.example/]", "refs: [https://other.example/]", 1)
@@ -445,7 +445,7 @@ func TestConfig(t *testing.T) {
 	for _, g := range tpl.Groups {
 		groups.WriteString("  - {name: " + g.Name + ", type: " + g.Type + ", proxies: [DIRECT]}\n")
 	}
-	doc := []byte(groups.String() + "rules:\n  - MATCH,Proxy\n")
+	doc := []byte(groups.String() + "rules:\n  - MATCH," + tpl.Policies["Others"] + "\n")
 	if err := rules.Validate(doc); err != nil {
 		t.Fatal(err)
 	}
@@ -459,7 +459,7 @@ func TestConfig(t *testing.T) {
 			t.Errorf("%s does not exclude rules.InfoFilter", g.Name)
 		}
 	}
-	data, err := renderTemplate(tpl, cfg.Sources[0], "x", &yaml.Node{Kind: yaml.MappingNode}, []string{"MATCH,Others"})
+	data, err := renderTemplate(tpl, cfg.Sources[0], "x", &yaml.Node{Kind: yaml.MappingNode}, []string{"MATCH," + tpl.Policies["Others"]})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -85,15 +85,35 @@ final `LAN` and `GEOIP,CN` matches without resolving domains (`no-resolve`, in t
 rule set's entries), so domain connections are not resolved before the rules that decide them
 by name.
 
-It routes ads to AdBlock (REJECT, DIRECT or Proxy), each service to its group, mainland China
-(domains, then IP ranges) to Domestic, private networks direct, the rest of China by GEOIP to
-Domestic, and everything else to Others. Proxy offers Auto, DIRECT and every node; Auto is a
-url-test of every node; Domestic offers DIRECT or Proxy, Others Proxy or Domestic. The service
-groups (Netflix, Disney Plus, YouTube, Max, Spotify, Streaming, Telegram, Crypto, Discord, Google
-FCM, AI Suite, PayPal, Scholar, Speedtest, Steam, TikTok, Apple TV) offer Proxy, Auto, DIRECT
-and every node; CN Mainland TV, Microsoft, Apple Push, Apple Services and miHoYo offer DIRECT
-first. dler-io's Asian TV and Global TV, which pick a region for regional streaming services,
-are folded into Streaming (`retarget` in the config), keeping the rules' order.
+It routes ads to 🛑 AdBlock (REJECT, DIRECT or Proxy), each service to its group, mainland China
+(domains, then IP ranges) to 🎯 Domestic, private networks direct, the rest of China by GEOIP to
+🎯 Domestic, and everything else to 🐟 Others. 🚀 Proxy offers ♻️ Auto, DIRECT and every node;
+♻️ Auto is a url-test of every node; 🎯 Domestic offers DIRECT or 🚀 Proxy, 🐟 Others 🚀 Proxy or
+🎯 Domestic. The service groups offer 🚀 Proxy, ♻️ Auto, DIRECT and every node; those reachable
+from mainland China offer DIRECT first.
+
+| Group | Layout policy | | Group | Layout policy |
+| --- | --- | --- | --- | --- |
+| 🚀 Proxy | Proxy | | 🎓 Scholar | Scholar |
+| ♻️ Auto | (url-test) | | 📶 Speedtest | Speedtest |
+| 🎯 Domestic | Domestic | | 🎮 Steam | Steam |
+| 🐟 Others | Others | | 🎵 TikTok | TikTok |
+| 🛑 AdBlock | AdBlock | | ✈️ Telegram | Telegram |
+| 🎥 Netflix | Netflix | | 💬 Discord | Discord |
+| 🏰 Disney Plus | Disney Plus | | 💰 Crypto | Crypto |
+| 📹 YouTube | YouTube | | 💳 PayPal | PayPal |
+| 🎬 Max | Max | | 📢 Google FCM | Google FCM |
+| 🎧 Spotify | Spotify | | 🤖 AI Suite | AI Suite |
+| 🌍 Streaming | Asian TV, Global TV | | 📺 Apple TV | Apple TV |
+| 🏮 CN Mainland TV | CN Mainland TV (DIRECT first) | | 🔔 Apple Push | Apple Push (DIRECT first) |
+| Ⓜ️ Microsoft | Microsoft (DIRECT first) | | 🍎 Apple Services | Apple Services (DIRECT first) |
+| 🕹️ miHoYo | miHoYo (DIRECT first) | | | |
+
+The names come only from `cmd/rules/config.yaml`: `policies` maps the layout's policies to the
+groups, which is how dler-io's Asian TV and Global TV, region pickers for regional streaming
+services, both go to 🌍 Streaming, keeping the rules' order. The template writes the emoji as
+themselves (go-yaml would escape those outside the Basic Multilingual Plane); names are matched
+exactly, variation selectors (U+FE0F) included.
 
 ### Schema
 

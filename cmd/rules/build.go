@@ -15,6 +15,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/rules"
 )
 
@@ -116,13 +117,13 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 	files := map[string]string{} // provider name → file
 	var ruleList []string
 	var stats templateStats
-	retargeted := map[string]bool{}
+	mapped := map[string]bool{}
 	for _, rule := range layout.Rules {
 		fields := rules.SplitRule(rule)
 		// The policy: after MATCH, or after the payload.
 		if i := min(len(fields)-1, 2); i > 0 && (i == 2 || strings.EqualFold(fields[0], "MATCH")) {
-			if to, ok := t.Retarget[fields[i]]; ok {
-				retargeted[fields[i]] = true
+			if to, ok := t.Policies[fields[i]]; ok {
+				mapped[fields[i]] = true
 				fields[i] = to
 			}
 		}
@@ -169,9 +170,9 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 		}
 	}
 
-	for from := range t.Retarget {
-		if !retargeted[from] {
-			return fmt.Errorf("no rule sends traffic to %s any more; remove it from retarget", from)
+	for from := range t.Policies {
+		if !mapped[from] {
+			return fmt.Errorf("no rule sends traffic to %s any more; remove it from policies", from)
 		}
 	}
 	data, err := renderTemplate(t, src, file, providers, ruleList)
@@ -359,7 +360,8 @@ func renderTemplate(t *tmpl, src *source, layout string, providers *yaml.Node, r
 	if err := enc.Close(); err != nil {
 		return nil, err
 	}
-	return []byte(out.String()), nil
+	// Emoji in group names, as themselves rather than escaped.
+	return model.Readable([]byte(out.String())), nil
 }
 
 // checkGroupsUsed refuses groups that no rule reaches, directly or through other groups.
