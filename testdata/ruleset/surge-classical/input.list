@@ -1,0 +1,10 @@
+# NAME: Example
+# TOTAL: 6
+DOMAIN-SUFFIX,google.com
+DOMAIN-KEYWORD,youtube
+IP-CIDR,8.8.8.0/24,no-resolve
+IP-CIDR,2001:4860::/32,no-resolve
+USER-AGENT,YouTube*
+AND,((DOMAIN-SUFFIX,example.com),(PROTOCOL,UDP))
+PROCESS-NAME,curl
+IP-CIDR,999.1.1.1/8

@@ -1,0 +1,5 @@
+# A Surge DOMAIN-SET: a leading dot is the domain and its subdomains
+.apple.com
+icloud.com
+
+.cdn-apple.com

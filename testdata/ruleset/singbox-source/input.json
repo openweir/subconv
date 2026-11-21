@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  // sing-box source rule sets may carry comments
+  "rules": [
+    { "domain": ["www.example.com"], "domain_suffix": ["example.org", ".example.net"], "domain_keyword": ["track"] },
+    { "ip_cidr": ["192.168.0.0/16", "2001:db8::/32"] },
+    { "port": [22], "network": "tcp" },
+    { "type": "logical", "mode": "and", "rules": [{ "domain": "a.com" }, { "port": 443 }] },
+  ]
+}

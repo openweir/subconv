@@ -1,0 +1,24 @@
+{
+  "behavior": "classical",
+  "body": [
+    "DOMAIN,www.example.com",
+    "DOMAIN-SUFFIX,example.org",
+    "DOMAIN-SUFFIX,example.net",
+    "DOMAIN-KEYWORD,track",
+    "IP-CIDR,192.168.0.0/16",
+    "IP-CIDR6,2001:db8::/32"
+  ],
+  "entries": 6,
+  "format": "text",
+  "skipped": 2,
+  "warnings": [
+    {
+      "code": "unsupported_rule",
+      "detail": "1 entries: logical or inverted sing-box rules"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "1 entries: sing-box rules that match several kinds of field at once"
+    }
+  ]
+}

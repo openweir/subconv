@@ -1,0 +1,7 @@
+# Clash domain rule set
+payload:
+  - '+.google.com'
+  - "www.example.com"
+  - .example.net   # subdomains only, as mihomo reads it
+  - not a domain
+  - '*.example.org'

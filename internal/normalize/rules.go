@@ -7,41 +7,8 @@ import (
 	"strings"
 
 	"github.com/openweir/subconv/internal/model"
+	"github.com/openweir/subconv/internal/ruleset"
 )
-
-// The rule types OpenWeir mihomo parses (rules/parser.go).
-var ruleTypes = map[string]bool{}
-
-func init() {
-	for _, kind := range strings.Fields("DOMAIN DOMAIN-SUFFIX DOMAIN-KEYWORD DOMAIN-REGEX DOMAIN-WILDCARD GEOSITE " +
-		"GEOIP SRC-GEOIP IP-ASN SRC-IP-ASN IP-CIDR IP-CIDR6 SRC-IP-CIDR IP-SUFFIX SRC-IP-SUFFIX SRC-PORT DST-PORT " +
-		"IN-PORT DSCP PROCESS-NAME PROCESS-PATH PROCESS-NAME-REGEX PROCESS-PATH-REGEX PROCESS-NAME-WILDCARD " +
-		"PROCESS-PATH-WILDCARD NETWORK UID IN-TYPE IN-USER IN-NAME REMATCH-NAME AND OR NOT RULE-SET MATCH") {
-		ruleTypes[kind] = true
-	}
-}
-
-// Other clients' names for mihomo's rule types: Surge, Quantumult X and older Clash.
-var ruleAliases = map[string]string{
-	"HOST":           "DOMAIN",
-	"HOST-SUFFIX":    "DOMAIN-SUFFIX",
-	"HOST-KEYWORD":   "DOMAIN-KEYWORD",
-	"HOST-WILDCARD":  "DOMAIN-WILDCARD",
-	"HOST-REGEX":     "DOMAIN-REGEX",
-	"IP6-CIDR":       "IP-CIDR6",
-	"IP-CIDR6":       "IP-CIDR6",
-	"DEST-PORT":      "DST-PORT",
-	"DEST-PORTS":     "DST-PORT",
-	"SRC-IP":         "SRC-IP-CIDR",
-	"SOURCE-IP-CIDR": "SRC-IP-CIDR",
-	"FINAL":          "MATCH",
-	"PROCESS":        "PROCESS-NAME",
-	"IP-ASN6":        "IP-ASN",
-}
-
-// Rule types whose payload may contain commas: the policy is the last field.
-var commaPayload = map[string]bool{"AND": true, "OR": true, "NOT": true, "SUB-RULE": true,
-	"DOMAIN-REGEX": true, "PROCESS-NAME-REGEX": true, "PROCESS-PATH-REGEX": true}
 
 // Policies of other clients that mean REJECT to mihomo.
 var rejects = map[string]string{
@@ -89,7 +56,7 @@ func (s *state) rule(line string) (string, string) {
 		items[index] = strings.TrimSpace(items[index])
 	}
 	kind := strings.ToUpper(items[0])
-	if alias, ok := ruleAliases[kind]; ok {
+	if alias, ok := ruleset.Aliases[kind]; ok {
 		kind = alias
 	}
 	if kind == "MATCH" {
@@ -102,7 +69,7 @@ func (s *state) rule(line string) (string, string) {
 		}
 		return "MATCH," + target, ""
 	}
-	if !ruleTypes[kind] {
+	if !ruleset.Types[kind] {
 		if kind == "SUB-RULE" {
 			return "", "sub-rules are not carried over"
 		}
@@ -110,7 +77,7 @@ func (s *state) rule(line string) (string, string) {
 	}
 	var payload, target string
 	var params []string
-	if commaPayload[kind] {
+	if ruleset.CommaPayload[kind] {
 		if len(items) < 3 {
 			return "", "no policy"
 		}
@@ -159,10 +126,10 @@ func (s *state) condition(kind, payload string, depth int) (string, string) {
 		for index, part := range parts {
 			items := strings.Split(part, ",")
 			sub := strings.ToUpper(strings.TrimSpace(items[0]))
-			if alias, ok := ruleAliases[sub]; ok {
+			if alias, ok := ruleset.Aliases[sub]; ok {
 				sub = alias
 			}
-			if !ruleTypes[sub] || sub == "MATCH" {
+			if !ruleset.Types[sub] || sub == "MATCH" {
 				return "", "rule type " + sub
 			}
 			rest := ""
@@ -170,7 +137,7 @@ func (s *state) condition(kind, payload string, depth int) (string, string) {
 				rest = strings.TrimSpace(strings.Join(items[1:], ","))
 			}
 			var params []string
-			if !commaPayload[sub] && len(items) > 2 {
+			if !ruleset.CommaPayload[sub] && len(items) > 2 {
 				rest = strings.TrimSpace(items[1])
 				for _, param := range items[2:] {
 					params = append(params, strings.ToLower(strings.TrimSpace(param)))

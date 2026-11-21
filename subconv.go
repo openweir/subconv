@@ -87,26 +87,30 @@ func ConvertWith(data []byte, options Options) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	var result *Result
-	switch format {
-	case FormatSingBox:
-		result, err = singbox.Convert(payload, options)
-	case FormatClash, FormatStash:
-		result, err = clash.Convert(payload)
-	case FormatSurge, FormatSurfboard, FormatLoon, FormatShadowrocket, FormatQuantumultX:
-		result, err = surge.Convert(payload, format, options)
-	case FormatSIP008:
-		result, err = shadowsocks.ConvertSIP008(payload)
-	case FormatSSD:
-		result, err = shadowsocks.ConvertSSD(payload)
-	case FormatXray:
-		result, err = xray.Convert(payload)
-	default:
-		result, err = links.Convert(payload)
-	}
+	result, err := convert(format, payload, options)
 	if err != nil {
 		return nil, err
 	}
 	normalize.Result(result, options)
 	return result, nil
+}
+
+// convert hands a detected body to its format's package.
+func convert(format Format, payload []byte, options Options) (*Result, error) {
+	switch format {
+	case FormatSingBox:
+		return singbox.Convert(payload, options)
+	case FormatClash, FormatStash:
+		return clash.Convert(payload)
+	case FormatSurge, FormatSurfboard, FormatLoon, FormatShadowrocket, FormatQuantumultX:
+		return surge.Convert(payload, format, options)
+	case FormatSIP008:
+		return shadowsocks.ConvertSIP008(payload)
+	case FormatSSD:
+		return shadowsocks.ConvertSSD(payload)
+	case FormatXray:
+		return xray.Convert(payload)
+	default:
+		return links.Convert(payload)
+	}
 }

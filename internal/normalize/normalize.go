@@ -177,3 +177,18 @@ func headers(value any) model.Object {
 	}
 	return out
 }
+
+// Proxies normalizes the proxies of a proxy provider's content on their own. Their dialer-proxy
+// names the config the provider joins, so it stays as written; groups, providers and rules in
+// the content are not the provider's and go.
+func Proxies(r *model.Result) {
+	s := &state{
+		r:       r,
+		proxies: map[string]model.Object{},
+		groups:  map[string]bool{},
+		dropped: map[string]bool{},
+		warned:  map[string]bool{},
+	}
+	r.Proxies = s.proxyList(r.Proxies, "proxy", s.proxies)
+	r.ProxyProviders, r.Groups, r.RuleProviders, r.Rules = nil, nil, nil, nil
+}

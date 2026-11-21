@@ -1,0 +1,23 @@
+{
+  "behavior": "classical",
+  "body": [
+    "DOMAIN-SUFFIX,google.com",
+    "DOMAIN,www.example.com",
+    "DOMAIN-KEYWORD,ads",
+    "IP-CIDR,10.0.0.0/8,no-resolve",
+    "IP-CIDR6,fd00::/8"
+  ],
+  "entries": 5,
+  "format": "text",
+  "skipped": 2,
+  "warnings": [
+    {
+      "code": "unsupported_rule",
+      "detail": "1 entries: MATCH inside a rule set"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "1 entries: rule type USER-AGENT"
+    }
+  ]
+}

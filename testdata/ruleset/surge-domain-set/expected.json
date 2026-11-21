@@ -1,0 +1,12 @@
+{
+  "behavior": "domain",
+  "body": [
+    "+.apple.com",
+    "icloud.com",
+    "+.cdn-apple.com"
+  ],
+  "entries": 3,
+  "format": "text",
+  "skipped": 0,
+  "warnings": null
+}
