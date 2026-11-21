@@ -1,0 +1,163 @@
+# The rules branch: where its templates and rule sets come from, under which licenses, and the
+# proxy groups each template routes to. cmd/rules reads this; docs/rules.md explains the result.
+
+default: lite
+max-size: 16777216 # bytes per downloaded file
+max-shrink: 0.5 # a rule set losing more than half its entries since the last build fails it
+split-min: 100 # domains and IP ranges from which a classical rule set is split into parts
+interval: 86400 # the rule providers' refresh interval, in seconds
+provider-path: ./rules/openweir # where mihomo keeps the rule sets, under its home directory
+
+sources:
+  - name: dler-io/Rules
+    home: https://github.com/dler-io/Rules
+    refs:
+      - https://fastly.jsdelivr.net/gh/dler-io/Rules@main/
+      - https://cdn.jsdelivr.net/gh/dler-io/Rules@main/
+      - https://raw.githubusercontent.com/dler-io/Rules/main/
+    commit: https://api.github.com/repos/dler-io/Rules/commits/main
+    archive: https://codeload.github.com/dler-io/Rules/tar.gz/{commit}
+    fetch: https://raw.githubusercontent.com/dler-io/Rules/{commit}/
+    output: dler
+    strip: Clash/Provider/
+    license: LicenseRef-dler-io-Rules
+    notice: |
+      The repository has no LICENSE file. The OpenWeir maintainers confirmed that redistributing
+      it is permitted (November 2026). The templates mirror its layouts `Clash/Rule_Lite.yaml`
+      (lite) and `Clash/Rule.yaml` (full); the rule sets under `providers/dler/` are converted
+      from its `Clash/Provider/` files. The proxy groups are OpenWeir's.
+
+  - name: Sukka's Ruleset
+    home: https://ruleset.skk.moe
+    refs:
+      - https://ruleset.skk.moe/
+    fetch: https://ruleset.skk.moe/
+    output: sukka
+    strip: Clash/
+    license: AGPL-3.0
+    license-header: true
+    notice: |
+      Built by Sukka from <https://github.com/SukkaW/Surge>, which compiles data from the sources
+      each file's header lists. The rule sets under `providers/sukka/` are converted from its
+      `Clash/` files; their text form (`.txt`) is the source of their compiled form (`.mrs`), and
+      the converter is <https://github.com/openweir/subconv> (`cmd/rules`, GPL-3.0).
+
+      `ip/china_ip` is "Mainland China IPv4 CIDR" from chnroutes2
+      (<https://github.com/misakaio/chnroutes2>, by misakaio), which its header and chnroutes2's
+      README license under CC BY-SA 2.0 (the repository's LICENSE file is CC BY-SA 4.0). Its
+      converted forms here are under the same license.
+
+licenses:
+  - id: AGPL-3.0
+    names: [AGPL 3.0, AGPL-3.0, AGPL v3, AGPLv3]
+    text: https://raw.githubusercontent.com/SukkaW/Surge/master/LICENSE
+  - id: CC-BY-SA-2.0
+    names: [CC BY-SA 2.0]
+    uri: https://creativecommons.org/licenses/by-sa/2.0/
+  - id: LicenseRef-dler-io-Rules
+
+templates:
+  - name: lite
+    layout: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Rule_Lite.yaml
+    description: >-
+      Ad blocking, AI, Apple and mainland China rule sets; everything else through Proxy. Small
+      enough for routers with 256 MiB of memory.
+    groups:
+      - &proxy
+        name: Proxy
+        type: select
+        proxies: [Auto, DIRECT]
+        include-all: true
+        exclude-filter: &info "{info}" # rules.InfoFilter: the pseudo-nodes showing traffic and expiry
+      - &auto
+        name: Auto
+        type: url-test
+        include-all: true
+        exclude-filter: *info
+        url: https://www.gstatic.com/generate_204
+        interval: 300
+        tolerance: 50
+      - &domestic
+        name: Domestic
+        type: select
+        proxies: [DIRECT, Proxy]
+      - &others
+        name: Others
+        type: select
+        proxies: [Proxy, Domestic]
+
+  - name: full
+    layout: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Rule.yaml
+    description: >-
+      A group for every service of the layout. For desktops and routers with memory to spare.
+    # dler-io's Asian TV and Global TV pick a region for regional streaming services; without
+    # region groups, one Streaming group takes both.
+    retarget:
+      Asian TV: Streaming
+      Global TV: Streaming
+    groups:
+      - *proxy
+      - *auto
+      - *domestic
+      - *others
+      - name: AdBlock
+        type: select
+        proxies: [REJECT, DIRECT, Proxy]
+      # Services: the main group, Auto, DIRECT, or any node.
+      - &service
+        name: Netflix
+        type: select
+        proxies: [Proxy, Auto, DIRECT]
+        include-all: true
+        exclude-filter: *info
+      - {<<: *service, name: Disney Plus}
+      - {<<: *service, name: YouTube}
+      - {<<: *service, name: Max}
+      - {<<: *service, name: Spotify}
+      - {<<: *service, name: Streaming}
+      - {<<: *service, name: Telegram}
+      - {<<: *service, name: Crypto}
+      - {<<: *service, name: Discord}
+      - {<<: *service, name: Google FCM}
+      - {<<: *service, name: AI Suite}
+      - {<<: *service, name: PayPal}
+      - {<<: *service, name: Scholar}
+      - {<<: *service, name: Speedtest}
+      - {<<: *service, name: Steam}
+      - {<<: *service, name: TikTok}
+      - {<<: *service, name: Apple TV}
+      # Services reachable from mainland China: DIRECT first.
+      - &local
+        name: CN Mainland TV
+        type: select
+        proxies: [DIRECT, Proxy, Auto]
+        include-all: true
+        exclude-filter: *info
+      - {<<: *local, name: Microsoft}
+      - {<<: *local, name: Apple Push}
+      - {<<: *local, name: Apple Services}
+      - {<<: *local, name: miHoYo}
+
+notice: |
+  # Notices
+
+  This branch is generated by <https://github.com/openweir/subconv> (`cmd/rules`, GPL-3.0) from
+  the sources below. Rule sets are converted: split by rule type into domain, IP and classical
+  parts, written in mihomo's text format and compiled to `.mrs`, with comments and rules mihomo
+  cannot load left out. `manifest.json` names the source, license and retrieval date of every
+  file.
+
+readme: |
+  # OpenWeir rules
+
+  Generated daily by <https://github.com/openweir/subconv> (`cmd/rules`); every run replaces this
+  branch with one new commit, so do not edit it.
+
+  - `templates/lite.yaml` (default), `templates/full.yaml`: routing templates for subscriptions
+    without rules. `{rules}` stands for this branch's URL on the CDN a client picked.
+  - `providers/`: the rule sets they load, as mihomo `.mrs` and as text.
+  - `manifest.json`: every file with its size, SHA-256, source, license and dates. Its version
+    grows with every publish.
+  - `NOTICE.md`, `LICENSES/`: attribution and licenses.
+
+  See <https://github.com/openweir/subconv/blob/main/docs/rules.md>.
