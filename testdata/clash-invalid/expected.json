@@ -56,6 +56,31 @@
       "password": "pw"
     },
     {
+      "name": "ShadowTLS without TLS",
+      "type": "vless",
+      "server": "s.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "servername": "cover.example.com",
+      "shadow-tls-opts": {
+        "password": "st",
+        "version": 3
+      },
+      "tls": true
+    },
+    {
+      "name": "AnyTLS REALITY odd fingerprint",
+      "type": "anytls",
+      "server": "a.example.com",
+      "port": 443,
+      "password": "an",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+        "short-id": "01"
+      }
+    },
+    {
       "name": "Good",
       "type": "trojan",
       "server": "t.example.com",
@@ -157,6 +182,14 @@
     {
       "code": "ignored_option",
       "detail": "Bad mux: smux protocol mplex is not one mihomo knows"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "REALITY and ShadowTLS: reality-opts with shadow-tls-opts"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "AnyTLS REALITY odd fingerprint: client-fingerprint netscape is not one mihomo knows; chrome instead"
     },
     {
       "code": "ignored_option",

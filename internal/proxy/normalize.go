@@ -708,7 +708,9 @@ func (n *normalizer) required(kind string) *Problem {
 	return nil
 }
 
-var utls = set("chrome firefox safari ios android edge 360 qq random randomized chrome_psk chrome_pq chrome_psk_shuffle chrome_padding_psk_shuffle chrome_pq_psk chrome_120")
+// mihomo's uTLS fingerprints (component/tls/utls.go).
+var utls = set("chrome firefox safari ios android edge 360 qq random randomized chrome120 firefox120 safari16 " +
+	"chrome_psk chrome_psk_shuffle chrome_padding_psk_shuffle chrome_pq chrome_pq_psk")
 
 func isPlain(cipher string) bool {
 	return cipher == "none" || cipher == "plain" || cipher == "dummy"

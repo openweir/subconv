@@ -153,6 +153,24 @@ func (n *normalizer) tls(kind string) *Problem {
 			return invalid("ech-opts config is not Base64")
 		}
 	}
+	// VMess and VLESS take one of REALITY, ShadowTLS, Restls and JLS, each over TLS.
+	var modes []string
+	for _, key := range []string{"reality-opts", "shadow-tls-opts", "restls-opts", "jls-opts"} {
+		if model.AsObject(p.Value(key)) != nil {
+			modes = append(modes, key)
+		}
+	}
+	if len(modes) > 1 {
+		return &Problem{model.WarnUnsupportedOption, strings.Join(modes, " with ")}
+	}
+	if len(modes) == 1 && (kind == "vmess" || kind == "vless") {
+		if on, _ := p.Value("tls").(bool); !on {
+			p.Set("tls", true)
+		}
+		if network := p.String("network"); modes[0] != "reality-opts" && (network == "kcp" || network == "mkcp") {
+			return &Problem{model.WarnUnsupportedOption, modes[0] + " over " + network}
+		}
+	}
 	reality := model.AsObject(p.Value("reality-opts"))
 	if reality == nil {
 		return nil
@@ -181,19 +199,15 @@ func (n *normalizer) tls(kind string) *Problem {
 	if len(id) > 16 || len(id)%2 == 1 || !hexText(id) {
 		return &Problem{model.WarnInvalidCredential, "REALITY short-id " + id}
 	}
-	for _, other := range []string{"shadow-tls-opts", "restls-opts", "jls-opts"} {
-		if p.Value(other) != nil {
-			return &Problem{model.WarnUnsupportedOption, "REALITY with " + other}
+	if kind == "anytls" {
+		if p.Value("ech-opts") != nil {
+			return &Problem{model.WarnUnsupportedOption, "AnyTLS REALITY with ECH"}
 		}
-	}
-	// REALITY is TLS.
-	if kind == "vmess" || kind == "vless" {
-		if on, _ := p.Value("tls").(bool); !on {
-			p.Set("tls", true)
+		// mihomo refuses AnyTLS REALITY without a uTLS fingerprint it knows.
+		if fingerprint := p.String("client-fingerprint"); !utls[fingerprint] {
+			p.Set("client-fingerprint", "chrome")
+			n.removed = append(n.removed, "client-fingerprint "+fingerprint+" is not one mihomo knows; chrome instead")
 		}
-	}
-	if kind == "anytls" && p.Value("ech-opts") != nil {
-		return &Problem{model.WarnUnsupportedOption, "AnyTLS REALITY with ECH"}
 	}
 	return nil
 }

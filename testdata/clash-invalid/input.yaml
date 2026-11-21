@@ -23,6 +23,9 @@ proxies:
   - {name: Nowhere bad pin, type: nowhere, server: nw.example.com, port: 443, password: 0123456789abcdef0123456789abcdef, pin: ABC}
   - {name: Mieru bad transport, type: mieru, server: m.example.com, port: 443, transport: QUIC, username: u, password: p}
   - {name: Bad mux, type: trojan, server: t.example.com, port: 445, password: pw, smux: {enabled: true, protocol: mplex}}
+  - {name: ShadowTLS without TLS, type: vless, server: s.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, servername: cover.example.com, shadow-tls-opts: {password: st, version: 3}}
+  - {name: REALITY and ShadowTLS, type: vless, server: s.example.com, port: 444, uuid: 7c8c8c0e-0000-4000-8000-000000000002, tls: true, reality-opts: {public-key: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA}, shadow-tls-opts: {password: st}}
+  - {name: AnyTLS REALITY odd fingerprint, type: anytls, server: a.example.com, port: 443, password: an, client-fingerprint: netscape, reality-opts: {public-key: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA, short-id: "01"}}
   - {name: Good, type: trojan, server: t.example.com, port: 446, password: pw}
 proxy-groups:
   - {name: Balance, type: load-balance, proxies: [Good, Bad mux], hash-key: src-ip}
