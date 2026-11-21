@@ -13,7 +13,7 @@
       "servername": "www.microsoft.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PUBKEY",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": "abcd"
       }
     },
@@ -109,7 +109,7 @@
       "server": "hk.example.com",
       "port": 8388,
       "cipher": "2022-blake3-aes-128-gcm",
-      "password": "c2VjcmV0",
+      "password": "MDEyMzQ1Njc4OWFiY2RlZg==",
       "udp": true
     },
     {
@@ -167,7 +167,7 @@
       "sni": "cover.example.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PK2",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": "01"
       }
     },
@@ -239,8 +239,8 @@
       "type": "wireguard",
       "server": "w.example.com",
       "port": 51820,
-      "private-key": "PRIV",
-      "public-key": "PUB",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
+      "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
       "mtu": 1408,
       "udp": true,
       "ip": "10.0.0.2",

@@ -17,7 +17,13 @@ const { nodeUri } = await import(join(apiEdge, "src/features/proxy/links.ts"));
 
 const account = { uid: "1", uuid: "01234567-89ab-cdef-0123-456789abcdef", password: "N9Za3_0TWlW0l4Sko-VSpKrz" };
 const tls = (sni: string) => ({ security: "tls", sni });
-const reality = { security: "reality", reality_public_key: "PUBKEY", reality_short_ids: ["abcd"], reality_server_names: ["www.microsoft.com"] };
+// Keys mihomo accepts: an X25519 public key, and the raw 16-byte server key the panel encodes.
+const reality = {
+	security: "reality",
+	reality_public_key: "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+	reality_short_ids: ["abcd"],
+	reality_server_names: ["www.microsoft.com"],
+};
 
 const fixtures: [string, string, Record<string, unknown>][] = [
 	["VLESS REALITY", "vless", { ...reality, flow: "xtls-rprx-vision" }],
@@ -29,7 +35,7 @@ const fixtures: [string, string, Record<string, unknown>][] = [
 	["Trojan", "trojan", tls("t.example.com")],
 	["Trojan gRPC", "trojan", { ...tls("t.example.com"), transport: "grpc", service_name: "gun" }],
 	["SS", "shadowsocks", { cipher: "aes-128-gcm" }],
-	["SS 2022", "shadowsocks", { cipher: "2022-blake3-aes-128-gcm", server_key: "c2VydmVyLWtleS0xNmJ5dGU=" }],
+	["SS 2022", "shadowsocks", { cipher: "2022-blake3-aes-128-gcm", server_key: "server-key-16byt" }],
 	["SS obfs", "shadowsocks", { cipher: "aes-128-gcm", plugin: "obfs", plugin_opts: { mode: "http", host: "bing.com" } }],
 	["SSR", "shadowsocksr", { cipher: "aes-128-cfb", protocol: "auth_chain_a", obfs: "plain", server_key: "shared" }],
 	["Hy2", "hysteria2", { sni: "h.example.com", obfs: "salamander", obfs_password: "ob", hop_ports: "20000-30000" }],

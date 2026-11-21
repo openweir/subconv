@@ -78,7 +78,7 @@
       "servername": "www.microsoft.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PUBKEY",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": "abcd"
       }
     },
@@ -191,8 +191,8 @@
       "type": "wireguard",
       "server": "w.example.com",
       "port": 51820,
-      "private-key": "PRIV",
-      "public-key": "PUB",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
+      "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
       "allowed-ips": [
         "10.0.0.0/8"
       ],

@@ -31,7 +31,7 @@ proxies:
     tls: true
     servername: www.microsoft.com
     fingerprint: chrome
-    reality-opts: {publicKey: PUBKEY, shortId: 1234}
+    reality-opts: {publicKey: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA, shortId: 1234}
     network: grpc
     grpc-opts: {serviceName: gun}
   - name: Trojan
@@ -78,12 +78,12 @@ proxies:
     port: 3128
   - name: WG
     type: wireguard
-    private-key: PRIV
+    private-key: CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=
     ip: 10.0.0.2/32
     udp: true
     peers:
-      - {server: "w.example.com:51820", public-key: PUB1, allowed-ips: "0.0.0.0/0", reserved: "1,2,3"}
-      - {server: w2.example.com, port: 51820, public-key: PUB2, allowed-ips: [10.0.0.0/8]}
+      - {server: "w.example.com:51820", public-key: MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=, allowed-ips: "0.0.0.0/0", reserved: "1,2,3"}
+      - {server: w2.example.com, port: 51820, public-key: WltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHk=, allowed-ips: [10.0.0.0/8]}
   - name: Naive
     type: naive
     server: n.example.com

@@ -168,7 +168,10 @@ func (n *normalizer) run() *Problem {
 	if problem := n.typed(kind); problem != nil {
 		return problem
 	}
-	return n.required(kind)
+	if problem := n.required(kind); problem != nil {
+		return problem
+	}
+	return n.validate(kind)
 }
 
 // keys canonicalizes key spellings and the type.
@@ -488,8 +491,11 @@ func (n *normalizer) typed(kind string) *Problem {
 		if _, set := p.Get("alterId"); !set {
 			p.InsertAfter("uuid", "alterId", 0)
 		}
-		if p.String("cipher") == "" {
+		switch cipher := strings.ToLower(p.String("cipher")); cipher {
+		case "":
 			p.InsertAfter("alterId", "cipher", "auto")
+		case "chacha20-ietf-poly1305":
+			p.Set("cipher", "chacha20-poly1305") // Quantumult X's name for it
 		}
 	case "snell":
 		// Snell takes a psk, and v6 a userkey; a password is another client's word for one of them.
@@ -717,7 +723,7 @@ func ssCipher(cipher string) string {
 		return "chacha20-ietf-poly1305"
 	case "xchacha20-poly1305":
 		return "xchacha20-ietf-poly1305"
-	case "table":
+	case "table", "plain", "dummy":
 		return "none"
 	}
 	return cipher

@@ -7,7 +7,7 @@
       "server": "st.example.com",
       "port": 443,
       "cipher": "2022-blake3-aes-128-gcm",
-      "password": "c2VjcmV0",
+      "password": "MDEyMzQ1Njc4OWFiY2RlZg==",
       "udp": true,
       "udp-over-tcp": true,
       "udp-over-tcp-version": 2,
@@ -180,12 +180,12 @@
       "type": "wireguard",
       "ip": "10.0.0.2",
       "ipv6": "fd00::2",
-      "private-key": "PRIV",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
       "peers": [
         {
           "server": "w1.example.com",
           "port": 51820,
-          "public-key": "PUB1",
+          "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
           "allowed-ips": [
             "10.1.0.0/16"
           ]
@@ -193,8 +193,8 @@
         {
           "server": "w2.example.com",
           "port": 51821,
-          "public-key": "PUB2",
-          "pre-shared-key": "PSK",
+          "public-key": "WltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHk=",
+          "pre-shared-key": "goOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKE=",
           "allowed-ips": [
             "0.0.0.0/0"
           ],
@@ -268,7 +268,6 @@
     "GEOSITE,category-ads-all,REJECT",
     "GEOIP,lan,DIRECT,no-resolve",
     "AND,((SRC-GEOIP,lan),(DST-PORT,53)),DIRECT",
-    "UID,1000,Proxy",
     "NOT,((AND,((IP-CIDR,1.1.1.1/32,no-resolve),(NETWORK,udp)))),Auto",
     "MATCH,Proxy"
   ],
@@ -307,12 +306,16 @@
     },
     {
       "code": "unsupported_rule",
+      "detail": "UID,1000,Proxy: UID rules load on Linux and Android only"
+    },
+    {
+      "code": "unsupported_rule",
       "detail": "MATCH,Gone: policy Gone does not exist"
     }
   ],
   "rule_stats": {
     "total": 11,
-    "dropped": 3,
+    "dropped": 4,
     "match": false
   }
 }

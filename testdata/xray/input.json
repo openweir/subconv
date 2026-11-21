@@ -33,7 +33,7 @@
     "realitySettings": {
      "serverName": "www.microsoft.com",
      "fingerprint": "chrome",
-     "publicKey": "PUBKEY",
+     "publicKey": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
      "shortId": "abcd",
      "spiderX": "/"
     }
@@ -117,7 +117,7 @@
       "address": "ss.example.com",
       "port": 8388,
       "method": "2022-blake3-aes-128-gcm",
-      "password": "c2VjcmV0",
+      "password": "MDEyMzQ1Njc4OWFiY2RlZg==",
       "uot": true
      }
     ]
@@ -127,14 +127,14 @@
    "tag": "wg",
    "protocol": "wireguard",
    "settings": {
-    "secretKey": "PRIV",
+    "secretKey": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
     "address": [
      "10.0.0.2/32",
      "fd00::2/128"
     ],
     "peers": [
      {
-      "publicKey": "PUB",
+      "publicKey": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
       "endpoint": "w.example.com:51820",
       "allowedIPs": [
        "0.0.0.0/0",

@@ -1,0 +1,33 @@
+# Values OpenWeir mihomo refuses when it loads a config: each would take the whole config down.
+# The proxy is repaired when it can be, and left out otherwise; the rest loads.
+proxies:
+  - {name: REALITY padded key, type: vless, server: r.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=", short-id: abcd}}
+  - {name: REALITY short key, type: vless, server: r.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, tls: true, reality-opts: {public-key: PUBKEY, short-id: abcd}}
+  - {name: REALITY odd short-id, type: vless, server: r.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, tls: true, reality-opts: {public-key: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA, short-id: abc}}
+  - {name: VLESS legacy flow, type: vless, server: x.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, tls: true, flow: xtls-rprx-direct}
+  - {name: SS unknown cipher, type: ss, server: s.example.com, port: 8388, cipher: aes-128-ofb, password: p}
+  - {name: SS plain, type: ss, server: s.example.com, port: 8389, cipher: plain, password: p}
+  - {name: SS 2022 short key, type: ss, server: s.example.com, port: 8390, cipher: 2022-blake3-aes-256-gcm, password: MDEyMzQ1Njc4OWFiY2RlZg==}
+  - {name: SS bad obfs, type: ss, server: s.example.com, port: 8391, cipher: aes-128-gcm, password: p, plugin: obfs, plugin-opts: {mode: websocket}}
+  - {name: SS bad UoT version, type: ss, server: s.example.com, port: 8392, cipher: aes-128-gcm, password: p, udp-over-tcp: true, udp-over-tcp-version: 3}
+  - {name: SSR AEAD, type: ssr, server: r.example.com, port: 443, cipher: aes-128-gcm, password: p, obfs: plain, protocol: origin}
+  - {name: VMess unknown cipher, type: vmess, server: v.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000001, alterId: 0, cipher: aes-256-gcm}
+  - {name: Snell v2 UDP, type: snell, server: n.example.com, port: 443, psk: k, version: 2, udp: true}
+  - {name: Snell v6 short psk, type: snell, server: n.example.com, port: 444, psk: short, version: 6}
+  - {name: Snell v4 userkey, type: snell, server: n.example.com, port: 445, psk: k, version: 4, userkey: u}
+  - {name: Hy2 bad obfs, type: hysteria2, server: h.example.com, port: 443, password: p, obfs: xor}
+  - {name: Hy1 bad up, type: hysteria, server: h.example.com, port: 443, auth-str: a, up: fast, down: "100 Mbps"}
+  - {name: WG bad key, type: wireguard, server: w.example.com, port: 51820, ip: 10.0.0.2, private-key: "not base64!", public-key: MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=}
+  - {name: Bad pin, type: trojan, server: t.example.com, port: 443, password: pw, fingerprint: "12:34"}
+  - {name: Bad ECH, type: trojan, server: t.example.com, port: 444, password: pw, ech-opts: {enable: true, config: "not base64!"}}
+  - {name: Nowhere bad pin, type: nowhere, server: nw.example.com, port: 443, password: 0123456789abcdef0123456789abcdef, pin: ABC}
+  - {name: Mieru bad transport, type: mieru, server: m.example.com, port: 443, transport: QUIC, username: u, password: p}
+  - {name: Bad mux, type: trojan, server: t.example.com, port: 445, password: pw, smux: {enabled: true, protocol: mplex}}
+  - {name: Good, type: trojan, server: t.example.com, port: 446, password: pw}
+proxy-groups:
+  - {name: Balance, type: load-balance, proxies: [Good, Bad mux], hash-key: src-ip}
+rules:
+  - DSCP,64,Balance
+  - IN-TYPE,QUIC,Balance
+  - UID,1000,Balance
+  - MATCH,Balance

@@ -165,6 +165,12 @@ func (s *state) group(index int, raw model.Object) *group {
 				s.r.Warn(model.WarnIgnoredOption, "%s: strategy %s", unique, text)
 			}
 		}
+		if key, set := o.Get("hash-key"); set {
+			if text, _ := model.Text(key); text != "" && text != "in-user" {
+				o.Delete("hash-key")
+				s.r.Warn(model.WarnIgnoredOption, "%s: hash-key %s", unique, text)
+			}
+		}
 		if o.String("strategy") == "round-robin" {
 			if _, set := o.Get("hash-key"); set {
 				o.Delete("hash-key")

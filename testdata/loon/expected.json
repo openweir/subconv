@@ -22,7 +22,7 @@
       "server": "hk.example.com",
       "port": 8389,
       "cipher": "2022-blake3-aes-128-gcm",
-      "password": "c2VjcmV0c2VjcmV0MTI=",
+      "password": "MDEyMzQ1Njc4OWFiY2RlZg==",
       "udp": true
     },
     {
@@ -70,7 +70,7 @@
       "servername": "www.microsoft.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PUBKEY",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": "abcd"
       }
     },
@@ -108,8 +108,8 @@
       "port": 51820,
       "ip": "10.0.0.2",
       "ipv6": "fd00::2",
-      "private-key": "PRIV",
-      "public-key": "PUB",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
+      "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
       "allowed-ips": [
         "0.0.0.0/0",
         "::/0"

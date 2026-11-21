@@ -193,6 +193,22 @@ func (s *state) condition(kind, payload string, depth int) (string, string) {
 			return payload, ""
 		}
 		return "", "network " + payload
+	case "UID":
+		// mihomo refuses the whole config on other systems (rules/common/uid.go).
+		return "", "UID rules load on Linux and Android only"
+	case "DSCP":
+		for part := range strings.SplitSeq(strings.ReplaceAll(payload, ",", "/"), "/") {
+			low, high, ranged := strings.Cut(part, "-")
+			if !dscp(low) || ranged && !dscp(high) {
+				return "", "DSCP " + payload
+			}
+		}
+	case "IN-TYPE":
+		for part := range strings.SplitSeq(payload, "/") {
+			if !inTypes[strings.ToUpper(strings.TrimSpace(part))] {
+				return "", "inbound type " + part
+			}
+		}
 	case "DOMAIN-REGEX", "PROCESS-NAME-REGEX", "PROCESS-PATH-REGEX":
 		if badRegex(payload) {
 			return "", "regular expression " + payload
@@ -276,6 +292,21 @@ func subRules(payload string) ([]string, bool) {
 		}
 	}
 	return parts, depth == 0
+}
+
+// mihomo's inbound types (constant/metadata.go), and SOCKS for both versions.
+var inTypes = map[string]bool{}
+
+func init() {
+	for _, kind := range strings.Fields("HTTP HTTPS SOCKS SOCKS4 SOCKS5 SHADOWSOCKS SNELL VMESS VLESS REDIR TPROXY " +
+		"TROJAN TUNNEL TUN TUIC HYSTERIA2 ANYTLS MIERU SUDOKU TRUSTTUNNEL SHADOWQUIC INNER") {
+		inTypes[kind] = true
+	}
+}
+
+func dscp(text string) bool {
+	n, err := strconv.Atoi(strings.TrimSpace(text))
+	return err == nil && n >= 0 && n <= 63
 }
 
 func port(text string) bool {

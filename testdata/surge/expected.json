@@ -132,8 +132,8 @@
       "port": 2408,
       "ip": "172.16.0.2",
       "ipv6": "fd01::2",
-      "private-key": "PRIV",
-      "public-key": "PUB",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
+      "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
       "allowed-ips": [
         "0.0.0.0/0",
         "::/0"

@@ -17,7 +17,7 @@
         },
         "reality": {
           "enabled": true,
-          "public_key": "PUBKEY",
+          "public_key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
           "short_id": "abcd"
         }
       }
@@ -153,7 +153,7 @@
       "server_port": 443,
       "type": "shadowsocks",
       "method": "2022-blake3-aes-128-gcm",
-      "password": "YzJWeWRtVnlMV3RsZVMweE5tSjVkR1U9:MDEyMzQ1NjctODlhYi1jZA==",
+      "password": "c2VydmVyLWtleS0xNmJ5dA==:MDEyMzQ1NjctODlhYi1jZA==",
       "tcp_fast_open": true
     },
     {
@@ -224,7 +224,7 @@
         },
         "reality": {
           "enabled": true,
-          "public_key": "PUBKEY",
+          "public_key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
           "short_id": "abcd"
         }
       }

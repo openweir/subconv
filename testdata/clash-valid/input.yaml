@@ -3,20 +3,20 @@ proxies:
   - {name: SS, type: ss, server: ss.example.com, port: 8388, cipher: aes-128-gcm, password: "p", udp: true, udp-over-tcp: true, udp-over-tcp-version: 2}
   - {name: SS port string, type: ss, server: ss.example.com, port: "8389", cipher: chacha20-ietf-poly1305, password: 123456, udp: 1}
   - {name: SS v2ray, type: ss, server: ss.example.com, port: 443, cipher: aes-256-gcm, password: p, plugin: v2ray-plugin, plugin-opts: {mode: websocket, tls: true, host: ss.example.com, path: /ws, mux: false}}
-  - {name: SS shadow-tls, type: ss, server: st.example.com, port: 443, cipher: 2022-blake3-aes-128-gcm, password: "c2VjcmV0", client-fingerprint: chrome, plugin: shadow-tls, plugin-opts: {host: cover.example.com, password: st, version: 3}}
+  - {name: SS shadow-tls, type: ss, server: st.example.com, port: 443, cipher: 2022-blake3-aes-128-gcm, password: "MDEyMzQ1Njc4OWFiY2RlZg==", client-fingerprint: chrome, plugin: shadow-tls, plugin-opts: {host: cover.example.com, password: st, version: 3}}
   - {name: SSR, type: ssr, server: ssr.example.com, port: 443, cipher: aes-128-cfb, password: p, obfs: tls1.2_ticket_auth, protocol: auth_aes128_md5, obfs-param: a.example.com, protocol-param: "1:p"}
   - {name: VMess, type: vmess, server: vm.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000001, alterId: 0, cipher: Auto, tls: true, servername: vm.example.com, network: ws, ws-opts: {path: /ray, headers: {Host: vm.example.com}, max-early-data: "2048", early-data-header-name: Sec-WebSocket-Protocol}}
   - {name: VMess h2, type: vmess, server: vm.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000001, alterId: 0, cipher: auto, tls: true, network: h2, h2-opts: {host: [vm.example.com], path: /h2}}
   - {name: VMess http, type: vmess, server: vm.example.com, port: 80, uuid: 7c8c8c0e-0000-4000-8000-000000000001, alterId: 0, cipher: none, network: http, http-opts: {method: GET, path: [/], headers: {Host: [vm.example.com]}}}
-  - {name: VLESS REALITY, type: vless, server: 203.0.113.5, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, flow: xtls-rprx-vision, tls: true, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: PUBKEY, short-id: abcd}, udp: true}
+  - {name: VLESS REALITY, type: vless, server: 203.0.113.5, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, flow: xtls-rprx-vision, tls: true, servername: www.microsoft.com, client-fingerprint: chrome, reality-opts: {public-key: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA, short-id: abcd}, udp: true}
   - {name: VLESS XHTTP, type: vless, server: x.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000003, tls: true, servername: x.example.com, network: xhttp, xhttp-opts: {path: /stream, host: x.example.com, mode: auto}, ech-opts: {enable: true, config: AEX+DQBB}}
   - {name: VLESS gRPC, type: vless, server: g.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000004, tls: true, network: grpc, grpc-opts: {grpc-service-name: gun}, smux: {enabled: true, protocol: h2mux, max-connections: 4}}
   - {name: Trojan, type: trojan, server: t.example.com, port: 443, password: pw, sni: t.example.com, skip-cert-verify: false, alpn: [h2, http/1.1], dialer-proxy: SS}
   - {name: Hy2, type: hysteria2, server: h.example.com, ports: "20000-30000/443", hop-interval: "10-30", password: hy, up: 50, down: "200 Mbps", obfs: salamander, obfs-password: ob, sni: h.example.com}
   - {name: Hy1, type: hysteria, server: h1.example.com, port: 443, auth-str: a, up: "30 Mbps", down: "100 Mbps", protocol: udp, sni: h1.example.com}
   - {name: TUIC, type: tuic, server: u.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000005, password: tu, alpn: [h3], congestion-controller: bbr, udp-relay-mode: native, reduce-rtt: true, heartbeat-interval: 10000}
-  - {name: WG, type: wireguard, server: w.example.com, port: 51820, ip: 10.0.0.2/32, ipv6: fd00::2, private-key: PRIV, public-key: PUB, allowed-ips: ["0.0.0.0/0", "::/0"], reserved: [1, 2, 3], mtu: 1408, udp: true}
-  - {name: WG peers, type: wireguard, ip: 10.0.0.3, private-key: PRIV, peers: [{server: a.example.com, port: 51820, public-key: PUB, allowed-ips: [10.0.0.0/8]}, {server: b.example.com, port: 51820, public-key: PUB2, allowed-ips: [10.1.0.0/16], reserved: AQID}]}
+  - {name: WG, type: wireguard, server: w.example.com, port: 51820, ip: 10.0.0.2/32, ipv6: fd00::2, private-key: CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=, public-key: MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=, allowed-ips: ["0.0.0.0/0", "::/0"], reserved: [1, 2, 3], mtu: 1408, udp: true}
+  - {name: WG peers, type: wireguard, ip: 10.0.0.3, private-key: CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=, peers: [{server: a.example.com, port: 51820, public-key: MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=, allowed-ips: [10.0.0.0/8]}, {server: b.example.com, port: 51820, public-key: WltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHk=, allowed-ips: [10.1.0.0/16], reserved: AQID}]}
   - {name: AnyTLS, type: anytls, server: a.example.com, port: 443, password: an, sni: a.example.com, client-fingerprint: firefox, udp: true}
   - {name: Naive, type: naive, server: n.example.com, port: 443, username: u, password: p, sni: n.example.com, quic: true}
   - {name: Snell, type: snell, server: sn.example.com, port: 443, psk: k, version: 4, obfs-opts: {mode: http, host: bing.com}}
@@ -24,7 +24,7 @@ proxies:
   - {name: Nowhere, type: nowhere, server: nw.example.com, port: 443, password: 0123456789abcdef0123456789abcdef, morph: false}
   - {name: SOCKS, type: socks5, server: 127.0.0.1, port: 1080, username: u, password: p, udp: true}
   - {name: HTTPS, type: http, server: p.example.com, port: 443, tls: true, sni: p.example.com, headers: {User-Agent: x}}
-  - {name: SSH, type: ssh, server: ssh.example.com, port: 22, username: root, password: p, host-key: ["ssh-ed25519 AAAA"]}
+  - {name: SSH, type: ssh, server: ssh.example.com, port: 22, username: root, password: p, host-key: ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f"]}
 proxy-providers:
   airport:
     type: http

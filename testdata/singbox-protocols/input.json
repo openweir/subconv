@@ -7,7 +7,7 @@
     { "type": "selector", "tag": "Empty", "outbounds": ["ShadowTLS"] },
     {
       "type": "shadowsocks", "tag": "香港 01", "server": "hk.example.com", "server_port": 8388,
-      "method": "2022-blake3-aes-128-gcm", "password": "c2VjcmV0", "tcp_fast_open": true,
+      "method": "2022-blake3-aes-128-gcm", "password": "MDEyMzQ1Njc4OWFiY2RlZg==", "tcp_fast_open": true,
       "multiplex": { "enabled": true, "protocol": "h2mux", "max_connections": 4, "padding": true }
     },
     {
@@ -23,7 +23,7 @@
     {
       "type": "vless", "tag": "VLESS REALITY", "server": "203.0.113.5", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
       "flow": "xtls-rprx-vision", "packet_encoding": "xudp",
-      "tls": { "enabled": true, "server_name": "www.microsoft.com", "reality": { "enabled": true, "public_key": "PUBKEY", "short_id": "abcd" } }
+      "tls": { "enabled": true, "server_name": "www.microsoft.com", "reality": { "enabled": true, "public_key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA", "short_id": "abcd" } }
     },
     {
       "type": "vless", "tag": "VLESS XHTTP", "server": "x.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
@@ -52,7 +52,7 @@
     },
     {
       "type": "anytls", "tag": "AnyTLS REALITY", "server": "a.example.com", "server_port": 443, "password": "an",
-      "tls": { "enabled": true, "server_name": "cover.example.com", "utls": { "enabled": true, "fingerprint": "chrome" }, "reality": { "enabled": true, "public_key": "PK2", "short_id": "01" } }
+      "tls": { "enabled": true, "server_name": "cover.example.com", "utls": { "enabled": true, "fingerprint": "chrome" }, "reality": { "enabled": true, "public_key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA", "short_id": "01" } }
     },
     {
       "type": "naive", "tag": "Naive QUIC", "server": "n.example.com", "server_port": 443, "username": "1", "password": "np", "quic": true,
@@ -72,8 +72,8 @@
   ],
   "endpoints": [
     {
-      "type": "wireguard", "tag": "WG", "address": ["10.0.0.2/32", "fd00::2/128"], "private_key": "PRIV", "mtu": 1408,
-      "peers": [{ "address": "w.example.com", "port": 51820, "public_key": "PUB", "allowed_ips": ["0.0.0.0/0", "::/0"], "reserved": [1, 2, 3] }]
+      "type": "wireguard", "tag": "WG", "address": ["10.0.0.2/32", "fd00::2/128"], "private_key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=", "mtu": 1408,
+      "peers": [{ "address": "w.example.com", "port": 51820, "public_key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=", "allowed_ips": ["0.0.0.0/0", "::/0"], "reserved": [1, 2, 3] }]
     }
   ],
   "route": { "final": "Proxy" }

@@ -1,0 +1,183 @@
+{
+  "format": "clash",
+  "proxies": [
+    {
+      "name": "REALITY padded key",
+      "type": "vless",
+      "server": "r.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+        "short-id": "abcd"
+      },
+      "tls": true
+    },
+    {
+      "name": "SS plain",
+      "type": "ss",
+      "server": "s.example.com",
+      "port": 8389,
+      "cipher": "none",
+      "password": "p"
+    },
+    {
+      "name": "SS bad UoT version",
+      "type": "ss",
+      "server": "s.example.com",
+      "port": 8392,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "udp-over-tcp": true
+    },
+    {
+      "name": "Snell v2 UDP",
+      "type": "snell",
+      "server": "n.example.com",
+      "port": 443,
+      "psk": "k",
+      "version": 2
+    },
+    {
+      "name": "Snell v4 userkey",
+      "type": "snell",
+      "server": "n.example.com",
+      "port": 445,
+      "psk": "k",
+      "version": 4
+    },
+    {
+      "name": "Bad mux",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 445,
+      "password": "pw"
+    },
+    {
+      "name": "Good",
+      "type": "trojan",
+      "server": "t.example.com",
+      "port": 446,
+      "password": "pw"
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Balance",
+      "type": "load-balance",
+      "proxies": [
+        "Good",
+        "Bad mux"
+      ]
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "MATCH,Balance"
+  ],
+  "warnings": [
+    {
+      "code": "invalid_credential",
+      "detail": "REALITY short key: REALITY public-key is not an X25519 key"
+    },
+    {
+      "code": "invalid_credential",
+      "detail": "REALITY odd short-id: REALITY short-id abc"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "VLESS legacy flow: flow xtls-rprx-direct"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "SS unknown cipher: cipher aes-128-ofb"
+    },
+    {
+      "code": "invalid_credential",
+      "detail": "SS 2022 short key: a 2022-blake3-aes-256-gcm key is not 32 bytes of Base64"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "SS bad obfs: obfs mode websocket"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "SS bad UoT version: udp-over-tcp-version is 3, not one mihomo knows"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "SSR AEAD: cipher aes-128-gcm, not a stream cipher"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "VMess unknown cipher: cipher aes-256-gcm"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Snell v2 UDP: udp needs Snell v3 or later"
+    },
+    {
+      "code": "invalid_credential",
+      "detail": "Snell v6 short psk: a Snell v6 psk of 5 bytes, not 12 to 255"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Snell v4 userkey: userkey is Snell v6's"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "Hy2 bad obfs: obfs xor"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Hy1 bad up: up fast"
+    },
+    {
+      "code": "invalid_credential",
+      "detail": "WG bad key: a WireGuard key is not Base64"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Bad pin: fingerprint 12:34, not a SHA-256 certificate pin"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Bad ECH: ech-opts config is not Base64"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Nowhere bad pin: pin is not 64 lowercase hexadecimal characters"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Mieru bad transport: transport QUIC"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Bad mux: smux protocol mplex is not one mihomo knows"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Balance: hash-key src-ip"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "DSCP,64,Balance: DSCP 64"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "IN-TYPE,QUIC,Balance: inbound type QUIC"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "UID,1000,Balance: UID rules load on Linux and Android only"
+    }
+  ],
+  "rule_stats": {
+    "total": 4,
+    "dropped": 3,
+    "match": true
+  }
+}

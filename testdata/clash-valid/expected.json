@@ -43,7 +43,7 @@
       "server": "st.example.com",
       "port": 443,
       "cipher": "2022-blake3-aes-128-gcm",
-      "password": "c2VjcmV0",
+      "password": "MDEyMzQ1Njc4OWFiY2RlZg==",
       "client-fingerprint": "chrome",
       "plugin": "shadow-tls",
       "plugin-opts": {
@@ -133,7 +133,7 @@
       "servername": "www.microsoft.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PUBKEY",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": "abcd"
       },
       "udp": true
@@ -234,8 +234,8 @@
       "port": 51820,
       "ip": "10.0.0.2/32",
       "ipv6": "fd00::2",
-      "private-key": "PRIV",
-      "public-key": "PUB",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
+      "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
       "allowed-ips": [
         "0.0.0.0/0",
         "::/0"
@@ -252,12 +252,12 @@
       "name": "WG peers",
       "type": "wireguard",
       "ip": "10.0.0.3",
-      "private-key": "PRIV",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
       "peers": [
         {
           "server": "a.example.com",
           "port": 51820,
-          "public-key": "PUB",
+          "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
           "allowed-ips": [
             "10.0.0.0/8"
           ]
@@ -265,7 +265,7 @@
         {
           "server": "b.example.com",
           "port": 51820,
-          "public-key": "PUB2",
+          "public-key": "WltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHk=",
           "allowed-ips": [
             "10.1.0.0/16"
           ],
@@ -351,7 +351,7 @@
       "username": "root",
       "password": "p",
       "host-key": [
-        "ssh-ed25519 AAAA"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f"
       ]
     }
   ],

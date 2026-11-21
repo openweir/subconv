@@ -1,4 +1,4 @@
-vless://01234567-89ab-cdef-0123-456789abcdef@vless.example.com:443?encryption=none&flow=xtls-rprx-vision&type=tcp&security=reality&sni=www.microsoft.com&fp=chrome&pbk=PUBKEY&sid=abcd&udp=1#VLESS%20REALITY
+vless://01234567-89ab-cdef-0123-456789abcdef@vless.example.com:443?encryption=none&flow=xtls-rprx-vision&type=tcp&security=reality&sni=www.microsoft.com&fp=chrome&pbk=AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA&sid=abcd&udp=1#VLESS%20REALITY
 vless://01234567-89ab-cdef-0123-456789abcdef@vless.example.com:443?encryption=none&type=ws&security=tls&sni=v.example.com&fp=chrome&host=v.example.com&path=%2Fws&udp=1&tfo=1#VLESS%20WS
 vless://01234567-89ab-cdef-0123-456789abcdef@vless.example.com:443?encryption=none&type=grpc&security=tls&sni=v.example.com&fp=chrome&serviceName=gun&udp=1&tfo=1#VLESS%20gRPC
 vless://01234567-89ab-cdef-0123-456789abcdef@vless.example.com:443?encryption=none&type=xhttp&security=tls&sni=x.example.com&fp=chrome&host=x.example.com&path=%2Fstream&mode=auto&udp=1&tfo=1#VLESS%20XHTTP
@@ -7,13 +7,13 @@ vmess://eyJ2IjoiMiIsInBzIjoiVk1lc3MgVENQIiwiYWRkIjoidm1lc3MuZXhhbXBsZS5jb20iLCJw
 trojan://01234567-89ab-cdef-0123-456789abcdef@trojan.example.com:443?type=tcp&security=tls&sni=t.example.com&fp=chrome&udp=1&tfo=1#Trojan
 trojan://01234567-89ab-cdef-0123-456789abcdef@trojan.example.com:443?type=grpc&security=tls&sni=t.example.com&fp=chrome&serviceName=gun&udp=1&tfo=1#Trojan%20gRPC
 ss://aes-128-gcm:01234567-89ab-cdef-0123-456789abcdef@shadowsocks.example.com:443?udp=1&tfo=1#SS
-ss://2022-blake3-aes-128-gcm:YzJWeWRtVnlMV3RsZVMweE5tSjVkR1U9%3AMDEyMzQ1NjctODlhYi1jZA%3D%3D@shadowsocks.example.com:443?udp=1&tfo=1#SS%202022
+ss://2022-blake3-aes-128-gcm:c2VydmVyLWtleS0xNmJ5dA%3D%3D%3AMDEyMzQ1NjctODlhYi1jZA%3D%3D@shadowsocks.example.com:443?udp=1&tfo=1#SS%202022
 ss://aes-128-gcm:01234567-89ab-cdef-0123-456789abcdef@shadowsocks.example.com:443?plugin=obfs-local%3Bobfs%3Dhttp&udp=1&tfo=1#SS%20obfs
 ssr://c2hhZG93c29ja3NyLmV4YW1wbGUuY29tOjQ0MzphdXRoX2NoYWluX2E6YWVzLTEyOC1jZmI6cGxhaW46YzJoaGNtVmsvP3Byb3RvcGFyYW09TVRvd01USXpORFUyTnkwNE9XRmlMV05rWldZdE1ERXlNeTAwTlRZM09EbGhZbU5rWldZJnJlbWFya3M9VTFOUw
 hysteria2://01234567-89ab-cdef-0123-456789abcdef@hysteria2.example.com:443/?sni=h.example.com&obfs=salamander&obfs-password=ob&mport=20000-30000#Hy2
 tuic://01234567-89ab-cdef-0123-456789abcdef:N9Za3_0TWlW0l4Sko-VSpKrz@tuic.example.com:443?sni=u.example.com&alpn=h3&congestion_control=bbr#TUIC
 anytls://01234567-89ab-cdef-0123-456789abcdef@anytls.example.com:443/?sni=a.example.com&udp=1#AnyTLS
-anytls://01234567-89ab-cdef-0123-456789abcdef@anytls.example.com:443/?type=tcp&security=reality&sni=www.microsoft.com&fp=chrome&pbk=PUBKEY&sid=abcd&udp=1#AnyTLS%20REALITY
+anytls://01234567-89ab-cdef-0123-456789abcdef@anytls.example.com:443/?type=tcp&security=reality&sni=www.microsoft.com&fp=chrome&pbk=AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA&sid=abcd&udp=1#AnyTLS%20REALITY
 naive+https://1:01234567-89ab-cdef-0123-456789abcdef@naive.example.com:443?sni=n.example.com&tfo=1#Naive
 naive+quic://1:01234567-89ab-cdef-0123-456789abcdef@naive.example.com:443?sni=n.example.com#Naive%20QUIC
 http://1:N9Za3_0TWlW0l4Sko-VSpKrz@http.example.com:443?tfo=1#HTTP

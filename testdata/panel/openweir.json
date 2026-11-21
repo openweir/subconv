@@ -11,7 +11,7 @@
     "servername": "www.microsoft.com",
     "client-fingerprint": "chrome",
     "reality-opts": {
-      "public-key": "PUBKEY",
+      "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
       "short-id": "abcd"
     }
   },
@@ -143,7 +143,7 @@
     "udp": true,
     "type": "ss",
     "cipher": "2022-blake3-aes-128-gcm",
-    "password": "YzJWeWRtVnlMV3RsZVMweE5tSjVkR1U9:MDEyMzQ1NjctODlhYi1jZA==",
+    "password": "c2VydmVyLWtleS0xNmJ5dA==:MDEyMzQ1NjctODlhYi1jZA==",
     "tfo": true
   },
   {
@@ -221,7 +221,7 @@
     "sni": "www.microsoft.com",
     "client-fingerprint": "chrome",
     "reality-opts": {
-      "public-key": "PUBKEY",
+      "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
       "short-id": "abcd"
     }
   },

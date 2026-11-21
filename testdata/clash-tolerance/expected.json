@@ -52,7 +52,7 @@
       "servername": "www.microsoft.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PUBKEY",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": 1234
       },
       "network": "grpc",
@@ -105,14 +105,14 @@
     {
       "name": "WG",
       "type": "wireguard",
-      "private-key": "PRIV",
+      "private-key": "CgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCk=",
       "ip": "10.0.0.2/32",
       "udp": true,
       "peers": [
         {
           "server": "w.example.com",
           "port": 51820,
-          "public-key": "PUB1",
+          "public-key": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE=",
           "allowed-ips": [
             "0.0.0.0/0"
           ],
@@ -125,7 +125,7 @@
         {
           "server": "w2.example.com",
           "port": 51820,
-          "public-key": "PUB2",
+          "public-key": "WltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHk=",
           "allowed-ips": [
             "10.0.0.0/8"
           ]
@@ -165,7 +165,7 @@
       "servername": "www.microsoft.com",
       "client-fingerprint": "chrome",
       "reality-opts": {
-        "public-key": "PUBKEY",
+        "public-key": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
         "short-id": 1234
       },
       "network": "grpc",
