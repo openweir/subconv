@@ -89,7 +89,6 @@ type converter struct {
 	aliases map[string]string
 	// WireGuard sections, by name, for Surge's section-name.
 	wireguard map[string][]string
-	names     map[string]bool
 }
 
 // Convert converts a line config of the given dialect.
@@ -103,7 +102,6 @@ func Convert(data []byte, format model.Format, options model.Options) (*model.Re
 		format:    format,
 		aliases:   map[string]string{},
 		wireguard: map[string][]string{},
-		names:     map[string]bool{},
 	}
 	sections := c.sections(string(data))
 	for _, name := range []string{"", "proxy", "server_local"} {

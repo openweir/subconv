@@ -33,8 +33,7 @@ type normalizer struct {
 
 func invalid(reason string) *Problem { return &Problem{model.WarnInvalidProxy, reason} }
 
-// Types holds every proxy type OpenWeir mihomo builds (adapter/parser.go), with the aliases
-// other clients write.
+// Other clients' names for mihomo's proxy types.
 var typeAliases = map[string]string{
 	"shadowsocks":  "ss",
 	"shadowsocksr": "ssr",
@@ -46,6 +45,7 @@ var typeAliases = map[string]string{
 	"https":        "http",
 }
 
+// Every proxy type OpenWeir mihomo builds (adapter/parser.go).
 var types = set("ss ssr socks5 http naive nowhere vmess vless vless-reverse snell trojan hysteria hysteria2 " +
 	"wireguard tuic shadowquic gost-relay direct dns reject rematch ssh mieru anytls sudoku masque " +
 	"trusttunnel openvpn tailscale zerotier easytier")
