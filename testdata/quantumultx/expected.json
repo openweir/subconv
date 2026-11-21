@@ -1,0 +1,203 @@
+{
+  "format": "quantumultx",
+  "proxies": [
+    {
+      "name": "HK SS",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      }
+    },
+    {
+      "name": "HK SS WS",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8389,
+      "cipher": "chacha20-ietf-poly1305",
+      "password": "p",
+      "udp": true,
+      "plugin": "v2ray-plugin",
+      "plugin-opts": {
+        "mode": "websocket",
+        "tls": true,
+        "host": "hk.example.com",
+        "path": "/ws"
+      }
+    },
+    {
+      "name": "SSR",
+      "type": "ssr",
+      "server": "sr.example.com",
+      "port": 443,
+      "cipher": "aes-256-cfb",
+      "password": "p",
+      "protocol": "auth_chain_a",
+      "protocol-param": "1:p",
+      "obfs": "plain",
+      "udp": true
+    },
+    {
+      "name": "JP VMess",
+      "type": "vmess",
+      "server": "jp.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "chacha20-ietf-poly1305",
+      "tls": true,
+      "servername": "jp.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "jp.example.com"
+        }
+      }
+    },
+    {
+      "name": "JP VMess TLS",
+      "type": "vmess",
+      "server": "jp.example.com",
+      "port": 8443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "aes-128-gcm",
+      "udp": true,
+      "tls": true,
+      "servername": "jp.example.com"
+    },
+    {
+      "name": "US VLESS",
+      "type": "vless",
+      "server": "us.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "US Trojan",
+      "type": "trojan",
+      "server": "us.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "us.example.com"
+    },
+    {
+      "name": "HTTPS",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 443,
+      "username": "u",
+      "password": "p",
+      "tls": true,
+      "sni": "p.example.com"
+    },
+    {
+      "name": "SOCKS",
+      "type": "socks5",
+      "server": "s.example.com",
+      "port": 1080,
+      "username": "u",
+      "password": "p",
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Auto",
+        "HK SS",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "HK SS",
+        "JP VMess",
+        "US Trojan"
+      ],
+      "interval": 600,
+      "tolerance": 0
+    },
+    {
+      "name": "Fallback",
+      "type": "fallback",
+      "proxies": [
+        "US VLESS",
+        "JP VMess"
+      ]
+    },
+    {
+      "name": "Balance",
+      "type": "load-balance",
+      "proxies": [
+        "HK SS",
+        "US Trojan"
+      ],
+      "strategy": "round-robin"
+    },
+    {
+      "name": "HK",
+      "type": "select",
+      "filter": "HK|香港",
+      "include-all-proxies": true
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "DOMAIN,www.google.com,Proxy",
+    "DOMAIN-SUFFIX,youtube.com,Proxy",
+    "DOMAIN-KEYWORD,netflix,Auto",
+    "IP-CIDR,10.0.0.0/8,DIRECT",
+    "IP-CIDR6,fd00::/8,DIRECT",
+    "GEOIP,cn,DIRECT",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_provider",
+      "detail": "example.com/qx.list: a remote server list in the client's own format"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "section [rewrite_local]: 1 lines"
+    },
+    {
+      "code": "unsupported_group",
+      "detail": "Home: type ssid"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "Ads: a Quantumult X list, which mihomo cannot read"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "Mixed: a list that names a policy per rule"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "USER-AGENT,Instagram*,proxy: rule type USER-AGENT"
+    }
+  ]
+}

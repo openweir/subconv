@@ -61,14 +61,17 @@ func TestVectors(t *testing.T) {
 
 func TestDetect(t *testing.T) {
 	for input, want := range map[string]Format{
-		`{"outbounds":[]}`:                         FormatSingBox,
-		`{"endpoints":[]}`:                         FormatSingBox,
-		"proxies:\n  - {name: a, type: ss}\n":      FormatClash,
-		"\xef\xbb\xbfproxies: []\n":                FormatClash,
-		"vless://uuid@example.com:443#a\n":         FormatLinks,
-		"dmxlc3M6Ly91dWlkQGV4YW1wbGUuY29tOjQ0MyNh": FormatLinks,
-		"// comment\n{\"outbounds\":[],}":          FormatSingBox,
-		"Proxy:\n  - {name: a, type: ss}\n":        FormatClash,
+		`{"outbounds":[]}`:                                                          FormatSingBox,
+		`{"endpoints":[]}`:                                                          FormatSingBox,
+		"proxies:\n  - {name: a, type: ss}\n":                                       FormatClash,
+		"\xef\xbb\xbfproxies: []\n":                                                 FormatClash,
+		"vless://uuid@example.com:443#a\n":                                          FormatLinks,
+		"dmxlc3M6Ly91dWlkQGV4YW1wbGUuY29tOjQ0MyNh":                                  FormatLinks,
+		"// comment\n{\"outbounds\":[],}":                                           FormatSingBox,
+		"Proxy:\n  - {name: a, type: ss}\n":                                         FormatClash,
+		"# Shadowrocket\nvless://u@h:1#a\n":                                         FormatLinks,
+		"[Proxy]\na = ss, h, 1, encrypt-method=none\n":                              FormatSurge,
+		"shadowsocks=h:1, method=none, tag=a\n":                                     FormatQuantumultX,
 		"\xff\xfev\x00l\x00e\x00s\x00s\x00:\x00/\x00/\x00u\x00@\x00h\x00:\x001\x00": FormatLinks,
 	} {
 		if got, err := Detect([]byte(input)); err != nil || got != want {

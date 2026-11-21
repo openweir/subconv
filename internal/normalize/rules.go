@@ -237,26 +237,23 @@ func (s *state) policy(name string) (string, string) {
 		return reject, ""
 	}
 	// Another case of a name that exists, as Quantumult X writes policies.
-	var match string
+	var matches []string
 	for candidate := range s.proxies {
 		if strings.EqualFold(candidate, name) {
-			if match != "" {
-				match = ""
-				break
-			}
-			match = candidate
+			matches = append(matches, candidate)
 		}
 	}
 	for candidate := range s.groups {
-		if strings.EqualFold(candidate, name) && candidate != match {
-			if match != "" {
-				return "", "policy " + name + " is ambiguous"
-			}
-			match = candidate
+		if strings.EqualFold(candidate, name) && s.proxies[candidate] == nil {
+			matches = append(matches, candidate)
 		}
 	}
-	if match != "" {
-		return match, ""
+	switch len(matches) {
+	case 1:
+		return matches[0], ""
+	case 0:
+	default:
+		return "", "policy " + name + " is ambiguous"
 	}
 	if s.dropped[name] {
 		return "", "policy " + name + " was left out"

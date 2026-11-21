@@ -98,8 +98,8 @@ func Convert(data []byte, options model.Options) (*model.Result, error) {
 			c.result.Proxies = append(c.result.Proxies, proxy)
 		}
 	}
-	for tag := range c.shadowTLS {
-		if !used[tag] {
+	for _, outbound := range outbounds {
+		if tag := outbound.String("tag"); c.shadowTLS[tag] != nil && !used[tag] {
 			c.result.Warn(model.WarnUnsupportedProxy, "%s: ShadowTLS on its own; mihomo adds it to the proxy that dials through it", tag)
 		}
 	}

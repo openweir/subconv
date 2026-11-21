@@ -1,0 +1,56 @@
+{
+  "format": "shadowrocket",
+  "proxies": [
+    {
+      "name": "HK",
+      "type": "trojan",
+      "server": "hk.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "hk.example.com"
+    },
+    {
+      "name": "JP",
+      "type": "vmess",
+      "server": "jp.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray"
+      }
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "PROXY",
+      "type": "select",
+      "proxies": [
+        "HK",
+        "JP"
+      ]
+    },
+    {
+      "name": "AUTO",
+      "type": "url-test",
+      "proxies": [
+        "HK",
+        "JP"
+      ],
+      "url": "http://www.gstatic.com/generate_204",
+      "interval": 600
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "DOMAIN-SUFFIX,apple.com,DIRECT",
+    "GEOIP,CN,DIRECT",
+    "MATCH,PROXY"
+  ],
+  "warnings": null
+}

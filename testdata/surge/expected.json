@@ -1,0 +1,266 @@
+{
+  "format": "surge",
+  "proxies": [
+    {
+      "name": "🇭🇰 HK 01",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      },
+      "tfo": true
+    },
+    {
+      "name": "🇯🇵 JP VMess",
+      "type": "vmess",
+      "server": "jp.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "servername": "jp.example.com",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "jp.example.com",
+          "User-Agent": "Mozilla"
+        }
+      }
+    },
+    {
+      "name": "🇺🇸 US Trojan",
+      "type": "trojan",
+      "server": "us.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "us.example.com",
+      "skip-cert-verify": true,
+      "fingerprint": "9e26352d9ef5a17e3c70380b7f4dfc9f5205484d7208ca9e4682ba1f81f3a366"
+    },
+    {
+      "name": "SG Snell",
+      "type": "snell",
+      "server": "sg.example.com",
+      "port": 443,
+      "psk": "k",
+      "version": 4,
+      "reuse": true,
+      "udp": true,
+      "obfs-opts": {
+        "mode": "tls",
+        "host": "bing.com"
+      }
+    },
+    {
+      "name": "SG Snell ShadowTLS",
+      "type": "snell",
+      "server": "sg.example.com",
+      "port": 8443,
+      "psk": "k",
+      "version": 4,
+      "udp": true,
+      "obfs-opts": {
+        "mode": "shadow-tls",
+        "host": "cover.example.com",
+        "password": "st",
+        "version": 3
+      }
+    },
+    {
+      "name": "TW Hy2",
+      "type": "hysteria2",
+      "server": "tw.example.com",
+      "port": 443,
+      "password": "hy",
+      "ports": "20000-30000,40000",
+      "down": "200 Mbps",
+      "sni": "tw.example.com"
+    },
+    {
+      "name": "KR TUIC",
+      "type": "tuic",
+      "server": "kr.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+      "password": "tu",
+      "sni": "kr.example.com",
+      "alpn": [
+        "h3"
+      ],
+      "udp": true
+    },
+    {
+      "name": "HTTPS Proxy",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 443,
+      "username": "user",
+      "password": "pass",
+      "tls": true,
+      "sni": "p.example.com"
+    },
+    {
+      "name": "SOCKS",
+      "type": "socks5",
+      "server": "127.0.0.1",
+      "port": 1080,
+      "udp": true
+    },
+    {
+      "name": "Chain",
+      "type": "trojan",
+      "server": "exit.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "dialer-proxy": "🇭🇰 HK 01"
+    },
+    {
+      "name": "WARP",
+      "type": "wireguard",
+      "server": "engage.cloudflareclient.com",
+      "port": 2408,
+      "ip": "172.16.0.2",
+      "ipv6": "fd01::2",
+      "private-key": "PRIV",
+      "public-key": "PUB",
+      "allowed-ips": [
+        "0.0.0.0/0",
+        "::/0"
+      ],
+      "reserved": [
+        1,
+        2,
+        3
+      ],
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Auto",
+        "🇭🇰 HK 01",
+        "🇯🇵 JP VMess",
+        "🇺🇸 US Trojan",
+        "WARP",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "🇭🇰 HK 01",
+        "🇯🇵 JP VMess",
+        "TW Hy2"
+      ],
+      "url": "http://www.gstatic.com/generate_204",
+      "interval": 600,
+      "tolerance": 50,
+      "timeout": 5000
+    },
+    {
+      "name": "Fallback",
+      "type": "fallback",
+      "proxies": [
+        "🇺🇸 US Trojan",
+        "KR TUIC"
+      ],
+      "url": "http://www.gstatic.com/generate_204",
+      "interval": 300
+    },
+    {
+      "name": "Balance",
+      "type": "load-balance",
+      "proxies": [
+        "SG Snell",
+        "SG Snell ShadowTLS"
+      ]
+    },
+    {
+      "name": "HK",
+      "type": "select",
+      "include-all-proxies": true,
+      "filter": "HK|香港"
+    }
+  ],
+  "rule-providers": {
+    "reject": {
+      "type": "http",
+      "behavior": "classical",
+      "format": "text",
+      "url": "https://example.com/rules/reject.list",
+      "interval": 86400
+    },
+    "proxy-domains": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "text",
+      "url": "https://example.com/rules/proxy-domains.txt",
+      "interval": 86400
+    }
+  },
+  "rules": [
+    "RULE-SET,reject,REJECT",
+    "RULE-SET,proxy-domains,Proxy",
+    "GEOIP,lan,DIRECT,no-resolve",
+    "DOMAIN-SUFFIX,google.com,Proxy",
+    "DOMAIN,example.org,Auto",
+    "DOMAIN-KEYWORD,netflix,Fallback",
+    "IP-CIDR,8.8.8.8/32,Proxy,no-resolve",
+    "IP-CIDR6,2001:4860::/32,Proxy,no-resolve",
+    "DST-PORT,22,DIRECT",
+    "NETWORK,udp,Balance",
+    "AND,((DOMAIN-SUFFIX,example.com),(NETWORK,udp)),REJECT",
+    "PROCESS-NAME,curl,DIRECT",
+    "GEOIP,CN,DIRECT",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_rule",
+      "detail": "section [url rewrite]: 1 lines"
+    },
+    {
+      "code": "unsupported_proxy",
+      "detail": "External: type external"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Remote: policy-path (a list in the client's own format)"
+    },
+    {
+      "code": "unsupported_group",
+      "detail": "Home: type subnet"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "RULE-SET,SYSTEM,DIRECT: Apple's system rule set"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Broken: no server"
+    },
+    {
+      "code": "empty_group",
+      "detail": "Remote: no members left"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "USER-AGENT,Telegram*,Proxy: rule type USER-AGENT"
+    }
+  ]
+}

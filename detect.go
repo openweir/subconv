@@ -9,6 +9,7 @@ import (
 	"github.com/openweir/subconv/internal/body"
 	"github.com/openweir/subconv/internal/links"
 	"github.com/openweir/subconv/internal/model"
+	"github.com/openweir/subconv/internal/surge"
 )
 
 var (
@@ -64,6 +65,9 @@ func detect(data []byte, depth int) (Format, []byte, error) {
 			}
 			message = jsonMessage(value)
 		}
+	}
+	if format := surge.Detect(text); format != "" {
+		return format, text, nil
 	}
 	if clashYAML(text) {
 		return FormatClash, text, nil

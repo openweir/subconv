@@ -17,6 +17,7 @@ import (
 	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/internal/normalize"
 	"github.com/openweir/subconv/internal/singbox"
+	"github.com/openweir/subconv/internal/surge"
 )
 
 type (
@@ -34,10 +35,20 @@ type (
 	Options = model.Options
 )
 
+// Formats Detect names; docs/conversion.md describes each.
 const (
-	FormatSingBox = model.FormatSingBox
-	FormatClash   = model.FormatClash
-	FormatLinks   = model.FormatLinks
+	FormatSingBox      = model.FormatSingBox
+	FormatClash        = model.FormatClash
+	FormatStash        = model.FormatStash
+	FormatLinks        = model.FormatLinks
+	FormatSurge        = model.FormatSurge
+	FormatSurfboard    = model.FormatSurfboard
+	FormatLoon         = model.FormatLoon
+	FormatShadowrocket = model.FormatShadowrocket
+	FormatQuantumultX  = model.FormatQuantumultX
+	FormatSIP008       = model.FormatSIP008
+	FormatSSD          = model.FormatSSD
+	FormatXray         = model.FormatXray
 )
 
 // Warning codes; docs/conversion.md lists what each covers.
@@ -80,6 +91,8 @@ func ConvertWith(data []byte, options Options) (*Result, error) {
 		result, err = singbox.Convert(payload, options)
 	case FormatClash:
 		result, err = clash.Convert(payload)
+	case FormatSurge, FormatSurfboard, FormatLoon, FormatShadowrocket, FormatQuantumultX:
+		result, err = surge.Convert(payload, format, options)
 	default:
 		result, err = links.Convert(payload)
 	}

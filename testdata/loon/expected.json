@@ -1,0 +1,210 @@
+{
+  "format": "loon",
+  "proxies": [
+    {
+      "name": "HK SS",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "pass=word",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      },
+      "tfo": true
+    },
+    {
+      "name": "HK SS2022",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8389,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0c2VjcmV0MTI=",
+      "udp": true
+    },
+    {
+      "name": "JP SSR",
+      "type": "ssr",
+      "server": "jp.example.com",
+      "port": 443,
+      "cipher": "aes-128-cfb",
+      "password": "p",
+      "protocol": "auth_aes128_md5",
+      "protocol-param": "1:p",
+      "obfs": "tls1.2_ticket_auth",
+      "obfs-param": "jp.example.com",
+      "udp": true
+    },
+    {
+      "name": "US VMess",
+      "type": "vmess",
+      "server": "us.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "aes-128-gcm",
+      "udp": true,
+      "tls": true,
+      "servername": "us.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "us.example.com"
+        }
+      }
+    },
+    {
+      "name": "US VLESS",
+      "type": "vless",
+      "server": "us.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "SG Trojan",
+      "type": "trojan",
+      "server": "sg.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "sg.example.com",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ws",
+        "headers": {
+          "Host": "sg.example.com"
+        }
+      }
+    },
+    {
+      "name": "TW Hy2",
+      "type": "hysteria2",
+      "server": "tw.example.com",
+      "port": 443,
+      "password": "hy",
+      "down": "100 Mbps",
+      "sni": "tw.example.com",
+      "obfs": "salamander",
+      "obfs-password": "ob"
+    },
+    {
+      "name": "WG",
+      "type": "wireguard",
+      "server": "w.example.com",
+      "port": 51820,
+      "ip": "10.0.0.2",
+      "ipv6": "fd00::2",
+      "private-key": "PRIV",
+      "public-key": "PUB",
+      "allowed-ips": [
+        "0.0.0.0/0",
+        "::/0"
+      ],
+      "reserved": [
+        1,
+        2,
+        3
+      ],
+      "udp": true
+    },
+    {
+      "name": "Chain",
+      "type": "vmess",
+      "server": "us.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "aes-128-gcm",
+      "udp": true,
+      "tls": true,
+      "servername": "us.example.com",
+      "skip-cert-verify": true,
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "us.example.com"
+        }
+      },
+      "dialer-proxy": "HK SS"
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Auto",
+        "HK SS",
+        "US VMess",
+        "Chain"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "HK SS",
+        "JP SSR",
+        "SG Trojan"
+      ],
+      "url": "http://www.gstatic.com/generate_204",
+      "interval": 600,
+      "tolerance": 100
+    },
+    {
+      "name": "Fallback",
+      "type": "fallback",
+      "proxies": [
+        "US VLESS",
+        "TW Hy2"
+      ],
+      "url": "http://www.gstatic.com/generate_204",
+      "interval": 300
+    }
+  ],
+  "rule-providers": {
+    "ads": {
+      "type": "http",
+      "behavior": "classical",
+      "format": "text",
+      "url": "https://example.com/rules/ads.list",
+      "interval": 86400
+    }
+  },
+  "rules": [
+    "RULE-SET,ads,REJECT",
+    "DOMAIN-SUFFIX,google.com,Proxy",
+    "IP-CIDR,10.0.0.0/8,DIRECT,no-resolve",
+    "GEOIP,CN,DIRECT",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "unsupported_provider",
+      "detail": "Airport: a remote server list in the client's own format"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "section [plugin]: 1 lines"
+    },
+    {
+      "code": "unsupported_rule_set",
+      "detail": "Mixed: a list that names a policy per rule"
+    }
+  ]
+}
