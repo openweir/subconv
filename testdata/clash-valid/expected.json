@@ -483,5 +483,10 @@
     "PROCESS-NAME,curl,DIRECT",
     "MATCH,Proxy"
   ],
-  "warnings": null
+  "warnings": null,
+  "rule_stats": {
+    "total": 16,
+    "dropped": 0,
+    "match": true
+  }
 }

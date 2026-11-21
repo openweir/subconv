@@ -52,5 +52,10 @@
     "GEOIP,CN,DIRECT",
     "MATCH,PROXY"
   ],
-  "warnings": null
+  "warnings": null,
+  "rule_stats": {
+    "total": 3,
+    "dropped": 0,
+    "match": true
+  }
 }

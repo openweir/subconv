@@ -70,5 +70,10 @@
       "code": "renamed",
       "detail": "🇭🇰 HK 01: renamed 🇭🇰 HK 01 2"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 0,
+    "dropped": 0,
+    "match": false
+  }
 }

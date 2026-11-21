@@ -262,5 +262,10 @@
       "code": "unsupported_rule",
       "detail": "USER-AGENT,Telegram*,Proxy: rule type USER-AGENT"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 16,
+    "dropped": 2,
+    "match": true
+  }
 }

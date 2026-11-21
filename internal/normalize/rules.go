@@ -16,27 +16,31 @@ var rejects = map[string]string{
 	"REJECT-ARRAY": "REJECT", "REJECT-NO-DROP": "REJECT", "REJECT-VIDEO": "REJECT",
 }
 
-// rules keeps the rules mihomo can parse whose policies and rule sets exist, and ends them with
-// one MATCH.
+// rules keeps the rules mihomo can parse whose policies and rule sets exist, ends them with one
+// MATCH, and counts them.
 func (s *state) rules() {
 	if len(s.r.Rules) == 0 {
 		return
 	}
+	stats := &s.r.RuleStats
 	var out []string
 	final := false
 	for _, line := range s.r.Rules {
+		stats.Total++
+		match := isMatch(line)
 		rule, problem := s.rule(line)
 		if problem != "" {
 			s.r.Warn(model.WarnUnsupportedRule, "%s: %s", line, problem)
-			if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(line)), "MATCH,") || strings.HasPrefix(strings.ToUpper(strings.TrimSpace(line)), "FINAL,") {
-				out = append(out, "MATCH,DIRECT")
-				final = true
-				break
+			stats.Dropped++
+			if !match {
+				continue
 			}
-			continue
+			rule = "MATCH,DIRECT"
+		} else {
+			stats.Match = match
 		}
 		out = append(out, rule)
-		if strings.HasPrefix(rule, "MATCH,") {
+		if match {
 			// Rules after MATCH never match.
 			final = true
 			break
@@ -47,6 +51,12 @@ func (s *state) rules() {
 		out = append(out, "MATCH,DIRECT")
 	}
 	s.r.Rules = out
+}
+
+func isMatch(line string) bool {
+	kind, _, _ := strings.Cut(line, ",")
+	kind = strings.ToUpper(strings.TrimSpace(kind))
+	return kind == "MATCH" || kind == "FINAL"
 }
 
 // rule checks one rule and returns it in mihomo's spelling, or why it cannot be kept.

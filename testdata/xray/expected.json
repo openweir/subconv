@@ -161,5 +161,10 @@
       "code": "unsupported_rule",
       "detail": "rule 7 to DIRECT: a rule with protocol"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 17,
+    "dropped": 2,
+    "match": true
+  }
 }

@@ -307,7 +307,12 @@
     },
     {
       "code": "unsupported_rule",
-      "detail": "final: outbound Gone does not exist; DIRECT instead"
+      "detail": "MATCH,Gone: policy Gone does not exist"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 11,
+    "dropped": 3,
+    "match": false
+  }
 }

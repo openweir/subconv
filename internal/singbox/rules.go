@@ -31,6 +31,7 @@ func (c *singBox) route(route model.Object) {
 		if target == "" {
 			if reason != "" {
 				c.result.Warn(model.WarnUnsupportedRule, "rule %d: %s", index+1, reason)
+				c.result.DropRule()
 			}
 			continue
 		}
@@ -38,6 +39,7 @@ func (c *singBox) route(route model.Object) {
 		if conditions == nil {
 			if reason != "" {
 				c.result.Warn(model.WarnUnsupportedRule, "rule %d to %s: %s", index+1, target, reason)
+				c.result.DropRule()
 			}
 			continue
 		}
@@ -45,13 +47,16 @@ func (c *singBox) route(route model.Object) {
 			c.result.Rules = append(c.result.Rules, withTarget(condition, target))
 		}
 	}
+	// The final outbound, or sing-box's default: the first. One that is gone stays named, for the
+	// normalization to replace and count.
 	final := or(route.String("final"), c.first)
 	target, reason := c.target(final)
-	if target == "" {
-		target = "DIRECT"
-		if reason != "" {
-			c.result.Warn(model.WarnUnsupportedRule, "final: %s; DIRECT instead", reason)
-		}
+	switch {
+	case target != "":
+	case reason != "":
+		target = final
+	default:
+		target = "DIRECT" // a dns outbound
 	}
 	c.result.Rules = append(c.result.Rules, "MATCH,"+target)
 }

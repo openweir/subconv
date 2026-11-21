@@ -102,5 +102,10 @@
   "proxy-groups": null,
   "rule-providers": {},
   "rules": null,
-  "warnings": null
+  "warnings": null,
+  "rule_stats": {
+    "total": 0,
+    "dropped": 0,
+    "match": false
+  }
 }

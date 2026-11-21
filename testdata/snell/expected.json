@@ -32,5 +32,10 @@
       "code": "unsupported_option",
       "detail": "V6Obfs: Snell v6 has no obfs"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 0,
+    "dropped": 0,
+    "match": false
+  }
 }

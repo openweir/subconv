@@ -347,6 +347,7 @@ func (c *converter) rules(list []any) {
 		policy := c.policy(target)
 		if policy == "" {
 			c.result.Warn(model.WarnUnsupportedRule, "rule %d: outbound %s does not exist", index+1, target)
+			c.result.DropRule()
 			continue
 		}
 		var groups [][]string
@@ -407,6 +408,7 @@ func (c *converter) rules(list []any) {
 		switch {
 		case problem != "":
 			c.result.Warn(model.WarnUnsupportedRule, "rule %d to %s: %s", index+1, policy, problem)
+			c.result.DropRule()
 		case len(groups) == 0:
 		case len(groups) == 1:
 			for _, atom := range groups[0] {

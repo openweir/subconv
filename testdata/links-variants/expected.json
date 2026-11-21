@@ -222,5 +222,10 @@
       "code": "invalid_proxy",
       "detail": "No port: no port"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 0,
+    "dropped": 0,
+    "match": false
+  }
 }

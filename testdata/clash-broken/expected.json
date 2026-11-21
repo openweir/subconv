@@ -52,5 +52,10 @@
       "code": "unsupported_rule",
       "detail": "rules item at line 28: not YAML"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 3,
+    "dropped": 1,
+    "match": true
+  }
 }

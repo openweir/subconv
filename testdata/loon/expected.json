@@ -206,5 +206,10 @@
       "code": "unsupported_rule_set",
       "detail": "Mixed: a list that names a policy per rule"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 6,
+    "dropped": 1,
+    "match": true
+  }
 }

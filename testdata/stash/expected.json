@@ -49,5 +49,10 @@
       "code": "unsupported_rule",
       "detail": "SCRIPT,quic,REJECT: rule type SCRIPT"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 3,
+    "dropped": 1,
+    "match": true
+  }
 }

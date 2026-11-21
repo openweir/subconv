@@ -21,5 +21,10 @@
       "code": "unsupported_option",
       "detail": "mieru: Mieru profile without one server"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 0,
+    "dropped": 0,
+    "match": false
+  }
 }

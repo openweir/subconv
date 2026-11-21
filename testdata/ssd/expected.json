@@ -33,5 +33,10 @@
       "code": "invalid_proxy",
       "detail": "Empty: no server"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 0,
+    "dropped": 0,
+    "match": false
+  }
 }

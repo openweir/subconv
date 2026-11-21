@@ -320,6 +320,7 @@ func (c *converter) rule(line string) {
 			return
 		case "SYSTEM":
 			c.result.Warn(model.WarnUnsupportedRule, "%s: Apple's system rule set", line)
+			c.result.DropRule()
 			return
 		}
 		behavior := "classical"
@@ -329,6 +330,7 @@ func (c *converter) rule(line string) {
 		name := c.provider(source, behavior, 0)
 		if name == "" {
 			c.result.Warn(model.WarnUnsupportedRule, "%s: rule set %s is not a web URL", line, source)
+			c.result.DropRule()
 			return
 		}
 		c.result.Rules = append(c.result.Rules, strings.Join(append([]string{"RULE-SET", name, c.policy(parts[2])}, parts[3:]...), ","))
@@ -379,16 +381,19 @@ func (c *converter) remoteRules(section, line string) {
 	at := or(options["tag"], label(source))
 	if policy == "" {
 		c.result.Warn(model.WarnUnsupportedRuleSet, "%s: a list that names a policy per rule", at)
+		c.result.DropRule()
 		return
 	}
 	if section == "filter_remote" && !c.options.ConvertsRuleSets {
 		c.result.Warn(model.WarnUnsupportedRuleSet, "%s: a Quantumult X list, which mihomo cannot read", at)
+		c.result.DropRule()
 		return
 	}
 	interval, _ := strconv.Atoi(options["update-interval"])
 	name := c.provider(source, "classical", interval)
 	if name == "" {
 		c.result.Warn(model.WarnUnsupportedRuleSet, "%s: not a web URL", at)
+		c.result.DropRule()
 		return
 	}
 	c.result.Rules = append(c.result.Rules, "RULE-SET,"+name+","+c.policy(policy))

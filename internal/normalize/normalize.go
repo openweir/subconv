@@ -191,4 +191,5 @@ func Proxies(r *model.Result) {
 	}
 	r.Proxies = s.proxyList(r.Proxies, "proxy", s.proxies)
 	r.ProxyProviders, r.Groups, r.RuleProviders, r.Rules = nil, nil, nil, nil
+	r.RuleStats = model.RuleStats{}
 }

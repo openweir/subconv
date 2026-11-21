@@ -25,6 +25,11 @@ func Convert(data []byte) (*model.Result, error) {
 		return nil, fmt.Errorf("clash: %w", errNotAConfig)
 	}
 	result := &model.Result{Format: Dialect(config), Warnings: recovered}
+	for _, warning := range recovered {
+		if warning.Code == model.WarnUnsupportedRule {
+			result.DropRule() // a rule whose YAML is broken
+		}
+	}
 	if rewrites := model.AsList(model.AsObject(config.Value("http")).Value("rewrite")); len(rewrites) > 0 {
 		// Stash's URL rewrites block and redirect requests, which mihomo's rules cannot.
 		result.Warn(model.WarnUnsupportedRule, "http rewrite: %d rules", len(rewrites))
@@ -46,9 +51,12 @@ func Convert(data []byte) (*model.Result, error) {
 		}
 	}
 	result.RuleProviders = model.AsObject(config.Value("rule-providers"))
-	for _, item := range model.AsList(config.Value("rules")) {
+	for index, item := range model.AsList(config.Value("rules")) {
 		if rule, ok := model.Text(item); ok && rule != "" {
 			result.Rules = append(result.Rules, rule)
+		} else {
+			result.Warn(model.WarnUnsupportedRule, "rule %d: not a rule", index+1)
+			result.DropRule()
 		}
 	}
 	return result, nil

@@ -25,5 +25,10 @@
   "rules": [
     "MATCH,Proxy"
   ],
-  "warnings": null
+  "warnings": null,
+  "rule_stats": {
+    "total": 1,
+    "dropped": 0,
+    "match": true
+  }
 }

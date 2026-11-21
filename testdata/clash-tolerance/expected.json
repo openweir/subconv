@@ -417,5 +417,10 @@
       "code": "unsupported_rule",
       "detail": "SUB-RULE,(NETWORK,tcp),sub: sub-rules are not carried over"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 18,
+    "dropped": 6,
+    "match": true
+  }
 }

@@ -86,11 +86,33 @@ type Result struct {
 	RuleProviders  Object    `json:"rule-providers"`
 	Rules          []string  `json:"rules"`
 	Warnings       []Warning `json:"warnings"`
+	// How many of the subscription's rules the conversion kept.
+	RuleStats RuleStats `json:"rule_stats"`
+}
+
+// RuleStats count a subscription's rules, for a client to judge whether to use them or a
+// routing template of its own. Rules count as Clash rules: a sing-box or Xray rule that tests
+// several values counts once per value, and a rule left out before it became one counts once.
+// Rules a client handles itself (sniffing, DNS hijacking) and rules after the final MATCH,
+// which never matched, do not count.
+type RuleStats struct {
+	// Rules in the subscription, the final one included.
+	Total int `json:"total"`
+	// Rules left out: a type mihomo lacks, a policy or rule set that is gone, a malformed rule.
+	Dropped int `json:"dropped"`
+	// Whether the subscription's final rule (MATCH, FINAL, route.final) survived with its policy.
+	Match bool `json:"match"`
 }
 
 // Warn records a warning.
 func (r *Result) Warn(code, format string, args ...any) {
 	r.Warnings = append(r.Warnings, Warning{code, fmt.Sprintf(format, args...)})
+}
+
+// DropRule counts a rule a format left out before it became a Clash rule.
+func (r *Result) DropRule() {
+	r.RuleStats.Total++
+	r.RuleStats.Dropped++
 }
 
 // YAML renders the parts as a mihomo config fragment.

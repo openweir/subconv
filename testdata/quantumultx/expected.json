@@ -199,5 +199,10 @@
       "code": "unsupported_rule",
       "detail": "USER-AGENT,Instagram*,proxy: rule type USER-AGENT"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 10,
+    "dropped": 3,
+    "match": true
+  }
 }

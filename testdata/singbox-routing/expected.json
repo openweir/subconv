@@ -83,5 +83,10 @@
       "code": "unsupported_rule",
       "detail": "rule 14 to DIRECT: a rule with wifi_ssid"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 16,
+    "dropped": 2,
+    "match": true
+  }
 }

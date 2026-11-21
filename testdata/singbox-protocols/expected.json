@@ -286,5 +286,10 @@
       "code": "empty_group",
       "detail": "Empty: no members left"
     }
-  ]
+  ],
+  "rule_stats": {
+    "total": 1,
+    "dropped": 0,
+    "match": true
+  }
 }
