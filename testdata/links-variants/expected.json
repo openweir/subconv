@@ -1,0 +1,226 @@
+{
+  "format": "links",
+  "proxies": [
+    {
+      "name": "VMess Shadowrocket",
+      "type": "vmess",
+      "server": "vm.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "servername": "vm.example.com",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "vm.example.com"
+        }
+      }
+    },
+    {
+      "name": "VMess gRPC 日本",
+      "type": "vmess",
+      "server": "g.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "aes-128-gcm",
+      "udp": true,
+      "tls": true,
+      "servername": "g.example.com",
+      "alpn": [
+        "h2"
+      ],
+      "client-fingerprint": "firefox",
+      "network": "grpc",
+      "grpc-opts": {
+        "grpc-service-name": "gun"
+      }
+    },
+    {
+      "name": "VLESS XHTTP extra",
+      "type": "vless",
+      "server": "x.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+      "udp": true,
+      "tls": true,
+      "servername": "x.example.com",
+      "client-fingerprint": "chrome",
+      "ech-opts": {
+        "enable": true,
+        "config": "AEX+DQBBAAEAIAAgDo9eO5S8X5ofLJuKfW5fSjssHQ6fintsXU4/KhsMnY4ABAABAAEADnNlY3JldC5leGFtcGxlAAA="
+      },
+      "network": "xhttp",
+      "xhttp-opts": {
+        "path": "/x",
+        "mode": "packet-up",
+        "x-padding-bytes": "100-1000",
+        "no-grpc-header": true,
+        "reuse-settings": {
+          "max-concurrency": "16-32",
+          "h-keep-alive-period": 30
+        }
+      }
+    },
+    {
+      "name": "REALITY spx",
+      "type": "vless",
+      "server": "r.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "flow": "xtls-rprx-vision",
+      "udp": true,
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "trojan-go",
+      "type": "trojan",
+      "server": "tg.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "ss-opts": {
+        "enabled": true,
+        "method": "aes-128-gcm",
+        "password": "sspw"
+      },
+      "sni": "tg.example.com",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/go",
+        "headers": {
+          "Host": "tg.example.com"
+        }
+      }
+    },
+    {
+      "name": "Hy2 hopping",
+      "type": "hysteria2",
+      "server": "h.example.com",
+      "port": 443,
+      "password": "hy",
+      "ports": "443,20000-30000",
+      "sni": "h.example.com",
+      "fingerprint": "9e26352d9ef5a17e3c70380b7f4dfc9f5205484d7208ca9e4682ba1f81f3a366"
+    },
+    {
+      "name": "Hy1",
+      "type": "hysteria",
+      "server": "h1.example.com",
+      "port": 443,
+      "auth-str": "a",
+      "protocol": "udp",
+      "up": "30 Mbps",
+      "down": "100 Mbps",
+      "obfs": "ob",
+      "sni": "h1.example.com",
+      "skip-cert-verify": true,
+      "alpn": [
+        "hysteria"
+      ]
+    },
+    {
+      "name": "TUIC",
+      "type": "tuic",
+      "server": "u.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+      "password": "tu",
+      "sni": "u.example.com",
+      "alpn": [
+        "h3"
+      ],
+      "congestion-controller": "bbr",
+      "udp-relay-mode": "quic",
+      "skip-cert-verify": true,
+      "disable-sni": true
+    },
+    {
+      "name": "v2rayN SOCKS",
+      "type": "socks5",
+      "server": "127.0.0.1",
+      "port": 1080,
+      "username": "user",
+      "password": "pass",
+      "udp": true
+    },
+    {
+      "name": "HTTP",
+      "type": "http",
+      "server": "p.example.com",
+      "port": 8080,
+      "username": "user",
+      "password": "p@ss"
+    },
+    {
+      "name": "SSH",
+      "type": "ssh",
+      "server": "ssh.example.com",
+      "port": 22,
+      "username": "root",
+      "password": "pw"
+    },
+    {
+      "name": "SS v2ray",
+      "type": "ss",
+      "server": "ss.example.com",
+      "port": 8388,
+      "cipher": "chacha20-ietf-poly1305",
+      "password": "pw",
+      "udp": true,
+      "plugin": "v2ray-plugin",
+      "plugin-opts": {
+        "mode": "websocket",
+        "tls": true,
+        "host": "ss.example.com",
+        "path": "/ws"
+      }
+    },
+    {
+      "name": "WG",
+      "type": "wireguard",
+      "server": "w.example.com",
+      "port": 51820,
+      "private-key": "PRIV",
+      "public-key": "PUB",
+      "allowed-ips": [
+        "10.0.0.0/8"
+      ],
+      "persistent-keepalive": 25,
+      "udp": true,
+      "ip": "10.0.0.2",
+      "reserved": [
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "XHTTP download: XHTTP extra setting downloadSettings"
+    },
+    {
+      "code": "unsupported_proxy",
+      "detail": "Juicity: scheme juicity"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "No port: no port"
+    }
+  ]
+}

@@ -16,8 +16,10 @@ import (
 	"github.com/openweir/subconv/internal/links"
 	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/internal/normalize"
+	"github.com/openweir/subconv/internal/shadowsocks"
 	"github.com/openweir/subconv/internal/singbox"
 	"github.com/openweir/subconv/internal/surge"
+	"github.com/openweir/subconv/internal/xray"
 )
 
 type (
@@ -93,6 +95,12 @@ func ConvertWith(data []byte, options Options) (*Result, error) {
 		result, err = clash.Convert(payload)
 	case FormatSurge, FormatSurfboard, FormatLoon, FormatShadowrocket, FormatQuantumultX:
 		result, err = surge.Convert(payload, format, options)
+	case FormatSIP008:
+		result, err = shadowsocks.ConvertSIP008(payload)
+	case FormatSSD:
+		result, err = shadowsocks.ConvertSSD(payload)
+	case FormatXray:
+		result, err = xray.Convert(payload)
 	default:
 		result, err = links.Convert(payload)
 	}

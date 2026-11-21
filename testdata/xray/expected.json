@@ -1,0 +1,165 @@
+{
+  "format": "xray",
+  "proxies": [
+    {
+      "name": "proxy",
+      "type": "vless",
+      "server": "r.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000002",
+      "udp": true,
+      "flow": "xtls-rprx-vision",
+      "tls": true,
+      "servername": "www.microsoft.com",
+      "client-fingerprint": "chrome",
+      "reality-opts": {
+        "public-key": "PUBKEY",
+        "short-id": "abcd"
+      }
+    },
+    {
+      "name": "vmess-ws",
+      "type": "vmess",
+      "server": "vm.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "udp": true,
+      "cipher": "auto",
+      "tls": true,
+      "servername": "vm.example.com",
+      "alpn": [
+        "http/1.1"
+      ],
+      "client-fingerprint": "chrome",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/ray",
+        "headers": {
+          "Host": "vm.example.com"
+        }
+      }
+    },
+    {
+      "name": "trojan-grpc 1",
+      "type": "trojan",
+      "server": "t1.example.com",
+      "port": 443,
+      "password": "pw1",
+      "udp": true,
+      "sni": "t.example.com",
+      "network": "grpc",
+      "grpc-opts": {
+        "grpc-service-name": "gun"
+      }
+    },
+    {
+      "name": "trojan-grpc 2",
+      "type": "trojan",
+      "server": "t2.example.com",
+      "port": 443,
+      "password": "pw2",
+      "udp": true,
+      "sni": "t.example.com",
+      "network": "grpc",
+      "grpc-opts": {
+        "grpc-service-name": "gun"
+      }
+    },
+    {
+      "name": "ss",
+      "type": "ss",
+      "server": "ss.example.com",
+      "port": 8388,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0",
+      "udp": true,
+      "udp-over-tcp": true
+    },
+    {
+      "name": "wg",
+      "type": "wireguard",
+      "server": "w.example.com",
+      "port": 51820,
+      "ip": "10.0.0.2",
+      "ipv6": "fd00::2",
+      "private-key": "PRIV",
+      "public-key": "PUB",
+      "allowed-ips": [
+        "0.0.0.0/0",
+        "::/0"
+      ],
+      "reserved": [
+        1,
+        2,
+        3
+      ],
+      "mtu": 1280,
+      "udp": true
+    },
+    {
+      "name": "chained",
+      "type": "socks5",
+      "server": "s.example.com",
+      "port": 1080,
+      "username": "u",
+      "password": "p",
+      "udp": true,
+      "dialer-proxy": "proxy"
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "balance",
+      "type": "url-test",
+      "proxies": [
+        "trojan-grpc 1",
+        "trojan-grpc 2"
+      ]
+    },
+    {
+      "name": "trojan-grpc",
+      "type": "select",
+      "proxies": [
+        "trojan-grpc 1",
+        "trojan-grpc 2"
+      ]
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "GEOSITE,category-ads-all,REJECT",
+    "GEOSITE,cn,DIRECT",
+    "DOMAIN-SUFFIX,example.cn,DIRECT",
+    "DOMAIN,www.example.org,DIRECT",
+    "DOMAIN-KEYWORD,baidu,DIRECT",
+    "DOMAIN-REGEX,^ad\\.,DIRECT",
+    "DOMAIN-KEYWORD,qq,DIRECT",
+    "GEOIP,lan,DIRECT,no-resolve",
+    "GEOIP,cn,DIRECT,no-resolve",
+    "IP-CIDR,1.1.1.1/32,DIRECT,no-resolve",
+    "IP-CIDR6,2001:db8::/32,DIRECT,no-resolve",
+    "AND,((NETWORK,udp),(DST-PORT,443)),REJECT",
+    "DOMAIN-SUFFIX,google.com,balance",
+    "DOMAIN-SUFFIX,t.co,trojan-grpc",
+    "MATCH,proxy"
+  ],
+  "warnings": [
+    {
+      "code": "ignored_option",
+      "detail": "vmess-ws: mux (Xray's own multiplexing)"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "kcp: transport kcp"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "rule 6 to proxy: domain ext:custom.dat:tag"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "rule 7 to DIRECT: a rule with protocol"
+    }
+  ]
+}

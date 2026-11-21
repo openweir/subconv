@@ -59,7 +59,7 @@
   "rules": null,
   "warnings": [
     {
-      "code": "unsupported_option",
+      "code": "invalid_proxy",
       "detail": "vmess link: not v2rayN's Base64 JSON"
     },
     {

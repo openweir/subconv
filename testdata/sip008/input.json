@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "servers": [
+    { "id": "27b8a625-4f4b-4428-9f0f-8a2317db7c79", "remarks": "Server 1", "server": "ss1.example.com", "server_port": 8388, "password": "p1", "method": "chacha20-ietf-poly1305" },
+    { "id": "7842c068-c667-41f2-8f7d-04feece3cb67", "remarks": "Server 2 obfs", "server": "ss2.example.com", "server_port": 8389, "password": "p2", "method": "aes-256-gcm", "plugin": "obfs-local", "plugin_opts": "obfs=http;obfs-host=bing.com" },
+    { "id": "1", "remarks": "Kcptun", "server": "ss3.example.com", "server_port": 29900, "password": "p3", "method": "aes-128-gcm", "plugin": "kcptun", "plugin_opts": "mode=fast2" },
+    { "id": "2", "remarks": "No port", "server": "ss4.example.com", "password": "p4", "method": "aes-128-gcm" }
+  ],
+  "bytes_used": 274877906944,
+  "bytes_remaining": 824633720832
+}

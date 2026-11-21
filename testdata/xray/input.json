@@ -1,0 +1,282 @@
+{
+ "log": {
+  "loglevel": "warning"
+ },
+ "inbounds": [
+  {
+   "port": 10808,
+   "protocol": "socks"
+  }
+ ],
+ "outbounds": [
+  {
+   "tag": "proxy",
+   "protocol": "vless",
+   "settings": {
+    "vnext": [
+     {
+      "address": "r.example.com",
+      "port": 443,
+      "users": [
+       {
+        "id": "7c8c8c0e-0000-4000-8000-000000000002",
+        "flow": "xtls-rprx-vision",
+        "encryption": "none"
+       }
+      ]
+     }
+    ]
+   },
+   "streamSettings": {
+    "network": "tcp",
+    "security": "reality",
+    "realitySettings": {
+     "serverName": "www.microsoft.com",
+     "fingerprint": "chrome",
+     "publicKey": "PUBKEY",
+     "shortId": "abcd",
+     "spiderX": "/"
+    }
+   }
+  },
+  {
+   "tag": "vmess-ws",
+   "protocol": "vmess",
+   "settings": {
+    "vnext": [
+     {
+      "address": "vm.example.com",
+      "port": 443,
+      "users": [
+       {
+        "id": "7c8c8c0e-0000-4000-8000-000000000001",
+        "alterId": 0,
+        "security": "auto"
+       }
+      ]
+     }
+    ]
+   },
+   "streamSettings": {
+    "network": "ws",
+    "security": "tls",
+    "tlsSettings": {
+     "serverName": "vm.example.com",
+     "allowInsecure": false,
+     "alpn": [
+      "http/1.1"
+     ],
+     "fingerprint": "chrome"
+    },
+    "wsSettings": {
+     "path": "/ray",
+     "headers": {
+      "Host": "vm.example.com"
+     }
+    }
+   },
+   "mux": {
+    "enabled": true,
+    "concurrency": 8
+   }
+  },
+  {
+   "tag": "trojan-grpc",
+   "protocol": "trojan",
+   "settings": {
+    "servers": [
+     {
+      "address": "t1.example.com",
+      "port": 443,
+      "password": "pw1"
+     },
+     {
+      "address": "t2.example.com",
+      "port": 443,
+      "password": "pw2"
+     }
+    ]
+   },
+   "streamSettings": {
+    "network": "grpc",
+    "security": "tls",
+    "tlsSettings": {
+     "serverName": "t.example.com"
+    },
+    "grpcSettings": {
+     "serviceName": "gun"
+    }
+   }
+  },
+  {
+   "tag": "ss",
+   "protocol": "shadowsocks",
+   "settings": {
+    "servers": [
+     {
+      "address": "ss.example.com",
+      "port": 8388,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "c2VjcmV0",
+      "uot": true
+     }
+    ]
+   }
+  },
+  {
+   "tag": "wg",
+   "protocol": "wireguard",
+   "settings": {
+    "secretKey": "PRIV",
+    "address": [
+     "10.0.0.2/32",
+     "fd00::2/128"
+    ],
+    "peers": [
+     {
+      "publicKey": "PUB",
+      "endpoint": "w.example.com:51820",
+      "allowedIPs": [
+       "0.0.0.0/0",
+       "::/0"
+      ]
+     }
+    ],
+    "reserved": [
+     1,
+     2,
+     3
+    ],
+    "mtu": 1280
+   }
+  },
+  {
+   "tag": "chained",
+   "protocol": "socks",
+   "settings": {
+    "servers": [
+     {
+      "address": "s.example.com",
+      "port": 1080,
+      "users": [
+       {
+        "user": "u",
+        "pass": "p"
+       }
+      ]
+     }
+    ]
+   },
+   "proxySettings": {
+    "tag": "proxy"
+   }
+  },
+  {
+   "tag": "kcp",
+   "protocol": "vmess",
+   "settings": {
+    "vnext": [
+     {
+      "address": "k.example.com",
+      "port": 443,
+      "users": [
+       {
+        "id": "7c8c8c0e-0000-4000-8000-000000000005"
+       }
+      ]
+     }
+    ]
+   },
+   "streamSettings": {
+    "network": "kcp"
+   }
+  },
+  {
+   "tag": "direct",
+   "protocol": "freedom"
+  },
+  {
+   "tag": "block",
+   "protocol": "blackhole"
+  }
+ ],
+ "routing": {
+  "domainStrategy": "IPIfNonMatch",
+  "balancers": [
+   {
+    "tag": "balance",
+    "selector": [
+     "trojan"
+    ],
+    "strategy": {
+     "type": "leastPing"
+    }
+   }
+  ],
+  "rules": [
+   {
+    "type": "field",
+    "domain": [
+     "geosite:category-ads-all"
+    ],
+    "outboundTag": "block"
+   },
+   {
+    "type": "field",
+    "domain": [
+     "geosite:cn",
+     "domain:example.cn",
+     "full:www.example.org",
+     "keyword:baidu",
+     "regexp:^ad\\.",
+     "qq"
+    ],
+    "outboundTag": "direct"
+   },
+   {
+    "type": "field",
+    "ip": [
+     "geoip:private",
+     "geoip:cn",
+     "1.1.1.1",
+     "2001:db8::/32"
+    ],
+    "outboundTag": "direct"
+   },
+   {
+    "type": "field",
+    "network": "udp",
+    "port": "443",
+    "outboundTag": "block"
+   },
+   {
+    "type": "field",
+    "domain": [
+     "domain:google.com"
+    ],
+    "balancerTag": "balance"
+   },
+   {
+    "type": "field",
+    "domain": [
+     "ext:custom.dat:tag"
+    ],
+    "outboundTag": "proxy"
+   },
+   {
+    "type": "field",
+    "protocol": [
+     "bittorrent"
+    ],
+    "outboundTag": "direct"
+   },
+   {
+    "type": "field",
+    "domain": [
+     "domain:t.co"
+    ],
+    "outboundTag": "trojan-grpc"
+   }
+  ]
+ }
+}

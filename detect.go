@@ -9,7 +9,9 @@ import (
 	"github.com/openweir/subconv/internal/body"
 	"github.com/openweir/subconv/internal/links"
 	"github.com/openweir/subconv/internal/model"
+	"github.com/openweir/subconv/internal/shadowsocks"
 	"github.com/openweir/subconv/internal/surge"
+	"github.com/openweir/subconv/internal/xray"
 )
 
 var (
@@ -72,6 +74,9 @@ func detect(data []byte, depth int) (Format, []byte, error) {
 	if clashYAML(text) {
 		return FormatClash, text, nil
 	}
+	if shadowsocks.IsSSD(text) {
+		return FormatSSD, text, nil
+	}
 	if links.Is(text) {
 		return FormatLinks, text, nil
 	}
@@ -95,10 +100,14 @@ func detect(data []byte, depth int) (Format, []byte, error) {
 func jsonFormat(value any) Format {
 	config := model.AsObject(value)
 	switch {
+	case xray.Is(value):
+		return FormatXray
 	case config.Value("outbounds") != nil || config.Value("endpoints") != nil:
 		return FormatSingBox
 	case config.Value("proxies") != nil || config.Value("proxy-providers") != nil:
 		return FormatClash
+	case shadowsocks.IsSIP008(value):
+		return FormatSIP008
 	}
 	return ""
 }

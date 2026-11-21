@@ -1,0 +1,41 @@
+{
+  "format": "sip008",
+  "proxies": [
+    {
+      "name": "Server 1",
+      "type": "ss",
+      "server": "ss1.example.com",
+      "port": 8388,
+      "cipher": "chacha20-ietf-poly1305",
+      "password": "p1",
+      "udp": true
+    },
+    {
+      "name": "Server 2 obfs",
+      "type": "ss",
+      "server": "ss2.example.com",
+      "port": 8389,
+      "cipher": "aes-256-gcm",
+      "password": "p2",
+      "udp": true,
+      "plugin": "obfs",
+      "plugin-opts": {
+        "mode": "http",
+        "host": "bing.com"
+      }
+    }
+  ],
+  "proxy-groups": null,
+  "rule-providers": {},
+  "rules": null,
+  "warnings": [
+    {
+      "code": "unsupported_option",
+      "detail": "Kcptun: plugin kcptun"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "No port: no port"
+    }
+  ]
+}

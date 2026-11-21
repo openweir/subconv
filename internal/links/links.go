@@ -10,6 +10,7 @@ package links
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -82,8 +83,11 @@ func Convert(data []byte) (*model.Result, error) {
 		p, reason := parse(kind, line)
 		if p == nil {
 			code := model.WarnUnsupportedOption
-			if reason == "" {
+			switch {
+			case reason == "":
 				code, reason = model.WarnUnsupportedProxy, "scheme "+kind
+			case strings.HasPrefix(reason, "not "):
+				code = model.WarnInvalidProxy // a malformed link
 			}
 			result.Warn(code, "%s: %s", label(line), reason)
 			continue
@@ -109,6 +113,7 @@ func parse(scheme, line string) (model.Object, string) {
 	case "snell":
 		return snell(line)
 	}
+	line, ports := portList(line)
 	u, err := url.Parse(line)
 	if err != nil || u.Hostname() == "" {
 		return nil, "not a valid link"
@@ -139,12 +144,13 @@ func parse(scheme, line string) (model.Object, string) {
 		out = proxy.Merge(base, model.New(
 			"type", "hysteria2",
 			"password", userinfo(u),
-			"ports", proxy.PortRanges(strings.Split(q.Get("mport"), ",")),
+			"ports", proxy.PortRanges(strings.Split(or(q.Get("mport"), ports), ",")),
 			"sni", q.Get("sni"),
 			"skip-cert-verify", flag(q, "insecure", "allowInsecure"),
 			"alpn", list(q.Get("alpn")),
 			"obfs", q.Get("obfs"),
 			"obfs-password", q.Get("obfs-password"),
+			"fingerprint", strings.ToLower(strings.ReplaceAll(q.Get("pinSHA256"), ":", "")),
 		))
 	case "hysteria":
 		out = proxy.Merge(base, model.New(
@@ -169,7 +175,9 @@ func parse(scheme, line string) (model.Object, string) {
 			"alpn", list(q.Get("alpn")),
 			"congestion-controller", q.Get("congestion_control"),
 			"udp-relay-mode", q.Get("udp_relay_mode"),
-			"skip-cert-verify", flag(q, "allow_insecure", "insecure"),
+			"skip-cert-verify", flag(q, "allow_insecure", "insecure", "allowInsecure"),
+			"disable-sni", flag(q, "disable_sni"),
+			"reduce-rtt", flag(q, "reduce_rtt", "zero_rtt_handshake"),
 		))
 	case "anytls":
 		out = proxy.Merge(base, model.New("type", "anytls", "password", userinfo(u), "udp", true))
@@ -240,6 +248,8 @@ func parse(scheme, line string) (model.Object, string) {
 			"private-key", userinfo(u),
 			"public-key", or(q.Get("publickey"), q.Get("publicKey")),
 			"pre-shared-key", or(q.Get("presharedkey"), q.Get("preSharedKey")),
+			"allowed-ips", list(or(q.Get("allowedips"), q.Get("allowedIPs"))),
+			"persistent-keepalive", atoi(q.Get("keepalive")),
 			"mtu", atoi(q.Get("mtu")),
 			"udp", true,
 		))
@@ -258,6 +268,29 @@ func parse(scheme, line string) (model.Object, string) {
 			}
 			out.Set("reserved", values)
 		}
+	case "ssh":
+		user, password := credentials(u)
+		out = proxy.Merge(base, model.New(
+			"type", "ssh",
+			"username", or(user, "root"),
+			"password", password,
+			"host-key", list(q.Get("host-key")),
+		))
+	case "trojan-go":
+		out = proxy.Merge(base, model.New("type", "trojan", "password", u.User.Username(), "udp", true))
+		// trojan-go's own Shadowsocks layer: "ss;method;password".
+		if encryption := q.Get("encryption"); encryption != "" {
+			kind, rest, _ := strings.Cut(encryption, ";")
+			method, password, _ := strings.Cut(rest, ";")
+			if kind != "ss" {
+				return nil, "trojan-go encryption " + kind
+			}
+			out.Set("ss-opts", model.New("enabled", true, "method", method, "password", password))
+		}
+		if q.Get("plugin") != "" {
+			return nil, "trojan-go plugin " + q.Get("plugin")
+		}
+		out, reason = stream(out, q, "sni", "tls")
 	case "tg":
 		return nil, "a Telegram proxy, which only Telegram uses"
 	default:
@@ -285,6 +318,14 @@ func stream(out model.Object, q url.Values, nameKey, fallback string) (model.Obj
 			"skip-cert-verify", flag(q, "allowInsecure", "insecure"),
 			"client-fingerprint", q.Get("fp"),
 		))
+		if ech := q.Get("ech"); ech != "" {
+			// Xray's ECH: a Base64 config list, or a DNS server to query for it.
+			config := ""
+			if _, err := base64.StdEncoding.DecodeString(ech); err == nil {
+				config = ech
+			}
+			out.Set("ech-opts", model.New("enable", true, "config", config))
+		}
 		if security == "reality" {
 			if _, set := out.Get("client-fingerprint"); !set {
 				out.Set("client-fingerprint", "chrome")
@@ -327,21 +368,22 @@ func stream(out model.Object, q url.Values, nameKey, fallback string) (model.Obj
 		if out.String("type") != "vless" {
 			return nil, "XHTTP on " + out.String("type")
 		}
-		if q.Get("extra") != "" {
-			return nil, "XHTTP extra settings"
+		opts := model.New("path", path, "host", host, "mode", q.Get("mode"))
+		if extra := q.Get("extra"); extra != "" {
+			settings, reason := xhttpExtra(extra)
+			if settings == nil {
+				return nil, reason
+			}
+			opts = proxy.Merge(opts, settings)
 		}
-		out = proxy.Merge(out, model.New("network", "xhttp", "xhttp-opts", model.New(
-			"path", path,
-			"host", host,
-			"mode", q.Get("mode"),
-		)))
+		out = proxy.Merge(out, model.New("network", "xhttp", "xhttp-opts", opts))
 	default:
 		return nil, "transport " + kind
 	}
 	return out, ""
 }
 
-// finish adds the options any link may carry and checks the result.
+// finish adds the options any link may carry.
 func finish(out model.Object, q url.Values) (model.Object, string) {
 	if q.Get("udp") == "1" {
 		out.Set("udp", true)
@@ -350,23 +392,22 @@ func finish(out model.Object, q url.Values) (model.Object, string) {
 	if (q.Get("tfo") == "1" || q.Get("fastopen") == "1") && out.String("type") != "naive" {
 		out.Set("tfo", true)
 	}
-	if port, _ := out.Get("port"); model.AsInt(port) == 0 {
-		if _, ranged := out.Get("port-range"); !ranged {
-			return nil, "no port"
-		}
-	}
 	return out, ""
 }
 
-// vmess reads v2rayN's Base64 JSON.
+// vmess reads v2rayN's Base64 JSON, and Shadowrocket's form.
 func vmess(line string) (model.Object, string) {
-	data, err := body.Base64(strings.TrimPrefix(line, line[:len("vmess://")]))
+	payload := line[len("vmess://"):]
+	if end := strings.IndexAny(payload, "?#"); end >= 0 {
+		payload = payload[:end] // Shadowrocket's parameters follow the Base64
+	}
+	data, err := body.Base64(payload)
 	if err != nil {
 		return nil, "not v2rayN's Base64 JSON"
 	}
 	var v map[string]any
 	if json.Unmarshal(data, &v) != nil {
-		return nil, "not v2rayN's Base64 JSON"
+		return shadowrocketVMess(line, string(data))
 	}
 	text := func(key string) string {
 		switch value := v[key].(type) {
@@ -403,6 +444,131 @@ func vmess(line string) (model.Object, string) {
 		return nil, reason
 	}
 	return finish(out, url.Values{})
+}
+
+// shadowrocketVMess reads Shadowrocket's vmess://base64(cipher:uuid@host:port)?remarks=…&obfs=…
+// form; decoded is the Base64 part.
+func shadowrocketVMess(line, decoded string) (model.Object, string) {
+	auth, address, ok := strings.Cut(decoded, "@")
+	cipher, uuid, ok2 := strings.Cut(auth, ":")
+	host, portText, err := net.SplitHostPort(address)
+	if !ok || !ok2 || err != nil {
+		return nil, "not v2rayN's Base64 JSON or Shadowrocket's form"
+	}
+	q := url.Values{}
+	if _, rest, found := strings.Cut(line, "?"); found {
+		rest, _, _ = strings.Cut(rest, "#")
+		q, _ = url.ParseQuery(rest)
+	}
+	out := proxy.Merge(proxy.Base(or(q.Get("remarks"), host), host, atoi(portText)), model.New(
+		"type", "vmess",
+		"uuid", uuid,
+		"alterId", atoi(q.Get("alterId")),
+		"cipher", or(cipher, "auto"),
+		"udp", true,
+	))
+	stream := url.Values{}
+	switch q.Get("obfs") {
+	case "websocket", "ws":
+		stream.Set("type", "ws")
+	case "h2", "http":
+		stream.Set("type", "h2")
+	case "grpc":
+		stream.Set("type", "grpc")
+	}
+	stream.Set("host", q.Get("obfsParam"))
+	stream.Set("path", q.Get("path"))
+	stream.Set("serviceName", q.Get("path"))
+	if q.Get("tls") == "1" {
+		stream.Set("security", "tls")
+	}
+	stream.Set("sni", q.Get("peer"))
+	stream.Set("allowInsecure", q.Get("allowInsecure"))
+	out, reason := withStream(out, stream)
+	if out == nil {
+		return nil, reason
+	}
+	return finish(out, url.Values{})
+}
+
+func withStream(out model.Object, q url.Values) (model.Object, string) {
+	if q.Get("security") == "tls" {
+		out.Set("tls", true)
+	}
+	return stream(out, q, "servername", "")
+}
+
+// xhttpExtra maps Xray's XHTTP extra JSON onto mihomo's xhttp-opts; settings mihomo lacks refuse
+// the proxy rather than change how it talks to the server.
+func xhttpExtra(text string) (model.Object, string) {
+	value, err := model.Decode([]byte(text))
+	extra := model.AsObject(value)
+	if err != nil || extra == nil {
+		return nil, "XHTTP extra settings that are not JSON"
+	}
+	keys := map[string]string{
+		"headers": "headers", "xPaddingBytes": "x-padding-bytes", "noGRPCHeader": "no-grpc-header",
+		"scMaxEachPostBytes": "sc-max-each-post-bytes", "scMinPostsIntervalMs": "sc-min-posts-interval-ms",
+		"xmux": "reuse-settings", "mode": "mode", "host": "host", "path": "path",
+	}
+	xmux := map[string]string{
+		"maxConcurrency": "max-concurrency", "maxConnections": "max-connections", "cMaxReuseTimes": "c-max-reuse-times",
+		"hMaxRequestTimes": "h-max-request-times", "hMaxReusableSecs": "h-max-reusable-secs", "hKeepAlivePeriod": "h-keep-alive-period",
+	}
+	var out model.Object
+	for _, field := range extra {
+		key, ok := keys[field.Key]
+		if !ok {
+			return nil, "XHTTP extra setting " + field.Key
+		}
+		value := field.Value
+		if key == "reuse-settings" {
+			var reuse model.Object
+			for _, setting := range model.AsObject(value) {
+				name, ok := xmux[setting.Key]
+				if !ok {
+					return nil, "XHTTP xmux setting " + setting.Key
+				}
+				text, _ := model.Text(setting.Value)
+				if name == "h-keep-alive-period" {
+					reuse = append(reuse, model.Field{Key: name, Value: setting.Value})
+				} else {
+					reuse = append(reuse, model.Field{Key: name, Value: text})
+				}
+			}
+			value = reuse
+		} else if text, ok := value.(int); ok && key != "no-grpc-header" {
+			value = strconv.Itoa(text)
+		}
+		out = append(out, model.Field{Key: key, Value: value})
+	}
+	return out, ""
+}
+
+// portList takes a port list out of a link's authority, as Hysteria 2 links write port hopping
+// ("host:443,20000-30000"), and returns the link with the first port.
+func portList(line string) (string, string) {
+	rest, ok := strings.CutPrefix(line, line[:strings.Index(line, "://")+3])
+	if !ok {
+		return line, ""
+	}
+	end := strings.IndexAny(rest, "/?#")
+	if end < 0 {
+		end = len(rest)
+	}
+	authority := rest[:end]
+	at := strings.LastIndex(authority, "@")
+	colon := strings.LastIndex(authority, ":")
+	if colon <= at || !strings.ContainsAny(authority[colon:], ",-") {
+		return line, ""
+	}
+	ports := authority[colon+1:]
+	first := strings.FieldsFunc(ports, func(r rune) bool { return r == ',' || r == '-' })
+	if len(first) == 0 {
+		return line, ""
+	}
+	prefix := line[:len(line)-len(rest)]
+	return prefix + authority[:colon+1] + first[0] + rest[end:], ports
 }
 
 // shadowsocks reads SIP002, with Base64 or percent-encoded userinfo, and the legacy form that
