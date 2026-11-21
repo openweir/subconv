@@ -70,7 +70,7 @@ type Snapshot struct {
 	client *Client
 }
 
-// Base returns the URL of the fastest host serving the manifest, the base to put in templates.
+// Base returns the URL of the fastest host serving the manifest, the base to put in the template.
 func (s *Snapshot) Base() string { return s.Hosts[0].Base }
 
 // Save stores the manifest in the client's cache, making its version the lowest the client
@@ -368,9 +368,8 @@ const (
 // never got it. Callers route by their own defaults until a later call succeeds.
 var ErrNoTemplate = errors.New("rules: no template available")
 
-// Template is a routing template ready for subconv to fill in.
+// Template is the routing template, ready for subconv to fill in.
 type Template struct {
-	Name string
 	// YAML is the template, with [Placeholder] for the branch's base URL.
 	YAML []byte
 	// Base is the URL to put in for [Placeholder]: the fastest host serving the version, or the
@@ -385,33 +384,26 @@ type Template struct {
 // Filled returns the template with Base in place of [Placeholder].
 func (t *Template) Filled() ([]byte, error) { return Fill(t.YAML, t.Base) }
 
-// Template returns a routing template by name ("" for [DefaultTemplate]): the latest version if
-// a host serves it, otherwise the cached one, whose Err says why. It fails on an unknown name,
-// when ctx ends, and with [ErrNoTemplate] when neither hosts nor cache have the template.
-func (c *Client) Template(ctx context.Context, name string) (*Template, error) {
-	name, err := TemplateName(name)
-	if err != nil {
-		return nil, err
-	}
+// Template returns the routing template: the latest version if a host serves it, otherwise the
+// cached one, whose Err says why. It fails when ctx ends, and with [ErrNoTemplate] when neither
+// hosts nor cache have the template.
+func (c *Client) Template(ctx context.Context) (*Template, error) {
 	snap, err := c.Latest(ctx)
 	if err == nil {
-		var f File
-		if f, err = snap.Manifest.TemplateFile(name); err == nil {
-			var data []byte
-			if data, err = snap.Fetch(ctx, f.Path); err == nil {
-				snap.Save()
-				return &Template{Name: name, YAML: data, Base: snap.Base(), Version: snap.Manifest.Version}, nil
-			}
+		var data []byte
+		if data, err = snap.Fetch(ctx, TemplatePath); err == nil {
+			snap.Save()
+			return &Template{YAML: data, Base: snap.Base(), Version: snap.Manifest.Version}, nil
 		}
 	}
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return nil, ctxErr
 	}
-	if t := c.cachedTemplate(name); t != nil {
+	if t := c.cachedTemplate(); t != nil {
 		t.Err = err
 		return t, nil
 	}
-	return nil, fmt.Errorf("%w: %s: %w", ErrNoTemplate, name, err)
+	return nil, fmt.Errorf("%w: %w", ErrNoTemplate, err)
 }
 
 func (c *Client) cachedManifest() (*Manifest, []byte) {
@@ -429,20 +421,17 @@ func (c *Client) cachedManifest() (*Manifest, []byte) {
 	return m, raw
 }
 
-func (c *Client) cachedTemplate(name string) *Template {
+func (c *Client) cachedTemplate() *Template {
 	m, _ := c.cachedManifest()
 	if m == nil {
 		return nil
 	}
-	f, err := m.TemplateFile(name)
-	if err != nil {
-		return nil
-	}
+	f, _ := m.File(TemplatePath)
 	data, ok := c.Cache.Get(f.Path)
 	if !ok || !f.Matches(data) {
 		return nil
 	}
-	return &Template{Name: name, YAML: data, Base: c.hosts()[0].Base, Version: m.Version, Origin: FromCache}
+	return &Template{YAML: data, Base: c.hosts()[0].Base, Version: m.Version, Origin: FromCache}
 }
 
 func (c *Client) hosts() []Host {

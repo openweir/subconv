@@ -1,12 +1,12 @@
-// Command rules builds the rules branch of github.com/openweir/subconv: the routing templates
-// and the rule sets they load, mirrored from the layouts and sources config.yaml names, with a
+// Command rules builds the rules branch of github.com/openweir/subconv: the routing template and
+// the rule sets it loads, mirrored from the layout and sources config.yaml names, with a
 // manifest of every file. The rules workflow runs it daily; docs/rules.md describes the branch.
 //
 //	rules -out DIR (-mihomo BIN | -text) [-config FILE] [-prev MANIFEST] [-changed FILE]
 //
-// It downloads every layout and rule set, refuses what does not look like one, splits classical
-// rule sets into domain, IP and classical parts, compiles domain and IP parts to .mrs with
-// mihomo's convert-ruleset, and writes the templates, the rule sets, the licenses, NOTICE.md and
+// It downloads the layout and every rule set, refuses what does not look like one, splits
+// classical rule sets into domain, IP and classical parts, compiles domain and IP parts to .mrs
+// with mihomo's convert-ruleset, and writes the template, the rule sets, the licenses, NOTICE.md and
 // manifest.json into DIR, which must be empty. With -prev, the previous manifest, it keeps the
 // dates of unchanged files, refuses rule sets that shrank sharply, and writes to -changed the
 // paths that changed (none if nothing did).
@@ -30,7 +30,7 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "cmd/rules/config.yaml", "the sources, licenses and templates")
+	configPath := flag.String("config", "cmd/rules/config.yaml", "the sources, licenses and template")
 	out := flag.String("out", "", "the empty `directory` to write the branch into")
 	mihomo := flag.String("mihomo", "", "the mihomo `binary` that compiles .mrs rule sets")
 	textOnly := flag.Bool("text", false, "write text rule sets only, without mihomo")

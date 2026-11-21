@@ -14,20 +14,17 @@ import (
 )
 
 // A branch as the generator would publish it.
-func branch(t *testing.T, version int64, lite string) (manifest []byte, files map[string][]byte) {
+func branch(t *testing.T, version int64, template string) (manifest []byte, files map[string][]byte) {
 	t.Helper()
 	files = map[string][]byte{
-		"templates/lite.yaml":           []byte(lite),
-		"templates/full.yaml":           []byte("full " + lite),
+		TemplatePath:                    []byte(template),
 		"providers/dler/lan.ipcidr.txt": []byte("10.0.0.0/8\n"),
 	}
 	m := Manifest{
 		Version:   version,
 		Generated: time.Unix(version, 0).UTC().Format(time.RFC3339),
-		Default:   Lite,
-		Templates: map[string]string{Lite: "templates/lite.yaml", Full: "templates/full.yaml"},
 	}
-	for _, p := range []string{"templates/lite.yaml", "templates/full.yaml", "providers/dler/lan.ipcidr.txt"} {
+	for _, p := range []string{"providers/dler/lan.ipcidr.txt", TemplatePath} {
 		m.Files = append(m.Files, File{Path: p, Size: int64(len(files[p])), SHA256: digest(files[p]), Updated: "2026-11-21", Kind: "template"})
 	}
 	manifest, err := json.MarshalIndent(m, "", "  ")
@@ -264,9 +261,9 @@ func TestLatestReportsEveryHost(t *testing.T) {
 
 func TestFetchFallsBackAndChecks(t *testing.T) {
 	v2, files2 := branch(t, 2, "two")
-	tamperedFiles := map[string][]byte{"templates/lite.yaml": []byte("twO")}
+	tamperedFiles := map[string][]byte{TemplatePath: []byte("twO")}
 	tampered := newMirror(t, v2, tamperedFiles)
-	oversized := newMirror(t, v2, map[string][]byte{"templates/lite.yaml": []byte("two and more")})
+	oversized := newMirror(t, v2, map[string][]byte{TemplatePath: []byte("two and more")})
 	good := newMirror(t, v2, files2)
 	good.delay = 30 * time.Millisecond
 	cache := &MemoryCache{}
@@ -277,17 +274,17 @@ func TestFetchFallsBackAndChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := snap.Fetch(t.Context(), "templates/lite.yaml")
+	data, err := snap.Fetch(t.Context(), TemplatePath)
 	if err != nil || string(data) != "two" {
 		t.Fatalf("got %q, %v", data, err)
 	}
-	if cached, _ := cache.Get("templates/lite.yaml"); string(cached) != "two" {
+	if cached, _ := cache.Get(TemplatePath); string(cached) != "two" {
 		t.Fatalf("cached %q", cached)
 	}
 
 	// Served from the cache now.
 	hits := good.hits.Load()
-	if _, err := snap.Fetch(t.Context(), "templates/lite.yaml"); err != nil || good.hits.Load() != hits {
+	if _, err := snap.Fetch(t.Context(), TemplatePath); err != nil || good.hits.Load() != hits {
 		t.Fatalf("not from the cache: %v", err)
 	}
 
@@ -298,15 +295,15 @@ func TestFetchFallsBackAndChecks(t *testing.T) {
 
 func TestFetchRejectsTamperedAndOversizedFiles(t *testing.T) {
 	v2, _ := branch(t, 2, "two")
-	tampered := newMirror(t, v2, map[string][]byte{"templates/lite.yaml": []byte("twO")})
-	oversized := newMirror(t, v2, map[string][]byte{"templates/lite.yaml": []byte("two and more")})
+	tampered := newMirror(t, v2, map[string][]byte{TemplatePath: []byte("twO")})
+	oversized := newMirror(t, v2, map[string][]byte{TemplatePath: []byte("two and more")})
 	client := testClient(t, tampered, tampered.host("a", 1), oversized.host("b", 1))
 
 	snap, err := client.Latest(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = snap.Fetch(t.Context(), "templates/lite.yaml")
+	_, err = snap.Fetch(t.Context(), TemplatePath)
 	if !errors.Is(err, ErrDigest) || !errors.Is(err, ErrTooLarge) {
 		t.Fatalf("err %v, want ErrDigest and ErrTooLarge", err)
 	}
@@ -320,11 +317,11 @@ func TestTemplateDegrades(t *testing.T) {
 	client := testClient(t, a, a.host("jsdmirror", 2), b.host("github", 0))
 	client.Cache = cache
 
-	tpl, err := client.Template(t.Context(), "")
+	tpl, err := client.Template(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tpl.Name != Lite || string(tpl.YAML) != "two" || tpl.Version != 2 || tpl.Origin != FromNetwork || tpl.Err != nil {
+	if string(tpl.YAML) != "two" || tpl.Version != 2 || tpl.Origin != FromNetwork || tpl.Err != nil {
 		t.Fatalf("%+v", tpl)
 	}
 	if raw, ok := cache.Get(ManifestPath); !ok || string(raw) != string(v2) {
@@ -332,7 +329,7 @@ func TestTemplateDegrades(t *testing.T) {
 	}
 
 	a.status, b.status = http.StatusServiceUnavailable, http.StatusServiceUnavailable
-	tpl, err = client.Template(t.Context(), Lite)
+	tpl, err = client.Template(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,12 +337,10 @@ func TestTemplateDegrades(t *testing.T) {
 		t.Fatalf("%+v", tpl)
 	}
 
-	// The full template was never fetched.
-	if _, err := client.Template(t.Context(), Full); !errors.Is(err, ErrNoTemplate) || !errors.Is(err, ErrNoManifest) {
-		t.Fatalf("err %v", err)
-	}
-
-	if _, err := client.Template(t.Context(), "medium"); !errors.Is(err, ErrUnknownTemplate) {
+	// A client that never got the template.
+	fresh := testClient(t, a, a.host("jsdmirror", 2), b.host("github", 0))
+	fresh.Cache = &MemoryCache{}
+	if _, err := fresh.Template(t.Context()); !errors.Is(err, ErrNoTemplate) || !errors.Is(err, ErrNoManifest) {
 		t.Fatalf("err %v", err)
 	}
 }

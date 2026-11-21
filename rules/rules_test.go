@@ -13,40 +13,22 @@ func TestParseManifest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f, err := m.TemplateFile(""); err != nil || f.Path != "templates/lite.yaml" {
-		t.Fatalf("default template %+v, %v", f, err)
-	}
-	if _, err := m.TemplateFile("medium"); !errors.Is(err, ErrUnknownTemplate) {
-		t.Fatalf("err %v", err)
+	if f, ok := m.File(TemplatePath); !ok || !f.Matches([]byte("seven")) {
+		t.Fatalf("template %+v", f)
 	}
 
 	sha := strings.Repeat("a", 64)
 	for name, body := range map[string]string{
 		"not JSON":   `<html>`,
-		"no version": `{"default":"lite","templates":{}}`,
-		"dot path": `{"version":1,"default":"lite","templates":{"lite":"../x"},
-			"files":[{"path":"../x","size":1,"sha256":"` + sha + `"}]}`,
-		"short digest": `{"version":1,"default":"lite","templates":{"lite":"x"},
-			"files":[{"path":"x","size":1,"sha256":"abc"}]}`,
-		"unlisted template": `{"version":1,"default":"lite","templates":{"lite":"y"},
-			"files":[{"path":"x","size":1,"sha256":"` + sha + `"}]}`,
-		"no default": `{"version":1,"default":"full","templates":{"lite":"x"},
-			"files":[{"path":"x","size":1,"sha256":"` + sha + `"}]}`,
+		"no version": `{"files":[]}`,
+		"dot path": `{"version":1,"files":[{"path":"template.yaml","size":1,"sha256":"` + sha + `"},
+			{"path":"../x","size":1,"sha256":"` + sha + `"}]}`,
+		"short digest": `{"version":1,"files":[{"path":"template.yaml","size":1,"sha256":"abc"}]}`,
+		"no template":  `{"version":1,"files":[{"path":"x","size":1,"sha256":"` + sha + `"}]}`,
 	} {
 		if _, err := ParseManifest([]byte(body)); !errors.Is(err, ErrInvalidManifest) {
 			t.Errorf("%s: err %v", name, err)
 		}
-	}
-}
-
-func TestTemplateName(t *testing.T) {
-	for in, want := range map[string]string{"": Lite, Lite: Lite, Full: Full} {
-		if got, err := TemplateName(in); err != nil || got != want {
-			t.Errorf("%q: %q, %v", in, got, err)
-		}
-	}
-	if _, err := TemplateName("Lite"); !errors.Is(err, ErrUnknownTemplate) {
-		t.Errorf("err %v", err)
 	}
 }
 

@@ -12,11 +12,11 @@ import (
 	"github.com/openweir/subconv/rules"
 )
 
-// The parts a rule set is split into, in the order their rules go into a template. A large
+// The parts a rule set is split into, in the order their rules go into the template. A large
 // classical set is split so that its domains and IP ranges load as mihomo's compact domain and
 // ipcidr sets (.mrs), which take less memory and match without a scan, instead of as a list of
 // rules mihomo tries one by one; only rules of other types stay classical. A small set stays
-// whole unless it splits into one part, so that templates do not multiply rule providers.
+// whole unless it splits into one part, so that the template does not multiply rule providers.
 const (
 	partDomain    = "domain"
 	partClassical = "classical"
@@ -41,7 +41,7 @@ type part struct {
 	behavior  string
 	noResolve bool
 	entries   []string
-	// file is what templates load: the .mrs, or the text if there is none.
+	// file is what the template loads: the .mrs, or the text if there is none.
 	file   string
 	format string
 }

@@ -12,11 +12,9 @@ import (
 	"github.com/openweir/subconv/rules"
 )
 
-// config is what config.yaml holds: where layouts and rule sets come from, under which licenses,
-// and the groups each template routes to.
+// config is what config.yaml holds: where the layout and rule sets come from, under which
+// licenses, and the groups the template routes to.
 type config struct {
-	// Default names the template clients use when they choose none.
-	Default string `yaml:"default"`
 	// MaxSize bounds a downloaded file, in bytes.
 	MaxSize int64 `yaml:"max-size"`
 	// MaxShrink fails the build when a rule set loses more than this share of its entries since
@@ -25,16 +23,16 @@ type config struct {
 	// SplitMin is the number of domains and IP ranges from which a classical rule set is split
 	// into parts; a smaller set stays whole.
 	SplitMin int `yaml:"split-min"`
-	// Interval is the rule providers' refresh interval in the templates, in seconds.
+	// Interval is the rule providers' refresh interval in the template, in seconds.
 	Interval int `yaml:"interval"`
 	// ProviderPath is where mihomo keeps the rule sets, relative to its home directory.
 	ProviderPath string `yaml:"provider-path"`
 	// Notice heads NOTICE.md; Readme is the branch's README.md.
-	Notice    string     `yaml:"notice"`
-	Readme    string     `yaml:"readme"`
-	Sources   []*source  `yaml:"sources"`
-	Licenses  []*license `yaml:"licenses"`
-	Templates []*tmpl    `yaml:"templates"`
+	Notice   string     `yaml:"notice"`
+	Readme   string     `yaml:"readme"`
+	Sources  []*source  `yaml:"sources"`
+	Licenses []*license `yaml:"licenses"`
+	Template *tmpl      `yaml:"template"`
 }
 
 // source is an upstream of layouts and rule sets.
@@ -78,7 +76,6 @@ type license struct {
 }
 
 type tmpl struct {
-	Name string `yaml:"name"`
 	// Layout is the URL of the Clash rules and rule providers to mirror, as a source refers
 	// to it.
 	Layout      string `yaml:"layout"`
@@ -120,24 +117,15 @@ func parseConfig(data []byte) (*config, error) {
 			return nil, fmt.Errorf("config: source %s: unknown license %s", s.Name, s.License)
 		}
 	}
-	names := map[string]bool{}
-	for _, t := range cfg.Templates {
-		for i := range t.Groups {
-			g := &t.Groups[i]
-			for _, f := range []*string{&g.Filter, &g.ExcludeFilter} {
-				*f = strings.ReplaceAll(*f, rules.InfoToken, rules.InfoFilter)
-			}
-		}
-		if _, err := rules.TemplateName(t.Name); err != nil || t.Name == "" || names[t.Name] {
-			return nil, fmt.Errorf("config: template name %q", t.Name)
-		}
-		names[t.Name] = true
-		if len(t.Groups) == 0 {
-			return nil, fmt.Errorf("config: template %s has no groups", t.Name)
-		}
+	t := cfg.Template
+	if t == nil || t.Layout == "" || len(t.Groups) == 0 {
+		return nil, fmt.Errorf("config: the template needs a layout and groups")
 	}
-	if !names[cfg.Default] {
-		return nil, fmt.Errorf("config: default template %q", cfg.Default)
+	for i := range t.Groups {
+		g := &t.Groups[i]
+		for _, f := range []*string{&g.Filter, &g.ExcludeFilter} {
+			*f = strings.ReplaceAll(*f, rules.InfoToken, rules.InfoFilter)
+		}
 	}
 	return &cfg, nil
 }

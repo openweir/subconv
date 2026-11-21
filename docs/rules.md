@@ -1,20 +1,19 @@
 # The rules branch
 
-Subscriptions that carry no routing rules (share-link lists, Base64 lists, SIP008, sing-box or
-Clash configs without rules) get their routing from a template. The templates, and the rule sets
-they load, live on the `rules` branch of this repository, which `.github/workflows/rules.yml`
-rebuilds daily with `cmd/rules`. Nothing on the branch is in the Go code: the `rules` package
-fetches it and keeps the last good copy in the caller's cache. A client that never got a
-template gets `rules.ErrNoTemplate`; subconv's Build (to come) then returns the plain
-conversion with a `template_unavailable` warning, and the client routes by its own defaults until
-a later fetch succeeds.
+Subscriptions that carry no usable routing rules (share-link lists, Base64 lists, SIP008, sing-box
+or Clash configs without rules, or whose rules converted too lossily) get their routing from a
+template. The template, and the rule sets it loads, live on the `rules` branch of this
+repository, which `.github/workflows/rules.yml` rebuilds daily with `cmd/rules`. Nothing on the
+branch is in the Go code: the `rules` package fetches it and keeps the last good copy in the
+caller's cache. A client that never got the template gets `rules.ErrNoTemplate`; `subconv.Build`
+then returns the plain conversion with a `template_unavailable` warning, and the client routes
+by its own defaults until a later fetch succeeds.
 
 ## The branch
 
 ```
 manifest.json                 every file below, with size, SHA-256, source, license and dates
-templates/lite.yaml           the default template, for routers with 256 MiB of memory
-templates/full.yaml           every service and streaming group
+template.yaml                 the routing template
 providers/<source>/<set>.<part>.mrs   rule sets in mihomo's binary format
 providers/<source>/<set>.<part>.txt   the same in mihomo's text format (their source)
 LICENSES/, NOTICE.md          upstream licenses and attribution
@@ -39,8 +38,8 @@ order of preference before any was timed ([`rules.DefaultHosts`](../rules/rules.
 | `https://cdn.jsdelivr.net/gh/openweir/subconv@rules` | jsDelivr | 1 |
 | `https://raw.githubusercontent.com/openweir/subconv/rules` | GitHub | 0 |
 
-Templates never name a host: rule provider URLs start with the placeholder `{rules}`, which the
-client replaces with the base URL of the host it picked (`rules.Fill`).
+The template never names a host: rule provider URLs start with the placeholder `{rules}`, which
+the client replaces with the base URL of the host it picked (`rules.Fill`).
 
 Caching: jsDelivr caches a branch for up to 12 hours, browsers for 7 days; the workflow purges
 every changed file through `purge.jsdelivr.net`, which clears all jsDelivr hostnames, the
@@ -71,37 +70,34 @@ answered follow, then hosts serving another version. `Snapshot.Fetch` downloads 
 first of them that serves it with the manifest's size and SHA-256, so a stale or tampered mirror
 costs a retry, not a wrong file.
 
-## Templates
+## The template
 
-`lite` (the default) and `full` mirror dler-io/Rules' layouts `Clash/Rule_Lite.yaml` and
-`Clash/Rule.yaml`: their rules in their order, every rule set mirrored on the branch. The proxy
-groups are ours (`cmd/rules/config.yaml`); there are no region groups. The subconv API takes the
-template's name, `lite` or `full`, `lite` when none is given.
+The template mirrors dler-io/Rules' layout `Clash/Rule.yaml`: its rules in their order, every
+rule set mirrored on the branch. The proxy groups are ours (`cmd/rules/config.yaml`, the only
+place their names come from); there are no region groups.
 
-| | Rule providers | Entries | Rule set files | Template |
-| --- | --- | --- | --- | --- |
-| lite | 18 (6 domain, 5 ipcidr .mrs; 7 classical text) | 240,859 | 2.2 MiB | 5.3 KiB |
-| full | 68 (36 domain, 5 ipcidr .mrs; 27 classical text) | 16,122 | 128 KiB | 20.7 KiB |
+| Rule providers | Entries | Rule set files | Template |
+| --- | --- | --- | --- |
+| 68 (36 domain, 5 ipcidr .mrs; 27 classical text) | 16,122 | 128 KiB | 20.7 KiB |
 
-Most of lite is Sukka's reject lists (149,832 and 84,771 domains, 1.5 and 0.7 MiB as .mrs). Both
-templates load in OpenWeir mihomo with every entry counted (November 2026).
+It loads in OpenWeir mihomo with every entry counted (November 2026). Every IP rule ahead of the
+final `LAN` and `GEOIP,CN` matches without resolving domains (`no-resolve`, in the rule or in its
+rule set's entries), so domain connections are not resolved before the rules that decide them
+by name.
 
-lite routes ad and tracker domains to REJECT, AI services to Proxy, Apple's China services
-direct, mainland China (domains, then IP ranges) to Domestic, Apple to Proxy, private networks
-direct, the rest of China by GEOIP to Domestic, and everything else to Others. Its groups are
-Proxy (Auto, DIRECT and every node), Auto (url-test of every node), Domestic (DIRECT or Proxy)
-and Others (Proxy or Domestic).
-
-full adds AdBlock (REJECT, DIRECT or Proxy) and a group per service, each offering Proxy, Auto,
-DIRECT and every node: Netflix, Disney Plus, YouTube, Max, Spotify, Streaming, Telegram, Crypto,
-Discord, Google FCM, AI Suite, PayPal, Scholar, Speedtest, Steam, TikTok and Apple TV; CN
-Mainland TV, Microsoft, Apple Push, Apple Services and miHoYo offer DIRECT first. dler-io's
-Asian TV and Global TV, which pick a region for regional streaming services, are folded into
-Streaming (`retarget` in the config), keeping the rules' order.
+It routes ads to AdBlock (REJECT, DIRECT or Proxy), each service to its group, mainland China
+(domains, then IP ranges) to Domestic, private networks direct, the rest of China by GEOIP to
+Domestic, and everything else to Others. Proxy offers Auto, DIRECT and every node; Auto is a
+url-test of every node; Domestic offers DIRECT or Proxy, Others Proxy or Domestic. The service
+groups (Netflix, Disney Plus, YouTube, Max, Spotify, Streaming, Telegram, Crypto, Discord, Google
+FCM, AI Suite, PayPal, Scholar, Speedtest, Steam, TikTok, Apple TV) offer Proxy, Auto, DIRECT
+and every node; CN Mainland TV, Microsoft, Apple Push, Apple Services and miHoYo offer DIRECT
+first. dler-io's Asian TV and Global TV, which pick a region for regional streaming services,
+are folded into Streaming (`retarget` in the config), keeping the rules' order.
 
 ### Schema
 
-A template is a mihomo config fragment with only these top-level keys ([`rules.Validate`](../rules/template.go)
+The template is a mihomo config fragment with only these top-level keys ([`rules.Validate`](../rules/template.go)
 enforces it, and the generator validates every template it writes):
 
 - `proxy-groups`: groups of type `select`, `url-test`, `fallback` or `load-balance`. A group
@@ -122,8 +118,8 @@ enforces it, and the generator validates every template it writes):
 Anything else (ports, `mode`, `dns`, `tun`, `external-controller`, `secret`, `profile`,
 `sniffer`, `hosts`, `proxies`, `proxy-providers`, a second YAML document, a `<<` merge) fails.
 
-Because the groups use mihomo's own fields, a template loads in mihomo as it is. When subconv
-fills the nodes in, it will instead:
+Because the groups use mihomo's own fields, the template loads in mihomo as it is. When
+`subconv.Build` fills the nodes in, it instead:
 
 1. validate the template (`rules.Validate`);
 2. add the converted `proxies` (and `proxy-providers`, if any);
@@ -131,9 +127,9 @@ fills the nodes in, it will instead:
    nodes whose names match `filter` and not `exclude-filter`, in subscription order (mihomo's
    `include-all` sorts them by name), adding the providers as `use` with the filters kept;
 4. drop groups left without members, and their references, as the normalization already does;
-5. replace `{rules}` with the chosen base URL (`rules.Fill`), or point the providers at files
-   the client downloaded with `Snapshot.Fetch`, whose content is checked against the manifest,
-   which mihomo's own refresh is not.
+5. replace `{rules}` with the chosen base URL (`rules.Fill`). A client may instead point the
+   providers at files it downloaded with `Snapshot.Fetch`, whose content is checked against the
+   manifest, which mihomo's own refresh is not.
 
 ## The rules package
 
@@ -142,9 +138,9 @@ client := &rules.Client{
 	HTTP:  httpClient,         // the caller's routing, proxies and address policy
 	Cache: cache,              // rules.Cache: Get/Put by branch path; keeps the last good files
 }
-tpl, err := client.Template(ctx, "lite") // "" is lite
-// err: an unknown name, ctx's error, or rules.ErrNoTemplate when no host serves the template
-// and the cache has none.
+tpl, err := client.Template(ctx)
+// err: ctx's error, or rules.ErrNoTemplate when no host serves the template and the cache has
+// none.
 // tpl.YAML has {rules}; tpl.Base is the fastest host serving tpl.Version.
 // tpl.Origin is FromNetwork, or FromCache when no host served it (tpl.Err says why).
 filled, err := tpl.Filled()
@@ -165,18 +161,18 @@ whose template it lacks.
 instead of `-mihomo`, to try it without mihomo) builds the branch into an empty directory:
 
 1. It resolves dler-io/Rules' current commit and downloads the repository at it as one
-   archive, and Sukka's files from ruleset.skk.moe. A layout's rule provider must come from a
-   configured source; a file must be UTF-8 text under 16 MiB and not a web page.
+   archive. The layout's rule providers must come from a configured source; a file must be
+   UTF-8 text under 16 MiB and not a web page.
 2. Each rule set is parsed by its declared behavior. Entries written as classical rules are
-   taken when they are of that behavior (dler declares Sukka's classical `ip/` lists ipcidr,
-   which mihomo would load as empty). Rules mihomo cannot load are left out and logged.
+   taken when they are of that behavior (a layout may declare a classical list ipcidr, which
+   mihomo would load as empty). Rules mihomo cannot load are left out and logged.
 3. A classical set with at least 100 domains and IP ranges is split into a domain part and an
    IP part (compiled to `.mrs`, which take less memory and need no scan) and a classical part
    for the rest (`DOMAIN-KEYWORD`, `PROCESS-NAME`, …), as consecutive `RULE-SET` rules with the
    same policy; IP ranges that said `no-resolve` keep it. Smaller sets stay whole.
 4. `mihomo convert-ruleset` compiles the parts; the workflow uses the latest OpenWeir mihomo
    release, checked against its `sha256sums`.
-5. It writes the templates, `LICENSES/` (the texts of the licenses in use), `NOTICE.md`, the
+5. It writes the template, `LICENSES/` (the texts of the licenses in use), `NOTICE.md`, the
    branch README and `manifest.json`, whose `version` is the build's Unix time, above the
    previous one.
 
@@ -188,10 +184,9 @@ The output is deterministic, so a day without upstream changes publishes nothing
 
 | Source | License | Used for |
 | --- | --- | --- |
-| [dler-io/Rules](https://github.com/dler-io/Rules) | no LICENSE file; redistribution confirmed permitted (November 2026) | both layouts, `providers/dler/` |
-| [Sukka's Ruleset](https://ruleset.skk.moe) ([SukkaW/Surge](https://github.com/SukkaW/Surge)) | AGPL-3.0, shipped in `LICENSES/` | lite's reject, Apple China and domestic sets |
-| `ip/china_ip` from [chnroutes2](https://github.com/misakaio/chnroutes2) via Sukka | CC BY-SA 2.0 (per its header and README; the repository's LICENSE file says 4.0) | lite's China IP |
+| [dler-io/Rules](https://github.com/dler-io/Rules) | no LICENSE file; redistribution confirmed permitted (November 2026) | the layout, `providers/dler/` |
 
-Each file's license is in the manifest; Sukka's files name theirs in a `# License:` header,
-which overrides the source's. dler-io's `Head*.yaml` (ports, DNS, TUN, controller secret) are
-never read: only layouts' `rules` and `rule-providers` are, and templates refuse everything else.
+Each file's license is in the manifest; a source configured with `license-header` lets a file's
+`# License:` header override the source's. dler-io's `Head*.yaml` (ports, DNS, TUN, controller
+secret) are never read: only the layout's `rules` and `rule-providers` are, and the template
+refuses everything else.

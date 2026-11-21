@@ -1,4 +1,4 @@
-// Package rules gets OpenWeir's routing templates, and the rule sets they use, from the rules
+// Package rules gets OpenWeir's routing template, and the rule sets it uses, from the rules
 // branch of github.com/openweir/subconv, which a workflow regenerates daily.
 //
 // The branch is served by several CDNs under the same paths. A [Client] asks all of them for
@@ -7,7 +7,7 @@
 // supplies the *http.Client (and with it routing, proxies and address policy) and, optionally, a
 // [Cache] that keeps the last good manifest and files for when no host answers.
 //
-// Templates name the branch's base URL as [Placeholder]; [Fill] puts the chosen host in.
+// The template names the branch's base URL as [Placeholder]; [Fill] puts the chosen host in.
 package rules
 
 import (
@@ -22,20 +22,14 @@ import (
 	"strings"
 )
 
-// Placeholder stands for the base URL of the branch in a template's rule provider URLs.
+// Placeholder stands for the base URL of the branch in the template's rule provider URLs.
 const Placeholder = "{rules}"
 
-// The templates the branch carries.
+// Where the manifest and the template lie in the branch.
 const (
-	Lite = "lite" // the default: a few rule sets, for routers with little memory
-	Full = "full" // every service group of the layout it comes from
+	ManifestPath = "manifest.json"
+	TemplatePath = "template.yaml"
 )
-
-// DefaultTemplate is the template used when none is named.
-const DefaultTemplate = Lite
-
-// ManifestPath is where the manifest lies in the branch.
-const ManifestPath = "manifest.json"
 
 // A Host serves the branch.
 type Host struct {
@@ -68,13 +62,9 @@ type Manifest struct {
 	// lower version than one they have seen, which a stale mirror would otherwise serve.
 	Version int64 `json:"version"`
 	// Generated is when the branch was built, in RFC 3339.
-	Generated string `json:"generated"`
-	// Default names the template to use when none is chosen.
-	Default string `json:"default"`
-	// Templates maps a template's name to its path.
-	Templates map[string]string `json:"templates"`
-	Files     []File            `json:"files"`
-	Sources   []Source          `json:"sources,omitempty"`
+	Generated string   `json:"generated"`
+	Files     []File   `json:"files"`
+	Sources   []Source `json:"sources,omitempty"`
 }
 
 // File describes one file of the branch.
@@ -108,7 +98,6 @@ type Source struct {
 // Errors of the package. Errors about one host are a *HostError wrapping one of these, or the
 // network's error.
 var (
-	ErrUnknownTemplate = errors.New("rules: unknown template")
 	ErrInvalidManifest = errors.New("rules: invalid manifest")
 	ErrNotListed       = errors.New("rules: file not in the manifest")
 	ErrTooLarge        = errors.New("rules: response larger than allowed")
@@ -129,7 +118,7 @@ func (e *HostError) Error() string { return e.Host + ": " + e.Err.Error() }
 func (e *HostError) Unwrap() error { return e.Err }
 
 // ParseManifest decodes a manifest and checks that it is complete: a version, safe unique paths,
-// SHA-256 digests, and templates that point at listed files.
+// SHA-256 digests, and the template.
 func ParseManifest(data []byte) (*Manifest, error) {
 	var m Manifest
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -148,13 +137,8 @@ func ParseManifest(data []byte) (*Manifest, error) {
 			return nil, fmt.Errorf("%w: %s: size or digest", ErrInvalidManifest, f.Path)
 		}
 	}
-	for name, p := range m.Templates {
-		if !seen[p] {
-			return nil, fmt.Errorf("%w: template %s is not listed", ErrInvalidManifest, name)
-		}
-	}
-	if _, ok := m.Templates[m.Default]; !ok {
-		return nil, fmt.Errorf("%w: default template %q", ErrInvalidManifest, m.Default)
+	if !seen[TemplatePath] {
+		return nil, fmt.Errorf("%w: no %s", ErrInvalidManifest, TemplatePath)
 	}
 	return &m, nil
 }
@@ -167,30 +151,6 @@ func (m *Manifest) File(path string) (File, bool) {
 		}
 	}
 	return File{}, false
-}
-
-// TemplateFile returns the entry of a template by name; "" is the manifest's default.
-func (m *Manifest) TemplateFile(name string) (File, error) {
-	if name == "" {
-		name = m.Default
-	}
-	p, ok := m.Templates[name]
-	if !ok {
-		return File{}, fmt.Errorf("%w: %q", ErrUnknownTemplate, name)
-	}
-	f, _ := m.File(p)
-	return f, nil
-}
-
-// TemplateName checks a template's name, "" being [DefaultTemplate].
-func TemplateName(name string) (string, error) {
-	switch name {
-	case "":
-		return DefaultTemplate, nil
-	case Lite, Full:
-		return name, nil
-	}
-	return "", fmt.Errorf("%w: %q", ErrUnknownTemplate, name)
 }
 
 // Matches reports whether data is the file's content.
@@ -218,7 +178,7 @@ func ValidPath(p string) bool {
 	return true
 }
 
-// Fill replaces [Placeholder] in a template with base, the URL of the branch on the chosen host.
+// Fill replaces [Placeholder] in the template with base, the URL of the branch on the chosen host.
 // base must be an http(s) URL that needs no quoting in YAML.
 func Fill(template []byte, base string) ([]byte, error) {
 	base = strings.TrimSuffix(base, "/")

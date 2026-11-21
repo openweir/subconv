@@ -66,13 +66,8 @@ func (b *builder) build(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 	}
-	templates := map[string]string{}
-	for _, t := range b.cfg.Templates {
-		path, err := b.template(ctx, t)
-		if err != nil {
-			return nil, fmt.Errorf("template %s: %w", t.Name, err)
-		}
-		templates[t.Name] = path
+	if err := b.template(ctx, b.cfg.Template); err != nil {
+		return nil, fmt.Errorf("template: %w", err)
 	}
 	if err := b.licenses(ctx); err != nil {
 		return nil, err
@@ -84,7 +79,7 @@ func (b *builder) build(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	m := b.manifest(templates)
+	m := b.manifest()
 	if err := b.checkShrink(m); err != nil {
 		return nil, err
 	}
@@ -101,20 +96,20 @@ func (b *builder) build(ctx context.Context) ([]string, error) {
 	return b.changed(m), nil
 }
 
-// template mirrors a layout into a template: the configured groups, the layout's rules with every
-// rule set replaced by its parts on the branch, and those parts as rule providers.
-func (b *builder) template(ctx context.Context, t *tmpl) (string, error) {
+// template mirrors the layout into the template: the configured groups, the layout's rules with
+// every rule set replaced by its parts on the branch, and those parts as rule providers.
+func (b *builder) template(ctx context.Context, t *tmpl) error {
 	src, file, ok := b.cfg.sourceOf(t.Layout)
 	if !ok {
-		return "", fmt.Errorf("layout %s is not from a configured source", t.Layout)
+		return fmt.Errorf("layout %s is not from a configured source", t.Layout)
 	}
 	body, err := b.read(ctx, src, file)
 	if err != nil {
-		return "", err
+		return err
 	}
 	layout, err := parseLayout(body)
 	if err != nil {
-		return "", fmt.Errorf("layout %s: %w", t.Layout, err)
+		return fmt.Errorf("layout %s: %w", t.Layout, err)
 	}
 
 	providers := &yaml.Node{Kind: yaml.MappingNode}
@@ -136,20 +131,20 @@ func (b *builder) template(ctx context.Context, t *tmpl) (string, error) {
 			continue
 		}
 		if len(fields) < 3 {
-			return "", fmt.Errorf("rule %q has no policy", rule)
+			return fmt.Errorf("rule %q has no policy", rule)
 		}
 		lp, ok := layout.Providers[fields[1]]
 		if !ok {
-			return "", fmt.Errorf("rule %q: no rule provider %s", rule, fields[1])
+			return fmt.Errorf("rule %q: no rule provider %s", rule, fields[1])
 		}
 		set, err := b.ruleSet(ctx, lp)
 		if err != nil {
-			return "", fmt.Errorf("rule provider %s: %w", fields[1], err)
+			return fmt.Errorf("rule provider %s: %w", fields[1], err)
 		}
 		for _, p := range set.parts {
 			name := providerName(fields[1], set, p)
 			if f, ok := files[name]; ok && f != p.file {
-				return "", fmt.Errorf("two rule providers are named %s", name)
+				return fmt.Errorf("two rule providers are named %s", name)
 			} else if !ok {
 				files[name] = p.file
 				if err := addProvider(providers, name, rules.Provider{
@@ -160,7 +155,7 @@ func (b *builder) template(ctx context.Context, t *tmpl) (string, error) {
 					Path:     b.cfg.ProviderPath + "/" + strings.TrimPrefix(p.file, "providers/"),
 					Interval: b.cfg.Interval,
 				}); err != nil {
-					return "", err
+					return err
 				}
 				stats.providers++
 				stats.entries += len(p.entries)
@@ -176,25 +171,24 @@ func (b *builder) template(ctx context.Context, t *tmpl) (string, error) {
 
 	for from := range t.Retarget {
 		if !retargeted[from] {
-			return "", fmt.Errorf("no rule sends traffic to %s any more; remove it from retarget", from)
+			return fmt.Errorf("no rule sends traffic to %s any more; remove it from retarget", from)
 		}
 	}
 	data, err := renderTemplate(t, src, file, providers, ruleList)
 	if err != nil {
-		return "", err
+		return err
 	}
 	if err := rules.Validate(data); err != nil {
-		return "", err
+		return err
 	}
 	if err := checkGroupsUsed(t.Groups, ruleList); err != nil {
-		return "", err
+		return err
 	}
-	path := "templates/" + t.Name + ".yaml"
-	if err := b.write(path, data, rules.File{Kind: "template", Source: src.fetchURL(file), License: src.License}); err != nil {
-		return "", err
+	if err := b.write(rules.TemplatePath, data, rules.File{Kind: "template", Source: src.fetchURL(file), License: src.License}); err != nil {
+		return err
 	}
-	fmt.Fprintf(b.log, "template %s: %d rule providers, %d entries, %s\n", t.Name, stats.providers, stats.entries, size(stats.bytes))
-	return path, nil
+	fmt.Fprintf(b.log, "template: %d rule providers, %d entries, %s\n", stats.providers, stats.entries, size(stats.bytes))
+	return nil
 }
 
 // parseLayout reads a Clash rules file. dler-io's start with the rules' list items, under an
@@ -213,7 +207,7 @@ func parseLayout(body []byte) (*layoutDoc, error) {
 	return &doc, nil
 }
 
-// ruleSet downloads and converts a rule set once, however many templates use it.
+// ruleSet downloads and converts a rule set once, however many rules use it.
 func (b *builder) ruleSet(ctx context.Context, lp layoutProvider) (*ruleSet, error) {
 	if set, ok := b.sets[lp.URL]; ok {
 		if set.behavior != lp.Behavior {
@@ -352,10 +346,10 @@ func renderTemplate(t *tmpl, src *source, layout string, providers *yaml.Node, r
 		key("rule-providers"), providers,
 		key("rules"), &list,
 	}}
-	doc.HeadComment = fmt.Sprintf("OpenWeir routing template %q, mirroring %s %s.\n%s\n"+
+	doc.HeadComment = fmt.Sprintf("OpenWeir routing template, mirroring %s %s.\n%s\n"+
 		"Groups reach nodes through include-all and filter; %s is the URL of the rules branch.\n"+
 		"Schema: https://github.com/openweir/subconv/blob/main/docs/rules.md",
-		t.Name, src.Name, layout, strings.TrimSpace(t.Description), rules.Placeholder)
+		src.Name, layout, strings.TrimSpace(t.Description), rules.Placeholder)
 	var out strings.Builder
 	enc := yaml.NewEncoder(&out)
 	enc.SetIndent(2)
@@ -508,12 +502,10 @@ func (b *builder) record(path string, meta rules.File) error {
 	return nil
 }
 
-func (b *builder) manifest(templates map[string]string) *rules.Manifest {
+func (b *builder) manifest() *rules.Manifest {
 	m := &rules.Manifest{
 		Version:   b.now.Unix(),
 		Generated: b.now.UTC().Format(time.RFC3339),
-		Default:   b.cfg.Default,
-		Templates: templates,
 	}
 	if b.prev != nil && m.Version <= b.prev.Version {
 		m.Version = b.prev.Version + 1

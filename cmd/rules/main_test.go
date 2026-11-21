@@ -25,7 +25,7 @@ const commit = "0123456789abcdef0123456789abcdef01234567"
 
 // A layout as dler-io writes them: the rules' items without "rules:", then the providers. The
 // client settings around them, like those of dler-io's Head*.yaml, must never reach a template.
-const liteLayout = `  - RULE-SET,Reject,REJECT
+const layout = `  - RULE-SET,Reject,REJECT
   - RULE-SET,Reject IP,REJECT
   - RULE-SET,Big,Proxy
   - RULE-SET,China IP,Domestic
@@ -74,7 +74,7 @@ proxies:
 `
 
 var upstreamFiles = map[string]string{
-	"Clash/Rule_Lite.yaml": liteLayout,
+	"Clash/Rule.yaml": layout,
 	"Clash/Provider/Big One.yaml": `payload:
   # > Big
   - DOMAIN,a.example
@@ -102,7 +102,6 @@ var sukkaFiles = map[string]string{
 }
 
 const testConfig = `
-default: lite
 max-size: 65536
 max-shrink: 0.5
 split-min: 3
@@ -136,16 +135,15 @@ licenses:
     names: [CC BY-SA 2.0]
     uri: https://creativecommons.org/licenses/by-sa/2.0/
   - id: LicenseRef-dler
-templates:
-  - name: lite
-    layout: https://fastly.jsdelivr.net/gh/dler/Rules@main/Clash/Rule_Lite.yaml
-    description: Test.
-    retarget: {Local: DIRECT}
-    groups:
-      - {name: Proxy, type: select, proxies: [Auto, DIRECT], include-all: true}
-      - {name: Auto, type: url-test, include-all: true, exclude-filter: "{info}"}
-      - {name: Domestic, type: select, proxies: [DIRECT, Proxy]}
-      - {name: Others, type: select, proxies: [Proxy, Domestic]}
+template:
+  layout: https://fastly.jsdelivr.net/gh/dler/Rules@main/Clash/Rule.yaml
+  description: Test.
+  retarget: {Local: DIRECT}
+  groups:
+    - {name: Proxy, type: select, proxies: [Auto, DIRECT], include-all: true}
+    - {name: Auto, type: url-test, include-all: true, exclude-filter: "{info}"}
+    - {name: Domestic, type: select, proxies: [DIRECT, Proxy]}
+    - {name: Others, type: select, proxies: [Proxy, Domestic]}
 notice: "# Notices"
 readme: "# Rules"
 `
@@ -250,13 +248,13 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	lite := read(t, out, "templates/lite.yaml")
-	if err := rules.Validate([]byte(lite)); err != nil {
-		t.Fatalf("%v\n%s", err, lite)
+	template := read(t, out, rules.TemplatePath)
+	if err := rules.Validate([]byte(template)); err != nil {
+		t.Fatalf("%v\n%s", err, template)
 	}
 	for _, setting := range []string{"port", "secret", "dns", "tun", "external-controller", "\nproxies:", "1053", "6152"} {
-		if strings.Contains(lite, setting) {
-			t.Errorf("template carries %q:\n%s", setting, lite)
+		if strings.Contains(template, setting) {
+			t.Errorf("template carries %q:\n%s", setting, template)
 		}
 	}
 	wantRules := `rules:
@@ -271,8 +269,8 @@ func TestBuild(t *testing.T) {
   - GEOIP,CN,Domestic
   - MATCH,Others
 `
-	if !strings.HasSuffix(lite, wantRules) {
-		t.Errorf("rules:\n%s", lite)
+	if !strings.HasSuffix(template, wantRules) {
+		t.Errorf("rules:\n%s", template)
 	}
 	for _, provider := range []string{
 		"Big (IP):\n    type: http\n    behavior: ipcidr\n    format: mrs\n    url: \"{rules}/providers/dler/big-one.ipcidr.mrs\"\n    path: ./rules/openweir/dler/big-one.ipcidr.mrs\n    interval: 86400\n",
@@ -280,8 +278,8 @@ func TestBuild(t *testing.T) {
 		"proxies: [Auto, DIRECT]",
 		"exclude-filter: " + rules.InfoFilter + "\n",
 	} {
-		if !strings.Contains(lite, provider) {
-			t.Errorf("no %q in\n%s", provider, lite)
+		if !strings.Contains(template, provider) {
+			t.Errorf("no %q in\n%s", provider, template)
 		}
 	}
 
@@ -306,7 +304,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m.Version != now.Unix() || m.Default != "lite" || m.Templates["lite"] != "templates/lite.yaml" {
+	if _, ok := m.File(rules.TemplatePath); m.Version != now.Unix() || !ok {
 		t.Fatalf("manifest %+v", m)
 	}
 	f, _ := m.File("providers/sukka/ip/china_ip.ipcidr.mrs")
@@ -350,7 +348,7 @@ func TestBuild(t *testing.T) {
 	if f, _ := m2.File("providers/sukka/ip/china_ip.ipcidr.txt"); f.Updated != "2026-11-23" {
 		t.Errorf("updated %s", f.Updated)
 	}
-	if f, _ := m2.File("templates/lite.yaml"); f.Updated != "2026-11-21" {
+	if f, _ := m2.File(rules.TemplatePath); f.Updated != "2026-11-21" {
 		t.Errorf("updated %s", f.Updated)
 	}
 }
@@ -373,7 +371,7 @@ func TestBuildRefuses(t *testing.T) {
 			u.config = strings.Replace(u.config, "{name: Others, type: select, proxies: [Proxy, Domestic]}", "{name: Rest, type: select, proxies: [Proxy, Domestic]}", 1)
 		}, `unknown policy "Others"`},
 		"unused group": {func(u *upstream) {
-			u.config = strings.Replace(u.config, "  - {name: Others,", "  - {name: Spare, type: select, proxies: [Proxy]}\n      - {name: Others,", 1)
+			u.config = strings.Replace(u.config, "    - {name: Others,", "    - {name: Spare, type: select, proxies: [Proxy]}\n    - {name: Others,", 1)
 		}, "group Spare is not used"},
 		"stale retarget": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "retarget: {Local: DIRECT}", "retarget: {Local: DIRECT, Gone: Proxy}", 1)
@@ -441,33 +439,32 @@ func TestConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tpl := range cfg.Templates {
-		var groups strings.Builder
-		groups.WriteString("proxy-groups:\n")
-		for _, g := range tpl.Groups {
-			groups.WriteString("  - {name: " + g.Name + ", type: " + g.Type + ", proxies: [DIRECT]}\n")
-		}
-		doc := []byte(groups.String() + "rules:\n  - MATCH,Proxy\n")
-		if err := rules.Validate(doc); err != nil {
-			t.Fatalf("%s: %v", tpl.Name, err)
-		}
-		for _, g := range tpl.Groups {
-			for _, f := range []string{g.Filter, g.ExcludeFilter} {
-				if !termsInOrder(f) {
-					t.Errorf("%s: %s: English terms first, then Chinese, then flags: %s", tpl.Name, g.Name, f)
-				}
-			}
-			if g.IncludeAll && g.ExcludeFilter != rules.InfoFilter {
-				t.Errorf("%s: %s does not exclude rules.InfoFilter", tpl.Name, g.Name)
+	tpl := cfg.Template
+	var groups strings.Builder
+	groups.WriteString("proxy-groups:\n")
+	for _, g := range tpl.Groups {
+		groups.WriteString("  - {name: " + g.Name + ", type: " + g.Type + ", proxies: [DIRECT]}\n")
+	}
+	doc := []byte(groups.String() + "rules:\n  - MATCH,Proxy\n")
+	if err := rules.Validate(doc); err != nil {
+		t.Fatal(err)
+	}
+	for _, g := range tpl.Groups {
+		for _, f := range []string{g.Filter, g.ExcludeFilter} {
+			if !termsInOrder(f) {
+				t.Errorf("%s: English terms first, then Chinese, then flags: %s", g.Name, f)
 			}
 		}
-		data, err := renderTemplate(tpl, cfg.Sources[0], "x", &yaml.Node{Kind: yaml.MappingNode}, []string{"MATCH,Others"})
-		if err != nil {
-			t.Fatal(err)
+		if g.IncludeAll && g.ExcludeFilter != rules.InfoFilter {
+			t.Errorf("%s does not exclude rules.InfoFilter", g.Name)
 		}
-		if err := rules.Validate(data); err != nil {
-			t.Fatalf("%s: %v\n%s", tpl.Name, err, data)
-		}
+	}
+	data, err := renderTemplate(tpl, cfg.Sources[0], "x", &yaml.Node{Kind: yaml.MappingNode}, []string{"MATCH,Others"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rules.Validate(data); err != nil {
+		t.Fatalf("%v\n%s", err, data)
 	}
 }
 
