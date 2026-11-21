@@ -4,7 +4,8 @@
 
 Converts proxy subscriptions of any common format into the OpenWeir subscription format: the
 `proxies`, `proxy-providers`, `proxy-groups`, `rule-providers` and `rules` that the
-[OpenWeir mihomo build](https://github.com/openweir/mihomo) loads. Pure Go, no I/O.
+[OpenWeir mihomo build](https://github.com/openweir/mihomo) loads. Pure Go; the conversion
+does no I/O.
 
 ## Supported inputs
 
@@ -32,10 +33,19 @@ for _, w := range result.Warnings {  // what was left out or changed: a stable c
 }
 stats := result.RuleStats            // Total, Dropped, Match: how well the rules converted
 
+// A config to run. Rules: "" (auto) | "template" | "subscription";
+// Client: *rules.Client; Head: put the OpenWeir default head in front
+config, err := subconv.Build(ctx, body, subconv.Options{Client: client, Head: true})
+
 // Providers a client downloads itself
 set, err := subconv.ConvertRuleSet(body, "domain", "text") // set.Behavior, set.Format, set.Body
 proxies, err := subconv.ConvertProxies(body)
 ```
+
+Subscriptions without rules (or whose rules convert poorly) get their routing from the template
+on this repository's `rules` branch, rebuilt daily from dler-io/Rules and served through
+jsDelivr-compatible CDNs; the `rules` package fetches it, checks it against the manifest and
+caches it — see [docs/rules.md](docs/rules.md).
 
 ## Command line
 

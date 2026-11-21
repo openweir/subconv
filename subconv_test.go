@@ -405,7 +405,7 @@ func TestVectorsLoadInMihomo(t *testing.T) {
 }
 
 // Subscriptions come from anywhere: no input may make Convert panic, and whatever it converts
-// must render. go test runs the seeds; go test -fuzz FuzzConvert explores further.
+// must render. go test runs the seeds; go test -fuzz '^FuzzConvert$' explores further.
 func FuzzConvert(f *testing.F) {
 	inputs, _ := filepath.Glob("testdata/*/input.*")
 	panel, _ := filepath.Glob("testdata/panel/*")

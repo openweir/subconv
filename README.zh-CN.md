@@ -4,7 +4,7 @@
 
 把各种常见格式的代理订阅转换成 OpenWeir 订阅格式，也就是
 [OpenWeir mihomo](https://github.com/openweir/mihomo) 能直接加载的 `proxies`、`proxy-providers`、
-`proxy-groups`、`rule-providers` 和 `rules`。纯 Go 实现，不做任何网络或文件 I/O。
+`proxy-groups`、`rule-providers` 和 `rules`。纯 Go 实现，转换本身不做任何网络或文件 I/O。
 
 ## 支持的输入
 
@@ -32,10 +32,18 @@ for _, w := range result.Warnings {  // 被剔除或改动的内容：稳定的�
 }
 stats := result.RuleStats            // Total、Dropped、Match：规则转换得是否完整
 
+// 可直接运行的完整配置。Rules：""（自动）| "template" | "subscription"；
+// Client：*rules.Client；Head：加上 OpenWeir 默认头部
+config, err := subconv.Build(ctx, body, subconv.Options{Client: client, Head: true})
+
 // 客户端自行下载的 provider
 set, err := subconv.ConvertRuleSet(body, "domain", "text") // set.Behavior、set.Format、set.Body
 proxies, err := subconv.ConvertProxies(body)
 ```
+
+没有规则（或规则转换损失较大）的订阅，改用本仓库 `rules` 分支上的模板分流。该分支每天从
+dler-io/Rules 重新生成，经兼容 jsDelivr 的 CDN 分发；`rules` 包负责获取模板、按 manifest
+校验并缓存，详见 [docs/rules.md](docs/rules.md)。
 
 ## 命令行
 

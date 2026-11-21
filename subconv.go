@@ -7,8 +7,10 @@
 // many formats; Convert detects which and returns the Clash parts, each item checked so that the
 // config loads. The rest of a config (ports, DNS, TUN, the controller) is each client's own.
 //
-// The package does no I/O: bytes in, a Result out. Each format lives in its own package under
-// internal/ (docs/architecture.md).
+// Converting does no I/O: bytes in, a Result out. Build makes a config to run of the parts, with
+// the routing template it gets through the caller's rules.Client when the subscription's own
+// routing is missing or too lossy. What the package does lives under internal/, each format in
+// its own package (docs/architecture.md).
 package subconv
 
 import (
