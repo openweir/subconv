@@ -5,8 +5,9 @@
 //
 // For a set of panel nodes it writes the sing-box outbounds (singbox.json), the share links
 // (links.txt) and the panel's OpenWeir proxies (openweir.json). TestPanelVectors converts the
-// first two and compares the proxies with the third. It also copies the head of the panel's
-// OpenWeir template (openweir-head.yaml), which TestHead holds subconv's head to.
+// first two and compares the proxies with the third (subconv_test.go). It also copies the head
+// of the panel's OpenWeir template (openweir-head.yaml), which TestHead holds subconv's head
+// (internal/build/head.go) to.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";

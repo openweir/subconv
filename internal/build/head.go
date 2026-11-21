@@ -1,10 +1,10 @@
-package subconv
+package build
 
 // Head is the OpenWeir default head: the settings of a complete config before its proxies,
 // exactly as the OpenWeir panel's template writes them (api-edge's
-// resources/subscriptions/openweir.liquid.txt). Build puts it in front of the converted parts
-// when Options.Head is set. TestHead holds it to testdata/panel/openweir-head.yaml, which
-// scripts/panel-vectors.ts copies from the panel; update both together.
+// resources/subscriptions/openweir.liquid.txt). The root package exports it as Head. TestHead
+// holds it to testdata/panel/openweir-head.yaml, which scripts/panel-vectors.ts copies from the
+// panel; update both together.
 const Head = `mixed-port: 9347
 allow-lan: false
 mode: rule

@@ -8,9 +8,15 @@ is in [conversion.md](conversion.md).
 ## Layout
 
 ```
-subconv.go             the public API: Convert, ConvertWith, Format and warning constants
-detect.go              Detect and its errors: which format a body is, decoded and cleaned
-content.go             ConvertRuleSet and ConvertProxies, for providers clients download
+subconv.go             the conversion API: Convert, ConvertWith, Detect, ConvertRuleSet,
+                       ConvertProxies, their errors, Result and the Format and warning constants
+build.go               Build, Options and Head
+subconv_test.go        the vectors, the panel cross-check, the mihomo load check, fuzz targets
+build_test.go          Build against a test rules branch
+internal/convert/      what the conversion API does: detect a body's format (detect.go), hand it
+                       to the format's package, normalize the result
+internal/build/        what Build adds: the routing template applied (template.go), the OpenWeir
+                       default head (head.go)
 internal/body/         a body as text: byte-order marks, UTF-16, Base64 variants, JSONC, web
                        pages and error messages
 internal/model/        what every format shares: Result, Warning and its codes, RuleStats,
@@ -40,7 +46,7 @@ without touching them.
 
 ## A conversion
 
-1. `detect` cleans the body (`internal/body`): a byte-order mark or UTF-16 goes, JSON comments
+1. `convert.Detect` cleans the body (`internal/body`): a byte-order mark or UTF-16 goes, JSON comments
    go, and a body that is Base64 as a whole is decoded and detected again. HTML, empty bodies
    and short messages fail with `ErrWebPage`, `ErrEmpty` and `ErrMessage`.
 2. The format's package reads the body into a `model.Result`: proxies, proxy providers, groups,
@@ -77,7 +83,8 @@ rule per value, a rule of several one `AND` of the groups, each an `OR` of its v
 - **A rule field**: add a case to `atoms` in `internal/singbox/rules.go`, or a type to
   `internal/ruleset/types.go` when mihomo gains one.
 - **A format**: add a package under `internal/`, a `Format` constant in `internal/model` and
-  `subconv.go`, a branch in `detect` and `convert`, a row in conversion.md, and a vector.
+  `subconv.go`, a branch in `detect` (`internal/convert/detect.go`) and `parts`
+  (`internal/convert/convert.go`), a row in conversion.md, and a vector.
 - A protocol the panel writes has a fixture in `scripts/panel-vectors.ts`; regenerate
   `testdata/panel/` so `TestPanelVectors` holds both sides to the same proxies.
 

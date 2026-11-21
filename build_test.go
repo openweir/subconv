@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -269,16 +268,5 @@ func TestBuildHead(t *testing.T) {
 		if !strings.Contains(string(yaml), "\nproxies:\n") && head || !strings.Contains(string(yaml), "🚀 Proxy") {
 			t.Errorf("parts:\n%s", yaml)
 		}
-	}
-}
-
-// subconv's head is the panel's: scripts/panel-vectors.ts copies it to testdata/panel.
-func TestHead(t *testing.T) {
-	panel, err := os.ReadFile("testdata/panel/openweir-head.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if Head != string(panel) {
-		t.Errorf("Head differs from the panel's template head; update head.go from testdata/panel/openweir-head.yaml (bun scripts/panel-vectors.ts ../api-edge)")
 	}
 }

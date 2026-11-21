@@ -4,13 +4,35 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
 
+	"github.com/openweir/subconv/internal/build"
 	"github.com/openweir/subconv/internal/model"
-	"github.com/openweir/subconv/internal/normalize"
 	"github.com/openweir/subconv/rules"
 )
+
+// Options adjust a conversion; the zero value is Convert's.
+type Options struct {
+	// ConvertsRuleSets says that the caller downloads rule providers itself and passes their
+	// bodies through ConvertRuleSet. Rule sets whose content mihomo cannot read (sing-box source
+	// JSON, Quantumult X filter lists) are then kept as http providers instead of left out.
+	ConvertsRuleSets bool
+
+	// The rest is Build's.
+
+	// Rules chooses the routing: RulesAuto (the default), RulesTemplate or RulesSubscription.
+	Rules string
+	// Client gets the routing template from the rules branch; nil is a rules.Client with the
+	// default hosts and http.DefaultClient, without a cache. The caller's client carries its
+	// routing, cache and MinVersion.
+	Client *rules.Client
+	// Head puts the OpenWeir default head (Head) in front of the parts, making a complete
+	// config.
+	Head bool
+}
+
+func (o Options) model() model.Options {
+	return model.Options{ConvertsRuleSets: o.ConvertsRuleSets}
+}
 
 // Routing choices for Options.Rules.
 const (
@@ -25,6 +47,12 @@ const (
 
 // ErrUnknownRules is returned for an Options.Rules that is none of the Rules* choices.
 var ErrUnknownRules = errors.New("unknown routing choice")
+
+// Head is the OpenWeir default head: the settings of a complete config before its proxies,
+// exactly as the OpenWeir panel's template writes them (api-edge's
+// resources/subscriptions/openweir.liquid.txt). Build puts it in front of the converted parts
+// when Options.Head is set.
+const Head = build.Head
 
 // Build converts a subscription into a config a client runs: Convert's parts, with the routing
 // template from the rules branch (package rules) in place of the subscription's groups, rule
@@ -59,7 +87,7 @@ func Build(ctx context.Context, data []byte, options Options) (*Result, error) {
 	case err != nil:
 		return nil, err
 	}
-	if err := applyTemplate(result, template, options.model()); err != nil {
+	if err := build.Apply(result, template, options.model()); err != nil {
 		result.Warn(model.WarnTemplateUnavailable, "%v", err)
 		return result, nil
 	}
@@ -76,130 +104,7 @@ func templateReason(choice string, stats RuleStats) (string, error) {
 	case RulesTemplate:
 		return TemplateRequested, nil
 	case RulesAuto:
-		switch {
-		case stats.Total == 0:
-			return TemplateNoRules, nil
-		case !stats.Match:
-			return TemplateNoMatch, nil
-		case stats.Dropped*10 > stats.Total:
-			return TemplateDropped, nil
-		}
-		return "", nil
+		return build.Reason(stats), nil
 	}
 	return "", fmt.Errorf("%w: %q", ErrUnknownRules, choice)
-}
-
-// applyTemplate replaces the result's groups, rule providers and rules with the template's:
-// its include-all groups list the result's proxies (and use its proxy providers), and groups left
-// empty go with their references.
-func applyTemplate(result *Result, template *rules.Template, options model.Options) error {
-	if err := rules.Validate(template.YAML); err != nil {
-		return err
-	}
-	filled, err := template.Filled()
-	if err != nil {
-		return err
-	}
-	value, err := model.Decode(filled)
-	if err != nil {
-		return fmt.Errorf("rules: template: %w", err)
-	}
-	config := model.AsObject(value)
-	var groups []model.Object
-	for _, item := range model.AsList(config.Value("proxy-groups")) {
-		group, err := expand(model.AsObject(item), result)
-		if err != nil {
-			return err
-		}
-		groups = append(groups, group)
-	}
-	stats, providers := result.RuleStats, model.AsObject(config.Value("rule-providers"))
-	result.Groups = groups
-	result.RuleProviders = providers
-	result.Rules = model.AsStrings(config.Value("rules"))
-	// Groups the template leaves empty go, with their references; the proxies come through
-	// unchanged, having been normalized already.
-	normalize.Result(result, options)
-	// The statistics stay the subscription's, and the template's providers as it writes them:
-	// their paths keep the rule sets' cache when the host changes.
-	result.RuleStats = stats
-	for index, field := range result.RuleProviders {
-		result.RuleProviders[index].Value = providers.Value(field.Key)
-	}
-	return nil
-}
-
-// mihomo's names of proxy types, which exclude-type lists.
-var typeNames = map[string]string{
-	"ss": "Shadowsocks", "ssr": "ShadowsocksR", "socks5": "Socks5", "http": "Http", "vmess": "Vmess",
-	"vless": "Vless", "trojan": "Trojan", "snell": "Snell", "hysteria": "Hysteria", "hysteria2": "Hysteria2",
-	"wireguard": "WireGuard", "tuic": "Tuic", "ssh": "Ssh", "mieru": "Mieru", "anytls": "AnyTLS",
-}
-
-// expand turns an include-all group into one that lists its members: its own first, then the
-// proxies its filters let through, in subscription order. With proxy providers, it uses them
-// all and keeps its filters for their proxies.
-func expand(group model.Object, result *Result) (model.Object, error) {
-	if all, _ := model.Bool(group.Value("include-all")); !all {
-		return group, nil
-	}
-	group = group.Clone()
-	filter, err := compile(group.String("filter"))
-	if err != nil {
-		return nil, err
-	}
-	exclude, err := compile(group.String("exclude-filter"))
-	if err != nil {
-		return nil, err
-	}
-	excludedTypes := strings.Split(strings.ToLower(group.String("exclude-type")), "|")
-	members := toAny(model.AsStrings(group.Value("proxies")))
-	for _, p := range result.Proxies {
-		name, kind := p.String("name"), p.String("type")
-		switch {
-		case filter != nil && !filter.MatchString(name),
-			exclude != nil && exclude.MatchString(name),
-			contains(excludedTypes, strings.ToLower(kind)) || contains(excludedTypes, strings.ToLower(typeNames[kind])):
-			continue
-		}
-		members = append(members, name)
-	}
-	group.Delete("include-all")
-	group.InsertAfter("type", "proxies", members)
-	if len(result.ProxyProviders) > 0 {
-		var use []any
-		for _, field := range result.ProxyProviders {
-			use = append(use, field.Key)
-		}
-		group.InsertAfter("proxies", "use", use)
-	} else {
-		group.Delete("filter")
-		group.Delete("exclude-filter")
-		group.Delete("exclude-type")
-	}
-	return group, nil
-}
-
-func compile(pattern string) (*regexp.Regexp, error) {
-	if pattern == "" {
-		return nil, nil
-	}
-	return regexp.Compile(pattern) // rules.Validate keeps filters to what Go and mihomo read alike
-}
-
-func toAny(list []string) []any {
-	out := make([]any, len(list))
-	for index, item := range list {
-		out[index] = item
-	}
-	return out
-}
-
-func contains(list []string, value string) bool {
-	for _, item := range list {
-		if item != "" && item == value {
-			return true
-		}
-	}
-	return false
 }

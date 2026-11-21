@@ -12,15 +12,9 @@
 package subconv
 
 import (
-	"github.com/openweir/subconv/internal/clash"
-	"github.com/openweir/subconv/internal/links"
+	"github.com/openweir/subconv/internal/convert"
 	"github.com/openweir/subconv/internal/model"
-	"github.com/openweir/subconv/internal/normalize"
-	"github.com/openweir/subconv/internal/shadowsocks"
-	"github.com/openweir/subconv/internal/singbox"
-	"github.com/openweir/subconv/internal/surge"
-	"github.com/openweir/subconv/internal/xray"
-	"github.com/openweir/subconv/rules"
+	"github.com/openweir/subconv/internal/ruleset"
 )
 
 type (
@@ -39,30 +33,6 @@ type (
 	// TemplateUse reports the routing template Build applied.
 	TemplateUse = model.TemplateUse
 )
-
-// Options adjust a conversion; the zero value is Convert's.
-type Options struct {
-	// ConvertsRuleSets says that the caller downloads rule providers itself and passes their
-	// bodies through ConvertRuleSet. Rule sets whose content mihomo cannot read (sing-box source
-	// JSON, Quantumult X filter lists) are then kept as http providers instead of left out.
-	ConvertsRuleSets bool
-
-	// The rest is Build's.
-
-	// Rules chooses the routing: RulesAuto (the default), RulesTemplate or RulesSubscription.
-	Rules string
-	// Client gets the routing template from the rules branch; nil is a rules.Client with the
-	// default hosts and http.DefaultClient, without a cache. The caller's client carries its
-	// routing, cache and MinVersion.
-	Client *rules.Client
-	// Head puts the OpenWeir default head (Head) in front of the parts, making a complete
-	// config.
-	Head bool
-}
-
-func (o Options) model() model.Options {
-	return model.Options{ConvertsRuleSets: o.ConvertsRuleSets}
-}
 
 // Formats Detect names; docs/conversion.md describes each.
 const (
@@ -108,10 +78,23 @@ const (
 	TemplateDropped   = model.TemplateDropped
 )
 
+var (
+	// ErrUnknownFormat is returned for input that is none of the formats.
+	ErrUnknownFormat = convert.ErrUnknownFormat
+	// ErrEmpty is returned for an empty body.
+	ErrEmpty = convert.ErrEmpty
+	// ErrWebPage is returned for an HTML page, which servers send for errors, logins and
+	// challenges instead of a subscription.
+	ErrWebPage = convert.ErrWebPage
+	// ErrMessage is returned for a short text or JSON message instead of a subscription, such
+	// as an expired token's; the error includes the message.
+	ErrMessage = convert.ErrMessage
+)
+
 // Detect returns the format of a subscription. It fails with ErrUnknownFormat, which
 // ErrEmpty, ErrWebPage and ErrMessage refine.
 func Detect(data []byte) (Format, error) {
-	format, _, err := detect(data, 0)
+	format, _, err := convert.Detect(data)
 	return format, err
 }
 
@@ -122,34 +105,32 @@ func Convert(data []byte) (*Result, error) {
 
 // ConvertWith converts a subscription with options.
 func ConvertWith(data []byte, options Options) (*Result, error) {
-	format, payload, err := detect(data, 0)
-	if err != nil {
-		return nil, err
-	}
-	result, err := convert(format, payload, options.model())
-	if err != nil {
-		return nil, err
-	}
-	normalize.Result(result, options.model())
-	return result, nil
+	return convert.Subscription(data, options.model())
 }
 
-// convert hands a detected body to its format's package.
-func convert(format Format, payload []byte, options model.Options) (*Result, error) {
-	switch format {
-	case FormatSingBox:
-		return singbox.Convert(payload, options)
-	case FormatClash, FormatStash:
-		return clash.Convert(payload)
-	case FormatSurge, FormatSurfboard, FormatLoon, FormatShadowrocket, FormatQuantumultX:
-		return surge.Convert(payload, format, options)
-	case FormatSIP008:
-		return shadowsocks.ConvertSIP008(payload)
-	case FormatSSD:
-		return shadowsocks.ConvertSSD(payload)
-	case FormatXray:
-		return xray.Convert(payload)
-	default:
-		return links.Convert(payload)
-	}
+// RuleSet is a rule provider's content in a form mihomo reads: Behavior and Format are what
+// the provider must declare for Body, which may differ from what it declared.
+type RuleSet = ruleset.Content
+
+var (
+	// ErrRuleSetTooLarge is returned for a rule set over 32 MiB or 250,000 entries.
+	ErrRuleSetTooLarge = ruleset.ErrTooLarge
+	// ErrNoRules is returned for a rule set with no entry mihomo can use.
+	ErrNoRules = ruleset.ErrNoRules
+)
+
+// ConvertRuleSet converts the content of a rule provider a client downloaded: Clash's YAML
+// payload or text list, MRS (which passes through), Surge and Loon lists, Quantumult X filter
+// lists, or sing-box source JSON. behavior and format are what the provider declares; they are
+// hints, and the content decides. Invalid entries are skipped and counted.
+func ConvertRuleSet(data []byte, behavior, format string) (*RuleSet, error) {
+	return convert.RuleSet(data, behavior, format)
+}
+
+// ConvertProxies converts the content of a proxy provider a client downloaded, in any format
+// Convert reads, into its proxies, each repaired or left out on its own. Groups and rules in the
+// content are not the provider's and are ignored; a dialer-proxy stays as written, since it
+// names the config the provider joins.
+func ConvertProxies(data []byte) (*Result, error) {
+	return convert.Proxies(data)
 }

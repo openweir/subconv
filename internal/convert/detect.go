@@ -1,4 +1,4 @@
-package subconv
+package convert
 
 import (
 	"bytes"
@@ -43,9 +43,14 @@ func (e *inputError) Error() string {
 
 func (e *inputError) Is(target error) bool { return target == e.kind || target == ErrUnknownFormat }
 
-// detect returns a body's format and the text to convert: decoded from Base64 or UTF-16, and
-// without JSON comments.
-func detect(data []byte, depth int) (Format, []byte, error) {
+// Detect returns a body's format and the text to convert: decoded from Base64 or UTF-16, and
+// without JSON comments. It fails with ErrUnknownFormat, which ErrEmpty, ErrWebPage and
+// ErrMessage refine.
+func Detect(data []byte) (model.Format, []byte, error) {
+	return detect(data, 0)
+}
+
+func detect(data []byte, depth int) (model.Format, []byte, error) {
 	text := bytes.TrimFunc(body.Clean(data), func(r rune) bool { return unicode.IsSpace(r) || r == '\uFEFF' })
 	switch {
 	case len(text) == 0:
@@ -76,10 +81,10 @@ func detect(data []byte, depth int) (Format, []byte, error) {
 		return format, text, nil
 	}
 	if shadowsocks.IsSSD(text) {
-		return FormatSSD, text, nil
+		return model.FormatSSD, text, nil
 	}
 	if links.Is(text) {
-		return FormatLinks, text, nil
+		return model.FormatLinks, text, nil
 	}
 	if depth == 0 {
 		if decoded, ok := body.Base64Text(text); ok {
@@ -98,17 +103,17 @@ func detect(data []byte, depth int) (Format, []byte, error) {
 }
 
 // jsonFormat names the format of a JSON config, or "".
-func jsonFormat(value any) Format {
+func jsonFormat(value any) model.Format {
 	config := model.AsObject(value)
 	switch {
 	case xray.Is(value):
-		return FormatXray
+		return model.FormatXray
 	case config.Value("outbounds") != nil || config.Value("endpoints") != nil:
-		return FormatSingBox
+		return model.FormatSingBox
 	case config.Value("proxies") != nil || config.Value("proxy-providers") != nil:
 		return clash.Dialect(config)
 	case shadowsocks.IsSIP008(value):
-		return FormatSIP008
+		return model.FormatSIP008
 	}
 	return ""
 }
@@ -131,7 +136,7 @@ func jsonMessage(value any) string {
 
 // clashYAML names the dialect of a YAML mapping with Clash's proxies or providers, in any of
 // the spellings Clash has used, or returns "".
-func clashYAML(text []byte) Format {
+func clashYAML(text []byte) model.Format {
 	if !bytes.Contains(text, []byte("roxies")) && !bytes.Contains(text, []byte("roxy")) {
 		return ""
 	}
