@@ -71,6 +71,15 @@ repaired; what cannot be repaired is left out with a warning, and the rest conve
 - Removed with `ignored_option`: `interface-name` and `routing-mark` (the client's), local files
   (`*-path`, `*-file`, certificates and keys that are paths rather than PEM), Naive options
   Cronet refuses.
+- What mihomo's constructors refuse at load, which would take the whole config down
+  (`TestVectorsLoadInMihomo` checks every vector with a mihomo binary): REALITY public keys (32
+  bytes of URL-safe Base64; other spellings of the same key are rewritten) and short IDs,
+  REALITY implying TLS; Shadowsocks methods, 2022 key lengths, obfs modes and UDP-over-TCP
+  versions; ShadowsocksR stream ciphers, obfs and protocols; VMess ciphers; VLESS's legacy XTLS
+  flows; Snell versions and their options; Hysteria bandwidths and protocols; Hysteria 2 obfs;
+  WireGuard keys, reserved bytes and addresses; certificate pins; ECH configs; Nowhere, Naive
+  and Mieru options; SSH host keys; mux protocols. An optional value is removed
+  (`ignored_option`), anything else leaves the proxy out.
 - Left out: a missing or invalid server or port (`invalid_proxy`), missing credentials
   (`invalid_credential`; also a Snell `password` without a `psk`), a type mihomo lacks
   (`unsupported_proxy`).
@@ -111,11 +120,12 @@ geoip set (SagerNet's sing-geosite and sing-geoip, MetaCubeX's sing branch, or t
   (Quantumult X's `proxy`), a bare IP as a /32 or /128, `DOMAIN-SUFFIX,.example.com`, port
   ranges written `a:b`; options other than `no-resolve` and `src` are dropped.
 - Left out (`unsupported_rule`, with the rule as written): types mihomo lacks (`USER-AGENT`,
-  `URL-REGEX`, `SCRIPT`, `SUB-RULE`), malformed rules and logical rules, invalid IP ranges,
-  ports or regexps, and rules whose policy or rule set does not exist or was left out.
-- The rules end with one `MATCH`: rules after it never match and go; a `MATCH` whose policy is
-  gone becomes `MATCH,DIRECT`; rules without one get `MATCH,DIRECT`, which is what mihomo does
-  anyway.
+  `URL-REGEX`, `SCRIPT`, `SUB-RULE`), `UID` (mihomo refuses it on every system but Linux and
+  Android), malformed rules and logical rules, invalid IP ranges, ports, DSCP values, inbound
+  types or regexps, and rules whose policy or rule set does not exist or was left out.
+- The rules end with one `MATCH`: rules after it never match and go. A `MATCH` whose policy is
+  gone, or a missing one, sends traffic to the first group, as Clash configs do, or `DIRECT`
+  when there is none; a config with groups and no rules gets that `MATCH` too.
 
 **Rule statistics**: `Result.RuleStats` counts the subscription's rules (`Total`), those left
 out (`Dropped`), and whether its final rule (`MATCH`, Surge's `FINAL`, sing-box's `route.final`
@@ -123,8 +133,28 @@ or first outbound, Xray's first outbound) survived with its policy (`Match`). Ru
 Clash rules: a sing-box or Xray rule that tests several values counts once per value, and a
 rule left out before it became one counts once. Rules a client handles itself (sniffing, DNS
 hijacking) and rules after the final `MATCH` do not count. A client may fall back to a routing
-template of its own when there are no rules, no `Match`, or too many dropped; `Convert` itself
-decides nothing.
+template when there are no rules, no `Match`, or too many dropped; `Convert` itself decides
+nothing, `Build` does (below).
+
+## Build
+
+`Build(ctx, body, Options)` converts a subscription into the config a client runs:
+
+- `Options.Rules`: `""` (auto) uses the subscription's routing unless it has no rules, its final
+  rule did not survive (`RuleStats.Match`), or more than a tenth of its rules were left out; then
+  the routing template of the rules branch ([rules.md](rules.md)). `"template"` always uses the
+  template, `"subscription"` never.
+- With the template, the subscription's groups, rule providers and rules give way to the
+  template's: every `include-all` group lists its own members, then the nodes its filters let
+  through in subscription order; proxy providers join it as `use`, with its filters for their
+  nodes; groups left empty go with their references; `{rules}` becomes the host the client
+  picked. `Result.Template` (`Version`, `Reason`, `Cached`) and a `template_applied` warning say
+  why: `requested`, `no_rules`, `no_match` or `dropped_rules`.
+- Without a template (`rules.ErrNoTemplate`: no host served it and the cache holds none, or it
+  fails `rules.Validate`), the plain conversion comes back with `template_unavailable`.
+- `Options.Client` is the caller's `rules.Client` (HTTP client, hosts, cache, `MinVersion`).
+- `Options.Head` puts the OpenWeir default head (`Head`, the panel template's settings before
+  its proxies) in front of the parts.
 
 ## Formats in detail
 
@@ -263,8 +293,11 @@ provider's name, or a rule as written (`rule N to POLICY` for sing-box and Xray 
 | `empty_group` | a group with no members left; left out with its references | no |
 | `unsupported_rule` | a rule left out (and rewrite or script sections) | **yes** |
 | `unsupported_rule_set` | a rule set mihomo cannot read or reach; its rules are left out | **yes** |
+| `template_applied` | Build put the routing template in place of the subscription's routing; the detail is the reason | the template's |
+| `template_unavailable` | Build needed the template but has none; the subscription's routing stays | — |
 
-A client should flag the last two: traffic goes elsewhere than the subscription meant.
+A client should flag `unsupported_rule` and `unsupported_rule_set`: traffic goes elsewhere than
+the subscription meant.
 
 ## Not representable
 
