@@ -190,7 +190,7 @@ func WebPage(data []byte) bool {
 // "token expired", or "" when the body is not one.
 func Message(data []byte) string {
 	text := strings.TrimSpace(string(data))
-	if text == "" || len(text) > 4096 || !Text([]byte(text)) {
+	if text == "" || len(text) > 4096 || !Text([]byte(text)) || blob(text) {
 		return ""
 	}
 	line, _, _ := strings.Cut(text, "\n")
@@ -199,4 +199,19 @@ func Message(data []byte) string {
 		line = string(runes[:117]) + "..."
 	}
 	return line
+}
+
+// blob reports a long run of Base64 or hex, which is data rather than a message.
+func blob(text string) bool {
+	if len(text) < 32 {
+		return false
+	}
+	for _, r := range text {
+		switch {
+		case r >= 'A' && r <= 'Z', r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '+', r == '/', r == '=', r == '-', r == '_', r == '\n', r == '\r':
+		default:
+			return false
+		}
+	}
+	return true
 }

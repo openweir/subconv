@@ -97,6 +97,7 @@ func TestDetectErrors(t *testing.T) {
 		`{"message":"invalid token"}`:     ErrMessage,
 		`{"error":{"msg":"user banned"}}`: ErrMessage,
 		`{"log":{}}`:                      ErrUnknownFormat,
+		"QmluYXJ5IGRhdGEgdGhhdCBpcyBub3QgYSBzdWJzY3JpcHRpb24AAQI=": ErrUnknownFormat,
 	} {
 		_, err := Convert([]byte(input))
 		if !errors.Is(err, want) || !errors.Is(err, ErrUnknownFormat) {
