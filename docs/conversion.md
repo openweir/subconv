@@ -221,11 +221,11 @@ XHTTP download settings, unknown schemes; a malformed link is `invalid_proxy`.
 ### Surge, Surfboard, Loon and Shadowrocket
 
 - **Proxies**: ss (obfs, ShadowTLS), ShadowsocksR, vmess, vless (REALITY), trojan (ws), http and
-  https, socks5 and socks5-tls, snell (obfs, ShadowTLS), hysteria2 (port hopping), tuic and
-  tuic-v5, anytls, ssh, and WireGuard from Surge's `[WireGuard name]` sections and Loon's single
-  lines. Loon's positional method, password and UUID. `underlying-proxy` is `dialer-proxy`,
-  `server-cert-fingerprint-sha256` is `fingerprint`. `name = direct` and `name = reject` are
-  aliases of the built-in policies.
+  https, socks5 and socks5-tls, snell (obfs, ShadowTLS, v6's userkey and mode), hysteria2 (port
+  hopping), tuic and tuic-v5, anytls, ssh, and WireGuard from Surge's `[WireGuard name]` sections
+  and Loon's single lines. Loon's positional method, password and UUID. `underlying-proxy` is
+  `dialer-proxy`, `server-cert-fingerprint-sha256` is `fingerprint`. `name = direct` and
+  `name = reject` are aliases of the built-in policies.
 - **Groups**: select, url-test (Loon's url, Surge's smart), fallback, load-balance;
   `include-all-proxies` and `policy-regex-filter`. Loon's `[Proxy Chain]` becomes a relay.
 - **Rules**: Surge's rules as above; `RULE-SET` and `DOMAIN-SET` URLs and Loon's `[Remote Rule]`

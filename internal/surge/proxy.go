@@ -212,10 +212,15 @@ func (c *converter) proxy(n node) (model.Object, string) {
 		out = proxy.Merge(base, model.New(
 			"type", "snell",
 			"psk", n.arg(0, "psk"),
+			"password", n.opt("password"), // not Snell's; the normalization reports it as for Clash
+			"userkey", n.opt("userkey"),
 			"version", version,
 			"reuse", n.flag("reuse"),
 			"udp", version >= 3,
 		))
+		if mode := n.opt("mode"); version == 6 && mode != "" && mode != "default" {
+			out.Set("mode", mode)
+		}
 		if obfs := n.opt("obfs"); obfs != "" && obfs != "none" {
 			if version >= 6 {
 				return nil, "Snell v6 has no obfs"
