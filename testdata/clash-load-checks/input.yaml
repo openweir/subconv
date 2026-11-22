@@ -1,0 +1,33 @@
+# Values mihomo refuses at load, which would take the whole config down, next to valid ones it
+# takes and an earlier check refused. Each is repaired, removed, or leaves its proxy out.
+proxies:
+  - {name: VLESS auto, type: vless, server: v1.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000001, encryption: auto, tls: true}
+  - {name: VLESS zero, type: vless, server: v2.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000002, encryption: zero}
+  - {name: VLESS no key, type: vless, server: v3.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000003, encryption: mlkem768x25519plus.native.1rtt.100-111-1111}
+  - {name: VLESS REALITY no key, type: vless, server: v4.example.com, port: 443, uuid: 7c8c8c0e-0000-4000-8000-000000000004, tls: true, servername: www.example.com, reality-opts: {public-key: "", short-id: ""}}
+  - {name: AnyTLS REALITY no key, type: anytls, server: a.example.com, port: 443, password: p, reality-opts: {public-key: "", short-id: ab}}
+  - {name: Trojan h2, type: trojan, server: t1.example.com, port: 443, password: p, network: h2, h2-opts: {host: [t1.example.com], path: /}}
+  - {name: Trojan http, type: trojan, server: t2.example.com, port: 443, password: p, network: http, http-opts: {path: [/]}}
+  - {name: Trojan ws, type: trojan, server: t3.example.com, port: 443, password: p, network: ws, ws-opts: {path: /t}}
+  - {name: Hysteria Mbps, type: hysteria, server: h1.example.com, port: 443, auth-str: a, up: 100, down: 200}
+  - {name: Hysteria zero, type: hysteria, server: h2.example.com, port: 443, auth-str: a, up: 0, down: 200}
+  - {name: Hy2 gecko, type: hysteria2, server: h3.example.com, port: 443, password: p, obfs: gecko, obfs-password: g, obfs-min-packet-size: 1500}
+  - {name: Hy2 numbers, type: hysteria2, server: h4.example.com, port: 443, password: p, obfs: salamander, obfs-password: 12345, up: 50, down: 100}
+  - {name: TUIC token, type: tuic, server: q.example.com, port: 443, token: 123456}
+  - {name: ZeroTier, type: zerotier, network: 8056c2e21c000001, state-dir: zerotier, orbit: [{world: "000000000000abcd", seed: abcdef0123}, {world: x, seed: y}]}
+  - name: Naive
+    type: naive
+    server: n.example.com
+    port: 443
+    username: u
+    password: p
+    udp-over-tcp-version: 2
+    quic-congestion-control: bbr
+    private-key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n"
+    headers: {X-Client: subconv, Host: n.example.com, Padding: "1"}
+proxy-groups:
+  - {name: Proxy, type: select, proxies: [Auto, Fallback, VLESS auto, VLESS REALITY no key, Trojan ws, Hysteria Mbps, Hy2 gecko, Hy2 numbers, TUIC token, ZeroTier, Naive]}
+  - {name: Auto, type: url-test, proxies: [VLESS auto, Trojan ws], url: "https://cp.cloudflare.com", interval: 300, expected-status: "200-"}
+  - {name: Fallback, type: fallback, proxies: [Trojan ws, Hy2 gecko], url: "https://cp.cloudflare.com", interval: 300, expected-status: "200,204"}
+rules:
+  - MATCH,Proxy

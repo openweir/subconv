@@ -1,0 +1,210 @@
+{
+  "format": "clash",
+  "proxies": [
+    {
+      "name": "VLESS auto",
+      "type": "vless",
+      "server": "v1.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "tls": true
+    },
+    {
+      "name": "VLESS REALITY no key",
+      "type": "vless",
+      "server": "v4.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000004",
+      "tls": true,
+      "servername": "www.example.com"
+    },
+    {
+      "name": "Trojan ws",
+      "type": "trojan",
+      "server": "t3.example.com",
+      "port": 443,
+      "password": "p",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/t"
+      }
+    },
+    {
+      "name": "Hysteria Mbps",
+      "type": "hysteria",
+      "server": "h1.example.com",
+      "port": 443,
+      "auth-str": "a",
+      "up": 100,
+      "down": 200
+    },
+    {
+      "name": "Hy2 gecko",
+      "type": "hysteria2",
+      "server": "h3.example.com",
+      "port": 443,
+      "password": "p",
+      "obfs": "gecko",
+      "obfs-password": "g"
+    },
+    {
+      "name": "Hy2 numbers",
+      "type": "hysteria2",
+      "server": "h4.example.com",
+      "port": 443,
+      "password": "p",
+      "obfs": "salamander",
+      "obfs-password": 12345,
+      "up": 50,
+      "down": 100
+    },
+    {
+      "name": "TUIC token",
+      "type": "tuic",
+      "server": "q.example.com",
+      "port": 443,
+      "token": 123456
+    },
+    {
+      "name": "ZeroTier",
+      "type": "zerotier",
+      "network": "8056c2e21c000001",
+      "orbit": [
+        {
+          "world": "000000000000abcd",
+          "seed": "abcdef0123"
+        }
+      ]
+    },
+    {
+      "name": "Naive",
+      "type": "naive",
+      "server": "n.example.com",
+      "port": 443,
+      "username": "u",
+      "password": "p",
+      "headers": {
+        "X-Client": "subconv"
+      }
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Auto",
+        "Fallback",
+        "VLESS auto",
+        "VLESS REALITY no key",
+        "Trojan ws",
+        "Hysteria Mbps",
+        "Hy2 gecko",
+        "Hy2 numbers",
+        "TUIC token",
+        "ZeroTier",
+        "Naive"
+      ]
+    },
+    {
+      "name": "Auto",
+      "type": "url-test",
+      "proxies": [
+        "VLESS auto",
+        "Trojan ws"
+      ],
+      "url": "https://cp.cloudflare.com",
+      "interval": 300
+    },
+    {
+      "name": "Fallback",
+      "type": "fallback",
+      "proxies": [
+        "Trojan ws",
+        "Hy2 gecko"
+      ],
+      "url": "https://cp.cloudflare.com",
+      "interval": 300,
+      "expected-status": "200,204"
+    }
+  ],
+  "rule-providers": {},
+  "rules": [
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "ignored_option",
+      "detail": "VLESS auto: encryption auto is VMess's; VLESS has none"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "VLESS zero: VLESS encryption zero"
+    },
+    {
+      "code": "invalid_credential",
+      "detail": "VLESS no key: VLESS encryption is not mlkem768x25519plus.\u003cmode\u003e.\u003crtt\u003e.\u003ckeys\u003e"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "VLESS REALITY no key: reality-opts has no public-key, so mihomo does not use REALITY"
+    },
+    {
+      "code": "invalid_credential",
+      "detail": "AnyTLS REALITY no key: AnyTLS REALITY options without a public-key"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "Trojan h2: Trojan over h2, which mihomo's Trojan does not carry"
+    },
+    {
+      "code": "unsupported_option",
+      "detail": "Trojan http: Trojan over http, which mihomo's Trojan does not carry"
+    },
+    {
+      "code": "invalid_proxy",
+      "detail": "Hysteria zero: up 0"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Hy2 gecko: obfs-min-packet-size is outside Gecko's packet sizes"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "ZeroTier: state-dir is the client's setting"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "ZeroTier: orbit x/y is not a world ID and seed node"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Naive: private-key is a client key, which Cronet does not present"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Naive: udp-over-tcp-version needs udp-over-tcp"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Naive: quic-congestion-control needs quic"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Naive: headers Host is written by the transport"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Naive: headers Padding is written by the transport"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Auto: expected-status 200-"
+    }
+  ],
+  "rule_stats": {
+    "total": 1,
+    "dropped": 0,
+    "match": true
+  }
+}
