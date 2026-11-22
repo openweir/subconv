@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -21,8 +22,6 @@ import (
 type fetcher struct {
 	http    *http.Client
 	maxSize int64
-	// token authenticates GitHub API requests (GITHUB_TOKEN), against its rate limit.
-	token   string
 	retries int
 	backoff time.Duration
 }
@@ -72,9 +71,6 @@ func (f *fetcher) once(ctx context.Context, u string, header http.Header) (data 
 		req.Header[k] = v
 	}
 	req.Header.Set("User-Agent", "openweir-subconv-rules")
-	if f.token != "" && req.URL.Host == "api.github.com" {
-		req.Header.Set("Authorization", "Bearer "+f.token)
-	}
 	resp, err := f.http.Do(req)
 	if err != nil {
 		return nil, true, err
@@ -154,21 +150,55 @@ func (f *fetcher) archive(ctx context.Context, u string) (map[string][]byte, err
 	}
 }
 
-// resolveCommit asks the GitHub API for the commit a source is downloaded at.
+// resolveCommit finds the commit a source is downloaded at, the head of its branch, in its
+// repository's ref advertisement: what git ls-remote reads, which the GitHub API's rate limit
+// does not apply to.
 func (f *fetcher) resolveCommit(ctx context.Context, s *source) error {
-	if s.Commit == "" {
+	if s.Repository == "" {
 		return nil
 	}
-	data, err := f.get(ctx, s.Commit, http.Header{"Accept": {"application/vnd.github.sha"}})
+	u := strings.TrimSuffix(s.Repository, "/") + "/info/refs?service=git-upload-pack"
+	data, err := f.download(ctx, u, nil)
 	if err != nil {
 		return fmt.Errorf("%s: commit: %w", s.Name, err)
 	}
-	sha := strings.TrimSpace(string(data))
-	if _, err := hex.DecodeString(sha); err != nil || len(sha) != 40 {
-		return fmt.Errorf("%s: commit: unexpected answer %q", s.Name, sha[:min(len(sha), 80)])
+	sha, err := advertisedCommit(data, "refs/heads/"+s.Branch)
+	if err != nil {
+		return fmt.Errorf("%s: commit: %s: %w", s.Name, u, err)
 	}
 	s.commit = sha
 	return nil
+}
+
+// advertisedCommit returns the commit of ref in a ref advertisement of git's smart HTTP
+// protocol, version 0, which a server answers a request that asks for no other version. It is
+// a series of pkt-lines, each a 4-digit hexadecimal length and "<commit> <ref>", the first ref
+// followed by NUL and the server's capabilities; "0000" ends a section.
+func advertisedCommit(data []byte, ref string) (string, error) {
+	for len(data) > 0 {
+		n, err := strconv.ParseUint(string(data[:min(len(data), 4)]), 16, 16)
+		switch {
+		case err != nil || len(data) < 4 || n > 0 && n < 4:
+			return "", errors.New("not a git ref advertisement")
+		case n == 0: // flush-pkt
+			data = data[4:]
+			continue
+		case int(n) > len(data):
+			return "", errors.New("truncated git ref advertisement")
+		}
+		line := data[4:n]
+		data = data[n:]
+		line, _, _ = bytes.Cut(line, []byte{0})
+		commit, name, _ := strings.Cut(strings.TrimSuffix(string(line), "\n"), " ")
+		if name != ref {
+			continue
+		}
+		if _, err := hex.DecodeString(commit); err != nil || len(commit) != 40 || strings.ToLower(commit) != commit {
+			return "", fmt.Errorf("%s: unexpected commit %q", ref, commit[:min(len(commit), 80)])
+		}
+		return commit, nil
+	}
+	return "", fmt.Errorf("no %s", ref)
 }
 
 // fetchURL is where a source's file is downloaded from.

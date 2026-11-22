@@ -41,15 +41,18 @@ type source struct {
 	Home string `yaml:"home"`
 	// Refs are the URL prefixes that layouts use for the source's files.
 	Refs []string `yaml:"refs"`
-	// Fetch is the URL prefix to download them from; {commit} stands for Commit's answer.
+	// Fetch is the URL prefix to download them from; {commit} stands for the commit Repository
+	// and Branch name.
 	Fetch string `yaml:"fetch"`
 	// Archive, if set, is a tar.gz of the whole source to read the files from instead, in one
-	// download; {commit} again stands for Commit's answer. Fetch then only names the files'
-	// origin in the manifest.
+	// download; {commit} again stands for the commit. Fetch then only names the files' origin in
+	// the manifest.
 	Archive string `yaml:"archive"`
-	// Commit, if set, is a GitHub API URL answering the commit to download, so one build reads
-	// one state of the repository.
-	Commit string `yaml:"commit"`
+	// Repository, if set, is the source's git repository, and Branch the branch whose head
+	// commit the build downloads, read as git ls-remote reads it, so one build reads one state
+	// of the source.
+	Repository string `yaml:"repository"`
+	Branch     string `yaml:"branch"`
 	// Output is the source's directory under providers/; Strip is the path prefix of its files
 	// that output paths leave out.
 	Output string `yaml:"output"`
@@ -113,6 +116,10 @@ func parseConfig(data []byte) (*config, error) {
 			return nil, fmt.Errorf("config: source %q is incomplete", s.Name)
 		}
 		outputs[s.Output] = true
+		pinned := s.Repository != ""
+		if pinned != (s.Branch != "") || pinned != strings.Contains(s.Fetch+s.Archive, "{commit}") || pinned && !rules.ValidPath(s.Branch) {
+			return nil, fmt.Errorf("config: source %s: {commit}, repository and branch go together", s.Name)
+		}
 		if cfg.license(s.License) == nil {
 			return nil, fmt.Errorf("config: source %s: unknown license %s", s.Name, s.License)
 		}

@@ -69,8 +69,8 @@ jobs:
             git show FETCH_HEAD:manifest.json > "$RUNNER_TEMP/prev.json"
           fi
 
-      # Without a token the generator's one GitHub API request (dler-io/Rules' commit) is
-      # unauthenticated.
+      # The generator needs no token: it reads dler-io/Rules' head as git ls-remote does, not
+      # through the GitHub API.
       - name: Build
         id: build
         run: |

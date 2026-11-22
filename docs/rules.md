@@ -210,9 +210,10 @@ keeps only versions of `Trusted` snapshots: the cached manifest's version is no 
 `go run ./cmd/rules -out DIR -mihomo BIN [-prev manifest.json] [-changed FILE]` (or `-text`
 instead of `-mihomo`, to try it without mihomo) builds the branch into an empty directory:
 
-1. It resolves dler-io/Rules' current commit and downloads the repository at it as one
-   archive. The layout's rule providers must come from a configured source; a file must be
-   UTF-8 text under 16 MiB and not a web page.
+1. It reads the head commit of dler-io/Rules' main branch from the repository, as
+   `git ls-remote` does (no GitHub API request, so no API rate limit), and downloads the
+   repository at that commit as one archive. The layout's rule providers must come from a
+   configured source; a file must be UTF-8 text under 16 MiB and not a web page.
 2. Each rule set is parsed by its declared behavior. Entries written as classical rules are
    taken when they are of that behavior (a layout may declare a classical list ipcidr, which
    mihomo would load as empty). Rules mihomo cannot load are left out and logged.
@@ -221,7 +222,7 @@ instead of `-mihomo`, to try it without mihomo) builds the branch into an empty 
    for the rest (`DOMAIN-KEYWORD`, `PROCESS-NAME`, …), as consecutive `RULE-SET` rules with the
    same policy; IP ranges that said `no-resolve` keep it. Smaller sets stay whole.
 4. `mihomo convert-ruleset` compiles the parts. mihomo runs with only `PATH`, `HOME` and
-   `TMPDIR` from the generator's environment, never its `GITHUB_TOKEN`; the workflow uses the
+   `TMPDIR` from the generator's environment, so no token there reaches it; the workflow uses the
    OpenWeir mihomo release that `cmd/rules/mihomo.pin` names, at the SHA-256 pinned there.
 5. It writes the template, `LICENSES/` (the texts of the licenses in use), `NOTICE.md`, the
    branch README and `manifest.json`, whose `version` is the build's Unix time, above the
@@ -238,8 +239,8 @@ downloads never holds a token that can write to the repository:
 
 - `build` (`contents: read`, no token in its environment) checks out main without keeping
   credentials, downloads the pinned mihomo, runs the generator against the branch's current
-  manifest, and uploads the branch and the changed paths as an artifact. The generator's one
-  GitHub API request, for dler-io/Rules' commit, goes unauthenticated.
+  manifest, and uploads the branch and the changed paths as an artifact. The generator needs
+  no token: it makes no GitHub API request.
 - `publish` (`contents: write`) runs only when a path changed. It checks out nothing and
   executes nothing it downloaded: it refuses an artifact holding anything but regular files at
   the branch's paths (`manifest.json`, `template.yaml`, `README.md`, `NOTICE.md`, `LICENSES/…`,

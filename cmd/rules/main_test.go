@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -113,7 +114,8 @@ sources:
   - name: dler-io/Rules
     home: https://github.com/dler/Rules
     refs: [https://fastly.jsdelivr.net/gh/dler/Rules@main/]
-    commit: {{server}}/api/commit
+    repository: {{server}}/dler.git
+    branch: main
     archive: {{server}}/archive/{commit}.tar.gz
     fetch: https://raw.githubusercontent.com/dler/Rules/{commit}/
     output: dler
@@ -164,8 +166,9 @@ func newUpstream(t *testing.T) *upstream {
 	archive := tarball(t, upstreamFiles)
 	u.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch p := r.URL.Path; {
-		case p == "/api/commit":
-			io.WriteString(w, commit)
+		case p == "/dler.git/info/refs" && r.URL.RawQuery == "service=git-upload-pack":
+			w.Header().Set("Content-Type", "application/x-git-upload-pack-advertisement")
+			io.WriteString(w, refAdvertisement)
 		case p == "/archive/"+commit+".tar.gz":
 			w.Write(archive)
 		case p == "/license":
@@ -185,6 +188,21 @@ func newUpstream(t *testing.T) *upstream {
 	u.config = strings.ReplaceAll(testConfig, "{{server}}", u.srv.URL)
 	return u
 }
+
+// refAdvertisement is what a git server answers GET <repository>/info/refs?service=git-upload-pack,
+// with main at commit and everything else elsewhere.
+var refAdvertisement = pkt("# service=git-upload-pack\n") + "0000" +
+	pkt(otherCommit+" HEAD\x00multi_ack thin-pack side-band-64k symref=HEAD:refs/heads/main object-format=sha1\n") +
+	pkt(otherCommit+" refs/heads/dev\n") +
+	pkt(commit+" refs/heads/main\n") +
+	pkt(otherCommit+" refs/heads/main-old\n") +
+	pkt(otherCommit+" refs/tags/v1\n") +
+	pkt(commit+" refs/tags/v1^{}\n") + "0000"
+
+const otherCommit = "89abcdef0123456789abcdef0123456789abcdef"
+
+// pkt is a pkt-line of git's protocol.
+func pkt(s string) string { return fmt.Sprintf("%04x%s", len(s)+4, s) }
 
 func tarball(t *testing.T, files map[string]string) []byte {
 	var buf bytes.Buffer
@@ -381,6 +399,9 @@ func TestBuildRefuses(t *testing.T) {
 		"foreign rule set": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "refs: [https://sukka.example/]", "refs: [https://other.example/]", 1)
 		}, "not from a configured source"},
+		"unknown branch": {func(u *upstream) {
+			u.config = strings.Replace(u.config, "branch: main", "branch: gone", 1)
+		}, "no refs/heads/gone"},
 		"oversized": {func(u *upstream) {
 			u.files["/Clash/ip/china_ip.txt"] = "# License: CC BY-SA 2.0\n" + strings.Repeat("1.0.1.0/24\n", 7000)
 		}, "larger than"},
@@ -506,6 +527,44 @@ func termsInOrder(filter string) bool {
 		last, start = c, i+1
 	}
 	return true
+}
+
+func TestAdvertisedCommit(t *testing.T) {
+	if got, err := advertisedCommit([]byte(refAdvertisement), "refs/heads/main"); got != commit || err != nil {
+		t.Fatalf("got %q, %v", got, err)
+	}
+	for _, tc := range []struct{ data, ref, want string }{
+		{refAdvertisement, "refs/heads/gone", "no refs/heads/gone"},
+		{refAdvertisement[:len(refAdvertisement)-40], "refs/heads/gone", "truncated"},
+		{"<!DOCTYPE html><html><body>Rate limited</body></html>", "refs/heads/main", "not a git ref advertisement"},
+		{"00", "refs/heads/main", "not a git ref advertisement"},
+		{"0003", "refs/heads/main", "not a git ref advertisement"},
+		{pkt("ZZ refs/heads/main\n"), "refs/heads/main", "unexpected commit"},
+		{pkt(strings.ToUpper(commit) + " refs/heads/main\n"), "refs/heads/main", "unexpected commit"},
+	} {
+		if got, err := advertisedCommit([]byte(tc.data), tc.ref); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%.40q %s: got %q, %v; want %q", tc.data, tc.ref, got, err, tc.want)
+		}
+	}
+}
+
+// TestConfigRepository checks that {commit}, repository and branch come together.
+func TestConfigRepository(t *testing.T) {
+	config := strings.ReplaceAll(testConfig, "{{server}}", "https://server.example")
+	if _, err := parseConfig([]byte(config)); err != nil {
+		t.Fatal(err)
+	}
+	for _, edit := range [][2]string{
+		{"    repository: https://server.example/dler.git\n", ""},
+		{"    branch: main\n", ""},
+		{"branch: main", "branch: ../main"},
+		{"fetch: https://server.example/sukka/", "fetch: https://server.example/sukka/{commit}/"},
+	} {
+		_, err := parseConfig([]byte(strings.Replace(config, edit[0], edit[1], 1)))
+		if err == nil || !strings.Contains(err.Error(), "go together") {
+			t.Errorf("%q to %q: %v", edit[0], edit[1], err)
+		}
+	}
 }
 
 // TestMihomoEnv checks that mihomo, a binary from another repository, does not see the

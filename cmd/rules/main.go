@@ -56,7 +56,7 @@ func run(ctx context.Context, configPath, out, mihomo, prevPath, changedPath str
 	}
 	b := &builder{
 		cfg:   cfg,
-		fetch: &fetcher{http: &http.Client{}, maxSize: cfg.MaxSize, token: os.Getenv("GITHUB_TOKEN"), retries: 3, backoff: 2 * time.Second},
+		fetch: &fetcher{http: &http.Client{}, maxSize: cfg.MaxSize, retries: 3, backoff: 2 * time.Second},
 		out:   out,
 		now:   time.Now().UTC(),
 		log:   os.Stderr,
@@ -104,7 +104,7 @@ func run(ctx context.Context, configPath, out, mihomo, prevPath, changedPath str
 
 // mihomoConverter compiles rule sets with mihomo's convert-ruleset. mihomo is a binary from
 // another repository: it runs in [mihomoEnv], not in the generator's environment, which may hold
-// GITHUB_TOKEN.
+// tokens.
 func mihomoConverter(bin string) converter {
 	return func(ctx context.Context, behavior, src, dst string) error {
 		cmd := exec.CommandContext(ctx, bin, "convert-ruleset", behavior, "text", src, dst)

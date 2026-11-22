@@ -14,7 +14,10 @@ sources:
       - https://fastly.jsdelivr.net/gh/dler-io/Rules@main/
       - https://cdn.jsdelivr.net/gh/dler-io/Rules@main/
       - https://raw.githubusercontent.com/dler-io/Rules/main/
-    commit: https://api.github.com/repos/dler-io/Rules/commits/main
+    # The build reads main's head commit from the repository, as git ls-remote does (no GitHub
+    # API request, so no API rate limit), and downloads everything at that commit.
+    repository: https://github.com/dler-io/Rules.git
+    branch: main
     archive: https://codeload.github.com/dler-io/Rules/tar.gz/{commit}
     fetch: https://raw.githubusercontent.com/dler-io/Rules/{commit}/
     output: dler
