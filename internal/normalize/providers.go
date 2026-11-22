@@ -169,11 +169,8 @@ func (s *state) ruleProvider(name string, p model.Object) (model.Object, string)
 		p.Delete("path")
 		p.Delete("path-in-bundle")
 	case "inline":
-		payload := texts(p.Value("payload"))
-		if len(payload) == 0 {
-			return nil, "no rules"
-		}
-		p.Set("payload", toAny(payload))
+		// An empty set is a set that matches nothing, as in mihomo; its rules stay.
+		p.Set("payload", toAny(texts(p.Value("payload"))))
 		format = ""
 	case "file":
 		if p.String("path") == "" {

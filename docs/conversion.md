@@ -133,7 +133,8 @@ its end, which would change the filters after it, is refused too. A refused filt
 
 **Rule providers**: `http` and `inline` with a behavior and format mihomo reads; `file` is
 kept with `local_provider`. A missing format is mihomo's, YAML, unless the URL ends in `.mrs`,
-`.srs` or `.json`: `.txt` and `.list` sets are often YAML `payload` lists. sing-box's
+`.srs` or `.json`: `.txt` and `.list` sets are often YAML `payload` lists. An inline set without
+rules is kept, matching nothing, and so are the rules that use it. sing-box's
 `.srs`/`.json` sets are replaced by MetaCubeX's `.mrs` twin when they are a well-known geosite or
 geoip set (SagerNet's sing-geosite and sing-geoip, MetaCubeX's sing branch, or the
 `geosite-*`/`geoip-*` names); other `.json` sets are kept only with `Options.ConvertsRuleSets`.
