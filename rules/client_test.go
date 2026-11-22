@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -184,13 +185,237 @@ func TestLatestRefusesRollback(t *testing.T) {
 		t.Fatalf("err %v, want ErrRollback", err)
 	}
 
-	// The cached manifest's version counts as seen.
-	v5, _ := branch(t, 5, "five")
+	// The cached floor holds for every host, agreeing or not.
 	client.MinVersion = 0
 	client.Cache = &MemoryCache{}
-	client.Cache.Put(ManifestPath, v5)
+	client.Cache.Put(FloorKey, []byte("5\n"))
 	if _, err := client.Latest(t.Context()); !errors.Is(err, ErrRollback) {
 		t.Fatalf("err %v, want ErrRollback", err)
+	}
+}
+
+// The cached manifest's version holds for a single operator other than GitHub, but two
+// operators, or GitHub, may go below it: one operator may have set it.
+func TestLatestLetsAgreementBelowTheCachedManifest(t *testing.T) {
+	v4, files4 := branch(t, 4, "four")
+	v5, _ := branch(t, 5, "five")
+	a := newMirror(t, v4, files4)
+	b := newMirror(t, v4, files4)
+	for name, tc := range map[string]struct {
+		hosts []Host
+		want  int64
+	}{
+		"two operators":      {[]Host{a.host("jsdmirror", 2), b.host("jsdelivr", 1)}, 4},
+		"GitHub":             {[]Host{a.host("github", 0)}, 4},
+		"one operator":       {[]Host{a.host("jsdelivr", 1), b.host("jsdelivr", 1)}, 0},
+		"one mirror":         {[]Host{a.host("jsdmirror", 2)}, 0},
+		"GitHub under floor": {[]Host{a.host("github", 0)}, -5},
+		"agreed under floor": {[]Host{a.host("jsdmirror", 2), b.host("jsdelivr", 1)}, -5},
+	} {
+		t.Run(name, func(t *testing.T) {
+			client := testClient(t, a, tc.hosts...)
+			client.Cache = &MemoryCache{}
+			client.Cache.Put(ManifestPath, v5)
+			if tc.want < 0 {
+				client.Cache.Put(FloorKey, []byte(strconv.FormatInt(-tc.want, 10)))
+			}
+			snap, err := client.Latest(t.Context())
+			switch {
+			case tc.want <= 0 && !errors.Is(err, ErrRollback):
+				t.Fatalf("err %v, want ErrRollback", err)
+			case tc.want > 0 && (err != nil || snap.Manifest.Version != tc.want || !snap.Trusted):
+				t.Fatalf("snapshot %+v, err %v", snap, err)
+			}
+		})
+	}
+}
+
+// A mirror that alone answers in time is used, but cannot pin the client to its version: the
+// reviewer's case of jsdmirror serving a far-future version with a template that routes
+// everything direct.
+func TestLoneMirrorDoesNotPin(t *testing.T) {
+	now := time.Now().Unix()
+	direct := "rules:\n  - MATCH,DIRECT\n"
+	forged, forgedFiles := branch(t, now+12*3600, direct)
+	honest, honestFiles := branch(t, now-3600, tpl("honest"))
+	mirror := newMirror(t, forged, forgedFiles)
+	jsdelivr := newMirror(t, honest, honestFiles)
+	github := newMirror(t, honest, honestFiles)
+	jsdelivr.status, github.status = http.StatusServiceUnavailable, http.StatusServiceUnavailable
+	cache := &MemoryCache{}
+	client := testClient(t, mirror, mirror.host("jsdmirror", 2), jsdelivr.host("jsdelivr", 1), github.host("github", 0))
+	client.Cache = cache
+
+	got, err := client.Template(t.Context())
+	if err != nil || string(got.YAML) != direct || got.Base != mirror.srv.URL {
+		t.Fatalf("lone mirror: %+v, %v", got, err)
+	}
+	if _, ok := cache.Get(FloorKey); ok {
+		t.Fatal("a single operator raised the floor")
+	}
+
+	// jsDelivr and GitHub are back with the honest version, older than the forged one.
+	jsdelivr.status, github.status = 0, 0
+	got, err = client.Template(t.Context())
+	if err != nil || string(got.YAML) != tpl("honest") || got.Version != now-3600 || got.Base != github.srv.URL {
+		t.Fatalf("after agreement: %+v, %v", got, err)
+	}
+	if floor, _ := cache.Get(FloorKey); strings.TrimSpace(string(floor)) != strconv.FormatInt(now-3600, 10) {
+		t.Fatalf("floor %q", floor)
+	}
+
+	// A version further ahead is refused outright, alone or agreed, and so is a forged floor
+	// that a client without this check kept.
+	for _, version := range []int64{1 << 62, now + 2*86400} {
+		ahead, aheadFiles := branch(t, version, direct)
+		mirror.manifest, mirror.files = ahead, aheadFiles
+		jsdelivr.manifest, jsdelivr.files = ahead, aheadFiles
+		github.status = http.StatusServiceUnavailable
+		if _, err := client.Latest(t.Context()); !errors.Is(err, ErrAhead) || !errors.Is(err, ErrNoManifest) {
+			t.Fatalf("version %d: err %v, want ErrAhead", version, err)
+		}
+		github.status = 0
+		poisoned := &MemoryCache{}
+		poisoned.Put(ManifestPath, ahead)
+		poisoned.Put(TemplatePath, []byte(direct))
+		poisoned.Put(FloorKey, []byte(strconv.FormatInt(version, 10)))
+		fresh := testClient(t, github, github.host("github", 0))
+		fresh.Cache, fresh.MinVersion = poisoned, version
+		if got, err := fresh.Template(t.Context()); err != nil || got.Version != now-3600 || got.Origin != FromNetwork {
+			t.Fatalf("poisoned cache, version %d: %+v, %v", version, got, err)
+		}
+	}
+}
+
+// Save raises the floor only for a version two operators or GitHub served.
+func TestSaveRaisesTheFloorWhenTrusted(t *testing.T) {
+	cache := &MemoryCache{}
+	for _, step := range []struct {
+		version int64
+		hosts   []string // operators, GitHub 0 hops away and the rest 1
+		floor   string
+	}{
+		{3, []string{"jsdmirror"}, ""},
+		{4, []string{"github"}, "4"},
+		{5, []string{"jsdmirror", "jsdelivr"}, "5"},
+		{6, []string{"jsdelivr", "jsdelivr"}, "5"},
+	} {
+		v, files := branch(t, step.version, "x")
+		var hosts []Host
+		var first *mirror
+		for _, operator := range step.hosts {
+			m := newMirror(t, v, files)
+			first = m
+			hops := 1
+			if operator == "github" {
+				hops = 0
+			}
+			hosts = append(hosts, m.host(operator, hops))
+		}
+		client := testClient(t, first, hosts...)
+		client.Cache = cache
+		snap, err := client.Latest(t.Context())
+		if err != nil {
+			t.Fatalf("version %d: %v", step.version, err)
+		}
+		snap.Save()
+		if floor, _ := cache.Get(FloorKey); strings.TrimSpace(string(floor)) != step.floor {
+			t.Fatalf("version %d from %v: floor %q, want %q", step.version, step.hosts, floor, step.floor)
+		}
+		if m, _ := client.cachedManifest(); m == nil || m.Version != step.version {
+			t.Fatalf("version %d: cached manifest %+v", step.version, m)
+		}
+	}
+}
+
+// A rollback does not start the wait for other hosts: the host that answers later with an
+// acceptable version is still heard.
+func TestLatestSettlesOnlyOnAcceptedAnswers(t *testing.T) {
+	v4, files4 := branch(t, 4, "four")
+	v6, files6 := branch(t, 6, "six")
+	stale := newMirror(t, v4, files4)
+	github := newMirror(t, v6, files6)
+	github.delay = 300 * time.Millisecond
+	for name, setup := range map[string]func(*Client){
+		"below the floor":          func(c *Client) { c.MinVersion = 5 },
+		"below the cached version": func(c *Client) { v5, _ := branch(t, 5, "five"); c.Cache.Put(ManifestPath, v5) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			client := testClient(t, stale, stale.host("jsdmirror", 2), github.host("github", 0))
+			client.Settle = 50 * time.Millisecond
+			client.Cache = &MemoryCache{}
+			setup(client)
+			snap, err := client.Latest(t.Context())
+			if err != nil || snap.Manifest.Version != 6 {
+				t.Fatalf("snapshot %+v, err %v", snap, err)
+			}
+		})
+	}
+}
+
+// The template names the host fewest hops from the branch that serves the chosen version;
+// downloads still go to the fastest first.
+func TestBaseIsTheHostFewestHopsAway(t *testing.T) {
+	v2, files2 := branch(t, 2, tpl("two"))
+	v1, files1 := branch(t, 1, tpl("one"))
+	mirror := newMirror(t, v2, files2)
+	jsdelivr := newMirror(t, v2, files2)
+	jsdelivr.delay = 30 * time.Millisecond
+	github := newMirror(t, v2, files2)
+	github.delay = 60 * time.Millisecond
+	client := testClient(t, mirror, mirror.host("jsdmirror", 2), jsdelivr.host("jsdelivr", 1), github.host("github", 0))
+	client.Settle = time.Second
+
+	snap, err := client.Latest(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(bases(snap.Hosts), " "); got != strings.Join([]string{mirror.srv.URL, jsdelivr.srv.URL, github.srv.URL}, " ") {
+		t.Fatalf("ranking %v", got)
+	}
+	if snap.Base() != github.srv.URL {
+		t.Fatalf("base %s, want GitHub's", snap.Base())
+	}
+
+	// GitHub serves another version: of the two that agree, jsDelivr is closer.
+	github.manifest, github.files = v1, files1
+	got, err := client.Template(t.Context())
+	if err != nil || got.Version != 2 || got.Base != jsdelivr.srv.URL {
+		t.Fatalf("%+v, %v", got, err)
+	}
+}
+
+// A template this client refuses is neither cached nor saved with its manifest: the last good
+// one stays.
+func TestTemplateValidatesBeforeCaching(t *testing.T) {
+	v2, files2 := branch(t, 2, tpl("two"))
+	bad := tpl("three") + "port: 7890\n"
+	v3, files3 := branch(t, 3, bad)
+	a := newMirror(t, v2, files2)
+	b := newMirror(t, v2, files2)
+	cache := &MemoryCache{}
+	client := testClient(t, a, a.host("jsdmirror", 2), b.host("github", 0))
+	client.Cache = cache
+	if _, err := client.Template(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	a.manifest, a.files, b.manifest, b.files = v3, files3, v3, files3
+	got, err := client.Template(t.Context())
+	if err != nil || got.Origin != FromCache || got.Version != 2 || string(got.YAML) != tpl("two") || !errors.Is(got.Err, ErrInvalidTemplate) {
+		t.Fatalf("%+v, %v", got, err)
+	}
+	manifest, _ := cache.Get(ManifestPath)
+	template, _ := cache.Get(TemplatePath)
+	floor, _ := cache.Get(FloorKey)
+	if string(manifest) != string(v2) || string(template) != tpl("two") || strings.TrimSpace(string(floor)) != "2" {
+		t.Fatalf("cache changed: manifest %.40q, template %.40q, floor %q", manifest, template, floor)
+	}
+
+	// Without a cached template there is none.
+	fresh := testClient(t, a, a.host("jsdmirror", 2), b.host("github", 0))
+	if _, err := fresh.Template(t.Context()); !errors.Is(err, ErrNoTemplate) || !errors.Is(err, ErrInvalidTemplate) {
+		t.Fatalf("err %v", err)
 	}
 }
 
@@ -310,31 +535,33 @@ func TestFetchRejectsTamperedAndOversizedFiles(t *testing.T) {
 }
 
 func TestTemplateDegrades(t *testing.T) {
-	v2, files2 := branch(t, 2, "two")
+	two := tpl("two")
+	v2, files2 := branch(t, 2, two)
 	a := newMirror(t, v2, files2)
 	b := newMirror(t, v2, files2)
 	cache := &MemoryCache{}
 	client := testClient(t, a, a.host("jsdmirror", 2), b.host("github", 0))
 	client.Cache = cache
 
-	tpl, err := client.Template(t.Context())
+	got, err := client.Template(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(tpl.YAML) != "two" || tpl.Version != 2 || tpl.Origin != FromNetwork || tpl.Err != nil {
-		t.Fatalf("%+v", tpl)
+	if string(got.YAML) != two || got.Version != 2 || got.Origin != FromNetwork || got.Err != nil || got.Base != b.srv.URL {
+		t.Fatalf("%+v", got)
 	}
 	if raw, ok := cache.Get(ManifestPath); !ok || string(raw) != string(v2) {
 		t.Fatal("manifest not cached")
 	}
 
 	a.status, b.status = http.StatusServiceUnavailable, http.StatusServiceUnavailable
-	tpl, err = client.Template(t.Context())
+	got, err = client.Template(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tpl.Origin != FromCache || string(tpl.YAML) != "two" || tpl.Version != 2 || tpl.Base != a.srv.URL || !errors.Is(tpl.Err, ErrNoManifest) {
-		t.Fatalf("%+v", tpl)
+	// The cached template names the configured host fewest hops away.
+	if got.Origin != FromCache || string(got.YAML) != two || got.Version != 2 || got.Base != b.srv.URL || !errors.Is(got.Err, ErrNoManifest) {
+		t.Fatalf("%+v", got)
 	}
 
 	// A client that never got the template.
@@ -344,6 +571,9 @@ func TestTemplateDegrades(t *testing.T) {
 		t.Fatalf("err %v", err)
 	}
 }
+
+// tpl is a valid template told apart by a comment.
+func tpl(label string) string { return "# " + label + "\n" + validTemplate }
 
 func bases(hosts []Host) []string {
 	var out []string

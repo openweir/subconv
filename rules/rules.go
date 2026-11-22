@@ -31,6 +31,10 @@ const (
 	TemplatePath = "template.yaml"
 )
 
+// MaxTemplateSize bounds the template a manifest may list (the branch's is about 20 KiB), so that
+// a manifest from a hostile host cannot make a client download without end.
+const MaxTemplateSize = 1 << 20
+
 // A Host serves the branch.
 type Host struct {
 	// Base is the URL of the branch's root, without a trailing slash.
@@ -39,7 +43,9 @@ type Host struct {
 	// they count as one source when hosts must agree on a manifest.
 	Operator string
 	// Hops counts the caches between the host and the branch itself: 0 for GitHub, 1 for
-	// jsDelivr, 2 for a mirror of jsDelivr. When operators disagree, the fewest hops win.
+	// jsDelivr, 2 for a mirror of jsDelivr. When operators disagree, the fewest hops win; a
+	// host 0 hops away is trusted like an agreement, and the template names the host fewest
+	// hops away.
 	Hops int
 }
 
@@ -59,7 +65,8 @@ func DefaultHosts() []Host { return slices.Clone(defaultHosts) }
 // Manifest lists every file on the branch.
 type Manifest struct {
 	// Version grows with every publish (the build's Unix time). Clients never go back to a
-	// lower version than one they have seen, which a stale mirror would otherwise serve.
+	// lower version than one they have seen, which a stale mirror would otherwise serve, and
+	// refuse versions more than [MaxAhead] ahead of their clock.
 	Version int64 `json:"version"`
 	// Generated is when the branch was built, in RFC 3339.
 	Generated string   `json:"generated"`
@@ -103,6 +110,7 @@ var (
 	ErrTooLarge        = errors.New("rules: response larger than allowed")
 	ErrDigest          = errors.New("rules: content does not match the manifest")
 	ErrRollback        = errors.New("rules: manifest older than one already seen")
+	ErrAhead           = errors.New("rules: manifest version ahead of the clock")
 	ErrInsecure        = errors.New("rules: a single source must be served over HTTPS")
 	ErrNoManifest      = errors.New("rules: no host served a usable manifest")
 	ErrInvalidBase     = errors.New("rules: invalid base URL")
@@ -118,7 +126,7 @@ func (e *HostError) Error() string { return e.Host + ": " + e.Err.Error() }
 func (e *HostError) Unwrap() error { return e.Err }
 
 // ParseManifest decodes a manifest and checks that it is complete: a version, safe unique paths,
-// SHA-256 digests, and the template.
+// SHA-256 digests, and the template, of at most [MaxTemplateSize] bytes.
 func ParseManifest(data []byte) (*Manifest, error) {
 	var m Manifest
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -135,6 +143,9 @@ func ParseManifest(data []byte) (*Manifest, error) {
 		seen[f.Path] = true
 		if f.Size < 0 || len(f.SHA256) != 64 || !isHex(f.SHA256) {
 			return nil, fmt.Errorf("%w: %s: size or digest", ErrInvalidManifest, f.Path)
+		}
+		if f.Path == TemplatePath && f.Size > MaxTemplateSize {
+			return nil, fmt.Errorf("%w: %s: %d bytes, more than %d", ErrInvalidManifest, f.Path, f.Size, MaxTemplateSize)
 		}
 	}
 	if !seen[TemplatePath] {

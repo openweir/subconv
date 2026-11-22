@@ -25,6 +25,7 @@ func TestParseManifest(t *testing.T) {
 			{"path":"../x","size":1,"sha256":"` + sha + `"}]}`,
 		"short digest": `{"version":1,"files":[{"path":"template.yaml","size":1,"sha256":"abc"}]}`,
 		"no template":  `{"version":1,"files":[{"path":"x","size":1,"sha256":"` + sha + `"}]}`,
+		"big template": `{"version":1,"files":[{"path":"template.yaml","size":1048577,"sha256":"` + sha + `"}]}`,
 	} {
 		if _, err := ParseManifest([]byte(body)); !errors.Is(err, ErrInvalidManifest) {
 			t.Errorf("%s: err %v", name, err)
