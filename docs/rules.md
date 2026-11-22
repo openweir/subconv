@@ -159,12 +159,20 @@ Because the groups use mihomo's own fields, the template loads in mihomo as it i
 `subconv.Build` fills the nodes in, it instead:
 
 1. validate the template (`rules.Validate`);
-2. add the converted `proxies` (and `proxy-providers`, if any);
-3. expand every `include-all` group into explicit `proxies`: its listed members first, then the
+2. add the converted `proxies` (and `proxy-providers`, if any). The template's group names
+   win: a node or proxy provider with one is renamed with a number (`renamed`), and every
+   `dialer-proxy`, provider `proxy`, group member and `use` that named it follows, so the
+   template's rules and groups never reach a node by its name;
+3. keep, after the template's groups, the subscription's groups that chains go through: those a
+   `dialer-proxy` names (a proxy's, a proxy provider's, its `override`'s or its inline
+   proxies'), or a proxy provider's `proxy`, and the groups they contain, as converted (renamed
+   like a node when one has a template group's name). A landing node keeps dialing through its
+   entry group rather than directly; the subscription's other groups go;
+4. expand every `include-all` group into explicit `proxies`: its listed members first, then the
    nodes whose names match `filter` and not `exclude-filter`, in subscription order (mihomo's
    `include-all` sorts them by name), adding the providers as `use` with the filters kept;
-4. drop groups left without members, and their references, as the normalization already does;
-5. replace `{rules}` with the chosen base URL (`rules.Fill`). A client may instead point the
+5. drop groups left without members, and their references, as the normalization already does;
+6. replace `{rules}` with the chosen base URL (`rules.Fill`). A client may instead point the
    providers at files it downloaded with `Snapshot.Fetch`, whose content is checked against the
    manifest, which mihomo's own refresh is not.
 
