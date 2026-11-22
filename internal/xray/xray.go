@@ -170,7 +170,8 @@ func (c *converter) outbound(index int, o model.Object) {
 	}
 }
 
-// add completes a proxy with an outbound's stream settings, mux and proxy settings.
+// add completes a proxy with an outbound's stream settings, mux and proxy settings or dialer
+// proxy.
 func (c *converter) add(tag string, o model.Object, server string, port any, fields model.Object) {
 	name := tag
 	if count := len(c.names[tag]); count > 0 {
@@ -195,10 +196,11 @@ func (c *converter) add(tag string, o model.Object, server string, port any, fie
 	if mux := model.AsObject(o.Value("mux")); model.AsBool(mux.Value("enabled")) && model.AsInt(mux.Value("concurrency")) >= 0 {
 		c.result.Warn(model.WarnIgnoredOption, "%s: mux (Xray's own multiplexing)", name)
 	}
-	if detour := model.AsObject(o.Value("proxySettings")).String("tag"); detour != "" {
+	sockopt := model.AsObject(model.AsObject(o.Value("streamSettings")).Value("sockopt"))
+	if detour := or(model.AsObject(o.Value("proxySettings")).String("tag"), sockopt.String("dialerProxy")); detour != "" {
 		out.Set("dialer-proxy", detour)
 	}
-	if model.AsBool(model.AsObject(model.AsObject(o.Value("streamSettings")).Value("sockopt")).Value("tcpFastOpen")) {
+	if model.AsBool(sockopt.Value("tcpFastOpen")) {
 		out.Set("tfo", true)
 	}
 	c.names[tag] = append(c.names[tag], name)

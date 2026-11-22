@@ -106,6 +106,17 @@
       "password": "p",
       "udp": true,
       "dialer-proxy": "proxy"
+    },
+    {
+      "name": "dialer",
+      "type": "trojan",
+      "server": "d.example.com",
+      "port": 443,
+      "password": "pw",
+      "udp": true,
+      "sni": "d.example.com",
+      "dialer-proxy": "proxy",
+      "tfo": true
     }
   ],
   "proxy-groups": [

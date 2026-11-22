@@ -199,14 +199,14 @@ vmess, vless (also Xray's flat settings), trojan, shadowsocks, socks, http, wire
 Hysteria 2 outbounds; an outbound with several servers or users becomes one proxy each and a
 select group of them under its tag. Stream settings: tcp/raw (HTTP header obfuscation), ws,
 httpupgrade, grpc, h2, xhttp; TLS (pinned certificate chains as `fingerprint`, ECH) and REALITY.
-`proxySettings` is `dialer-proxy`; freedom and blackhole are DIRECT and REJECT. Balancers become
-url-test (leastPing, leastLoad), load-balance (random, roundRobin) or fallback groups. Routing
-rules: `domain` (`domain:`, `full:`, `keyword:`, `regexp:`, `geosite:`, plain), `ip` and `source`
-(`geoip:private` as `lan`), `port`, `sourcePort`, `network`, `process`. Rules a client handles
-itself go quietly: those to a dns outbound or the API (`api.tag`, else `api`) and those from the
-API's or the DNS server's inbound tag (`dns.tag`). Left out: kcp and quic, XHTTP extra settings,
-`ext:` domain files, `protocol` and `attrs` rules; Xray's mux and WireGuard peers after the first
-are ignored with a warning.
+`proxySettings` and `sockopt.dialerProxy` are `dialer-proxy`; freedom and blackhole are DIRECT
+and REJECT. Balancers become url-test (leastPing, leastLoad), load-balance (random, roundRobin)
+or fallback groups. Routing rules: `domain` (`domain:`, `full:`, `keyword:`, `regexp:`,
+`geosite:`, plain), `ip` and `source` (`geoip:private` as `lan`), `port`, `sourcePort`,
+`network`, `process`. Rules a client handles itself go quietly: those to a dns outbound or the
+API (`api.tag`, else `api`) and those from the API's or the DNS server's inbound tag
+(`dns.tag`). Left out: kcp and quic, XHTTP extra settings, `ext:` domain files, `protocol` and
+`attrs` rules; Xray's mux and WireGuard peers after the first are ignored with a warning.
 
 ### Share links
 

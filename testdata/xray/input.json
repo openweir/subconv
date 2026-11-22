@@ -178,6 +178,29 @@
    }
   },
   {
+   "tag": "dialer",
+   "protocol": "trojan",
+   "settings": {
+    "servers": [
+     {
+      "address": "d.example.com",
+      "port": 443,
+      "password": "pw"
+     }
+    ]
+   },
+   "streamSettings": {
+    "security": "tls",
+    "tlsSettings": {
+     "serverName": "d.example.com"
+    },
+    "sockopt": {
+     "dialerProxy": "proxy",
+     "tcpFastOpen": true
+    }
+   }
+  },
+  {
    "tag": "kcp",
    "protocol": "vmess",
    "settings": {
