@@ -6,12 +6,12 @@ package normalize
 
 import (
 	"fmt"
-	"regexp/syntax"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/dlclark/regexp2"
 	"github.com/openweir/subconv/internal/model"
 	"github.com/openweir/subconv/internal/proxy"
 )
@@ -130,22 +130,41 @@ func seconds(value any) (int, bool) {
 	return 0, false
 }
 
-// badRegex reports a filter regexp no regex engine accepts. mihomo compiles filters with
-// regexp2, which reads more than Go's regexp (lookaround, backreferences); only the errors
-// both share count.
+// badRegex reports a regular expression mihomo refuses. mihomo compiles group and provider
+// filters with regexp2 and its default options, and regex rules with IgnoreCase: a group filter
+// it cannot compile crashes it, a provider filter or a rule makes it refuse the config. A filter
+// is compiled part by part, the parts separated by backquotes, and whole, as mihomo joins the
+// filters of a provider's groups with | for its health checks; for that, a pattern must not
+// leave the x or n option on at its end either, which would change the patterns after it.
 func badRegex(pattern string) bool {
-	for part := range strings.SplitSeq(pattern, "`") {
-		if _, err := syntax.Parse(part, syntax.Perl); err != nil {
-			if e, ok := err.(*syntax.Error); ok {
-				switch e.Code {
-				case syntax.ErrMissingParen, syntax.ErrMissingBracket, syntax.ErrTrailingBackslash,
-					syntax.ErrUnexpectedParen, syntax.ErrMissingRepeatArgument, syntax.ErrInvalidRepeatOp:
-					return true
-				}
+	if parts := strings.Split(pattern, "`"); len(parts) > 1 {
+		for _, part := range parts {
+			if _, err := compileRegex(part, regexp2.None); err != nil {
+				return true
 			}
 		}
 	}
-	return false
+	if _, err := compileRegex(pattern, regexp2.IgnoreCase); err != nil {
+		return true
+	}
+	whole, err := compileRegex(pattern, regexp2.None)
+	if err != nil {
+		return true
+	}
+	// With x on, "#)" is a comment and the parenthesis is missing; with n on, "()" captures
+	// nothing.
+	joined, err := compileRegex(pattern+"|(#)", regexp2.None)
+	return err != nil || len(joined.GetGroupNumbers()) == len(whole.GetGroupNumbers())
+}
+
+// compileRegex compiles a pattern with regexp2, as mihomo does.
+func compileRegex(pattern string, options regexp2.RegexOptions) (re *regexp2.Regexp, err error) {
+	defer func() {
+		if recover() != nil {
+			re, err = nil, fmt.Errorf("regexp2 panics on %q", pattern)
+		}
+	}()
+	return regexp2.Compile(pattern, options)
 }
 
 // texts reads a list of strings, or one string, as a list.

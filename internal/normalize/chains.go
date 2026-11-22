@@ -1,9 +1,10 @@
 package normalize
 
 import (
-	"regexp"
 	"strings"
+	"time"
 
+	"github.com/dlclark/regexp2"
 	"github.com/openweir/subconv/internal/model"
 )
 
@@ -74,17 +75,55 @@ func (s *state) reaches(from, target string, seen map[string]bool) bool {
 	return false
 }
 
-// matches applies a group filter as far as Go's regexp reads it; a pattern only mihomo's
-// regexp2 reads counts as matching.
+// matches applies a group filter as mihomo's regexp2 reads it; one that takes too long to tell
+// counts as matching.
 func matches(filter, name string) bool {
-	if filter == "" {
+	f, err := CompileFilter(filter)
+	if f == nil || err != nil {
 		return true
 	}
-	for part := range strings.SplitSeq(filter, "`") {
-		re, err := regexp.Compile(part)
-		if err != nil || re.MatchString(name) {
-			return true
+	matched, err := f.Match(name)
+	return matched || err != nil
+}
+
+// matchTimeout bounds one filter match, which regexp2 may otherwise backtrack through for
+// longer than a conversion should take.
+const matchTimeout = 100 * time.Millisecond
+
+// Filter is a group or provider filter as mihomo reads it: each part between backquotes a
+// pattern of its own, compiled with regexp2 and its default options. It matches a name when
+// one of its parts does.
+type Filter []*regexp2.Regexp
+
+// CompileFilter compiles a filter; "" is no filter, a nil Filter.
+func CompileFilter(pattern string) (Filter, error) {
+	if pattern == "" {
+		return nil, nil
+	}
+	var f Filter
+	for part := range strings.SplitSeq(pattern, "`") {
+		re, err := compileRegex(part, regexp2.None)
+		if err != nil {
+			return nil, err
+		}
+		re.MatchTimeout = matchTimeout
+		f = append(f, re)
+	}
+	return f, nil
+}
+
+// Match reports whether a part of the filter matches name. When none does but one took too
+// long to tell, it returns that error; mihomo, which lets it run, might have found a match.
+func (f Filter) Match(name string) (bool, error) {
+	var slow error
+	for _, re := range f {
+		matched, err := re.MatchString(name)
+		if matched {
+			return true, nil
+		}
+		if err != nil {
+			slow = err
 		}
 	}
-	return false
+	return false, slow
 }

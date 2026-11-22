@@ -5,7 +5,6 @@ package build
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -290,11 +289,12 @@ func expand(group model.Object, proxies []model.Object, providers model.Object) 
 		return group, nil
 	}
 	group = group.Clone()
-	filter, err := compile(group.String("filter"))
+	// Filters select proxies as mihomo's regexp2 reads them.
+	filter, err := normalize.CompileFilter(group.String("filter"))
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := compile(group.String("exclude-filter"))
+	exclude, err := normalize.CompileFilter(group.String("exclude-filter"))
 	if err != nil {
 		return nil, err
 	}
@@ -304,8 +304,8 @@ func expand(group model.Object, proxies []model.Object, providers model.Object) 
 	for _, p := range proxies {
 		name, kind := p.String("name"), p.String("type")
 		switch {
-		case filter != nil && !filter.MatchString(name),
-			exclude != nil && exclude.MatchString(name),
+		case filter != nil && !matches(filter, name),
+			matches(exclude, name),
 			excluded(strings.ToLower(kind)) || excluded(strings.ToLower(typeNames[kind])):
 			continue
 		}
@@ -327,11 +327,10 @@ func expand(group model.Object, proxies []model.Object, providers model.Object) 
 	return group, nil
 }
 
-func compile(pattern string) (*regexp.Regexp, error) {
-	if pattern == "" {
-		return nil, nil
-	}
-	return regexp.Compile(pattern) // rules.Validate keeps filters to what Go and mihomo read alike
+// matches reports a filter's match as mihomo counts it: one that fails is none.
+func matches(filter normalize.Filter, name string) bool {
+	matched, _ := filter.Match(name)
+	return matched
 }
 
 func toAny(list []string) []any {

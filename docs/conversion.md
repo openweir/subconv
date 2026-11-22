@@ -103,6 +103,16 @@ it), `inline` (each proxy normalized), and `file`, kept with `local_provider` fo
 decide. Intervals, `header`, `health-check`, `override` (without the client's settings) and
 filters are checked; a provider named like a group, or `default`, is renamed.
 
+**Regular expressions** (group and provider filters, `DOMAIN-REGEX`, `PROCESS-NAME-REGEX`,
+`PROCESS-PATH-REGEX`) are checked as mihomo compiles them, with regexp2 (the version mihomo
+uses, its default options): lookaround, `\pL` and `\x{…}` are kept, Go's own `\Q…\E` and
+`(?P<name>…)` are not, nor are invalid ranges (`[z-a]`) or repeat counts (`a{3,1}`). A filter is
+checked part by part, the parts separated by backquotes, and whole, as mihomo joins the filters
+of a provider's groups for its health checks; a pattern that leaves the `x` or `n` option on at
+its end, which would change the filters after it, is refused too. A refused filter goes with
+`ignored_option` (a group filter mihomo cannot compile crashes it); a refused rule with
+`unsupported_rule`.
+
 **Groups**
 
 - Types in any case and other names (`urltest`, `static`, `available`, `loadbalance`); options
@@ -160,10 +170,11 @@ may fall back to a routing template when there are no rules, no `Match`, or too 
   template, `"subscription"` never.
 - With the template, the subscription's groups, rule providers and rules give way to the
   template's: every `include-all` group lists its own members, then the nodes its filters let
-  through in subscription order; proxy providers join it as `use`, with its filters for their
-  nodes; groups left empty go with their references; `{rules}` becomes the host the client
-  picked. `Result.Template` (`Version`, `Reason`, `Cached`) and a `template_applied` warning say
-  why: `requested`, `no_rules`, `no_match` or `dropped_rules`.
+  through (read by regexp2, as mihomo reads them) in subscription order; proxy providers join
+  it as `use`, with its filters for their nodes; groups left empty go with their references;
+  `{rules}` becomes the host the client picked. `Result.Template` (`Version`, `Reason`,
+  `Cached`) and a `template_applied` warning say why: `requested`, `no_rules`, `no_match` or
+  `dropped_rules`.
 - Without a template (`rules.ErrNoTemplate`: no host served it and the cache holds none, or it
   fails `rules.Validate`), the plain conversion comes back with `template_unavailable`.
 - `Options.Client` is the caller's `rules.Client` (HTTP client, hosts, cache, `MinVersion`).
