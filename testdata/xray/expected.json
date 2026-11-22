@@ -155,11 +155,11 @@
     },
     {
       "code": "unsupported_rule",
-      "detail": "rule 6 to proxy: domain ext:custom.dat:tag"
+      "detail": "rule 9 to proxy: domain ext:custom.dat:tag"
     },
     {
       "code": "unsupported_rule",
-      "detail": "rule 7 to DIRECT: a rule with protocol"
+      "detail": "rule 10 to DIRECT: a rule with protocol"
     }
   ],
   "rule_stats": {

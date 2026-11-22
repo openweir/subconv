@@ -132,9 +132,9 @@ out (`Dropped`), and whether its final rule (`MATCH`, Surge's `FINAL`, sing-box'
 or first outbound, Xray's first outbound) survived with its policy (`Match`). Rules count as
 Clash rules: a sing-box or Xray rule that tests several values counts once per value, and a
 rule left out before it became one counts once. Rules a client handles itself (sniffing, DNS
-hijacking) and rules after the final `MATCH` do not count. A client may fall back to a routing
-template when there are no rules, no `Match`, or too many dropped; `Convert` itself decides
-nothing, `Build` does (below).
+hijacking, Xray's DNS and API traffic) and rules after the final `MATCH` do not count. A client
+may fall back to a routing template when there are no rules, no `Match`, or too many dropped;
+`Convert` itself decides nothing, `Build` does (below).
 
 ## Build
 
@@ -202,9 +202,11 @@ httpupgrade, grpc, h2, xhttp; TLS (pinned certificate chains as `fingerprint`, E
 `proxySettings` is `dialer-proxy`; freedom and blackhole are DIRECT and REJECT. Balancers become
 url-test (leastPing, leastLoad), load-balance (random, roundRobin) or fallback groups. Routing
 rules: `domain` (`domain:`, `full:`, `keyword:`, `regexp:`, `geosite:`, plain), `ip` and `source`
-(`geoip:private` as `lan`), `port`, `sourcePort`, `network`, `process`. Left out: kcp and quic,
-XHTTP extra settings, `ext:` domain files, `protocol` and `attrs` rules; Xray's mux and WireGuard
-peers after the first are ignored with a warning.
+(`geoip:private` as `lan`), `port`, `sourcePort`, `network`, `process`. Rules a client handles
+itself go quietly: those to a dns outbound or the API (`api.tag`, else `api`) and those from the
+API's or the DNS server's inbound tag (`dns.tag`). Left out: kcp and quic, XHTTP extra settings,
+`ext:` domain files, `protocol` and `attrs` rules; Xray's mux and WireGuard peers after the first
+are ignored with a warning.
 
 ### Share links
 

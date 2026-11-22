@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -32,6 +33,9 @@ type converter struct {
 	// The Clash names of each outbound tag; a tag may stand for several servers.
 	names map[string][]string
 	first string
+	// Tags of Xray's own outbounds and inbounds (DNS, the API), whose rules route Xray's own
+	// traffic: a client handles that itself, so the rules go quietly.
+	internal map[string]bool
 }
 
 // Convert converts an Xray or V2Ray config.
@@ -44,7 +48,7 @@ func Convert(data []byte) (*model.Result, error) {
 	if config == nil {
 		return nil, fmt.Errorf("xray: %w", errNotAConfig)
 	}
-	c := &converter{result: &model.Result{Format: model.FormatXray}, names: map[string][]string{}}
+	c := &converter{result: &model.Result{Format: model.FormatXray}, names: map[string][]string{}, internal: map[string]bool{}}
 	for index, item := range model.AsList(config.Value("outbounds")) {
 		c.outbound(index, model.AsObject(item))
 	}
@@ -59,6 +63,13 @@ func Convert(data []byte) (*model.Result, error) {
 	}
 	routing := model.AsObject(config.Value("routing"))
 	c.balancers(model.AsList(routing.Value("balancers")))
+	c.internal[model.AsObject(config.Value("api")).String("tag")] = true
+	c.internal[model.AsObject(config.Value("dns")).String("tag")] = true
+	if !tagged(config, "api") {
+		// The tag Xray's documentation and clients give the API, in rules that outlive its settings.
+		c.internal["api"] = true
+	}
+	delete(c.internal, "")
 	c.rules(model.AsList(routing.Value("rules")))
 	return c.result, nil
 }
@@ -79,7 +90,10 @@ func (c *converter) outbound(index int, o model.Object) {
 	case "blackhole":
 		c.names[tag] = []string{"REJECT"}
 		return
-	case "dns", "loopback":
+	case "dns":
+		c.internal[tag] = true
+		return
+	case "loopback":
 		return
 	case "vmess", "vless":
 		for _, server := range model.AsList(settings.Value("vnext")) {
@@ -345,6 +359,9 @@ func (c *converter) rules(list []any) {
 	for index, item := range list {
 		rule := model.AsObject(item)
 		target := or(rule.String("outboundTag"), rule.String("balancerTag"))
+		if c.internal[target] || c.fromInternal(model.AsStrings(rule.Value("inboundTag"))) {
+			continue // DNS queries and API calls, the client's own
+		}
 		policy := c.policy(target)
 		if policy == "" {
 			c.result.Warn(model.WarnUnsupportedRule, "rule %d: outbound %s does not exist", index+1, target)
@@ -427,6 +444,16 @@ func (c *converter) rules(list []any) {
 	if final := c.policy(c.first); final != "" {
 		c.result.Rules = append(c.result.Rules, "MATCH,"+final)
 	}
+}
+
+// fromInternal reports a rule's inbound tags that are all Xray's own.
+func (c *converter) fromInternal(tags []string) bool {
+	for _, tag := range tags {
+		if !c.internal[tag] {
+			return false
+		}
+	}
+	return len(tags) > 0
 }
 
 // policy returns the Clash policy of an outbound or balancer tag: the proxy, or for a tag of
@@ -518,6 +545,17 @@ func logical(mode string, parts []string) string {
 		wrapped[index] = "(" + part + ")"
 	}
 	return mode + ",(" + strings.Join(wrapped, ",") + ")"
+}
+
+// tagged reports an outbound or balancer with the tag.
+func tagged(config model.Object, tag string) bool {
+	balancers := model.AsObject(config.Value("routing")).Value("balancers")
+	for _, item := range slices.Concat(model.AsList(config.Value("outbounds")), model.AsList(balancers)) {
+		if model.AsObject(item).String("tag") == tag {
+			return true
+		}
+	}
+	return false
 }
 
 func splitEndpoint(endpoint string) (string, int) {
