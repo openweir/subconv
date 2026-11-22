@@ -96,6 +96,7 @@ jobs:
     needs: build
     if: needs.build.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    # The push takes seconds, the file purges six minutes at most and the manifest's about two.
     timeout-minutes: 10
     permissions:
       contents: write
@@ -153,10 +154,24 @@ jobs:
       # manifest goes last, so a client never sees a manifest whose files are still stale.
       # jsDelivr mirrors such as cdn.jsdmirror.com refetch from jsDelivr when their own cache
       # expires; clients check every file against the manifest either way.
+      # These purges are best-effort: one quick retry each, and the step stops after six
+      # minutes, so a slow purge API cannot hold the job until its timeout.
       - name: Purge jsDelivr
         if: steps.publish.outputs.published == 'true'
+        timeout-minutes: 6
         run: |
           while IFS= read -r path; do
+            [ "$path" != manifest.json ] || continue
             url="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@rules/${path}"
-            curl -fsS --retry 3 --max-time 30 -o /dev/null "$url" || echo "::warning::purge failed: $path"
+            curl -fsS --retry 1 --max-time 10 -o /dev/null "$url" || echo "::warning::purge failed: $path"
           done < "$RUNNER_TEMP/artifact/changed.txt"
+
+      # The manifest's purge runs even when those above failed or ran out of time: a stale
+      # manifest hides the whole update for up to 12 hours, while a stale file costs a client
+      # only a retry on another host.
+      - name: Purge the manifest
+        if: always() && steps.publish.outputs.published == 'true'
+        run: |
+          curl -fsS --retry 3 --max-time 30 -o /dev/null \
+            "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@rules/manifest.json" ||
+            echo "::warning::purge failed: manifest.json"
