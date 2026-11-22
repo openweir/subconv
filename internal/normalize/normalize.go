@@ -33,6 +33,8 @@ type state struct {
 	droppedRuleSets  map[string]bool
 	// References already warned about.
 	warned map[string]bool
+	// Group filters compiled so far.
+	filters map[string]Filter
 }
 
 // Result normalizes r in place.

@@ -127,7 +127,12 @@ its end, which would change the filters after it, is refused too. A refused filt
   the relay's name, so rules and groups that use the relay keep working. A relay through a
   provider, or whose later hops are groups, is left out (`unsupported_group`).
 - Groups that contain each other in a loop lose one member (`cyclic_reference`); so does a
-  dialer-proxy chain that leads back to its proxy, directly or through a group.
+  dialer-proxy chain that leads back to its proxy, directly or through a group. A group leads
+  wherever mihomo may dial through it: its members, with `include-all` the proxies its `filter`
+  matches, less those its `exclude-filter` matches or whose type its `exclude-type` lists
+  (mihomo's names, such as `Shadowsocks` and `Vmess`; members listed in `proxies` included),
+  and its `empty-fallback`. So a landing proxy may dial through a group of all proxies that
+  excludes it.
 - A group with nothing to choose from is left out (`empty_group`), and so are references to
   it, which may empty further groups.
 

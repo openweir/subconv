@@ -1,6 +1,7 @@
 package normalize
 
 import (
+	"slices"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ func (s *state) dialers() {
 }
 
 // reaches reports whether dialing through from can end up dialing target: through from's own
-// dialer-proxy, or any member of a group.
+// dialer-proxy, or anything a group may choose.
 func (s *state) reaches(from, target string, seen map[string]bool) bool {
 	if from == target {
 		return true
@@ -55,18 +56,7 @@ func (s *state) reaches(from, target string, seen map[string]bool) bool {
 		if o.String("name") != from {
 			continue
 		}
-		members := texts(o.Value("proxies"))
-		all, _ := model.Bool(o.Value("include-all"))
-		proxies, _ := model.Bool(o.Value("include-all-proxies"))
-		if all || proxies {
-			filter := o.String("filter")
-			for name := range s.proxies {
-				if matches(filter, name) {
-					members = append(members, name)
-				}
-			}
-		}
-		for _, member := range members {
+		for _, member := range s.choices(o) {
 			if s.reaches(member, target, seen) {
 				return true
 			}
@@ -75,16 +65,79 @@ func (s *state) reaches(from, target string, seen map[string]bool) bool {
 	return false
 }
 
-// matches applies a group filter as mihomo's regexp2 reads it; one that takes too long to tell
-// counts as matching.
-func matches(filter, name string) bool {
-	f, err := CompileFilter(filter)
-	if f == nil || err != nil {
-		return true
+// choices lists what a group may dial through, as mihomo builds it: its members and, with
+// include-all, the config's proxies its filter matches; then without those its exclude-filter
+// matches or whose type its exclude-type lists, which mihomo applies to every member; and its
+// empty-fallback, which it dials when nothing is left. A filter that takes too long to tell
+// counts as letting a proxy through.
+func (s *state) choices(o model.Object) []string {
+	members := texts(o.Value("proxies"))
+	all, _ := model.Bool(o.Value("include-all"))
+	proxies, _ := model.Bool(o.Value("include-all-proxies"))
+	if all || proxies {
+		filter := s.filter(o.String("filter"))
+		for name := range s.proxies {
+			if matched, err := filter.Match(name); filter == nil || matched || err != nil {
+				members = append(members, name)
+			}
+		}
 	}
-	matched, err := f.Match(name)
-	return matched || err != nil
+	exclude, types := s.filter(o.String("exclude-filter")), o.String("exclude-type")
+	members = slices.DeleteFunc(members, func(name string) bool {
+		matched, _ := exclude.Match(name)
+		return matched || types != "" && s.excludedType(types, name)
+	})
+	if fallback := o.String("empty-fallback"); fallback != "" {
+		members = append(members, fallback)
+	}
+	return members
 }
+
+// filter compiles a group's filter once. One that does not compile, which groupList removed
+// already, is no filter.
+func (s *state) filter(pattern string) Filter {
+	if f, ok := s.filters[pattern]; ok {
+		return f
+	}
+	f, _ := CompileFilter(pattern)
+	if s.filters == nil {
+		s.filters = map[string]Filter{}
+	}
+	s.filters[pattern] = f
+	return f
+}
+
+// excludedType reports a proxy or group whose type an exclude-type lists. mihomo compares its
+// own names of the types, ignoring case: Shadowsocks for ss, Selector for select.
+func (s *state) excludedType(types, name string) bool {
+	kind := ""
+	if p, ok := s.proxies[name]; ok {
+		kind = p.String("type")
+	} else {
+		for _, o := range s.r.Groups {
+			if o.String("name") == name {
+				kind = o.String("type")
+			}
+		}
+	}
+	if kind == "" {
+		return false
+	}
+	if mihomo, ok := typeNames[kind]; ok {
+		kind = mihomo
+	} else {
+		kind = strings.ReplaceAll(kind, "-", "") // url-test is URLTest, vless-reverse VlessReverse
+	}
+	for excluded := range strings.SplitSeq(types, "|") {
+		if strings.EqualFold(excluded, kind) {
+			return true
+		}
+	}
+	return false
+}
+
+// mihomo's names of the types that differ from the config's by more than case and dashes.
+var typeNames = map[string]string{"ss": "Shadowsocks", "ssr": "ShadowsocksR", "select": "Selector"}
 
 // matchTimeout bounds one filter match, which regexp2 may otherwise backtrack through for
 // longer than a conversion should take.
