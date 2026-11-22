@@ -14,6 +14,19 @@ type Problem struct {
 	Code, Reason string
 }
 
+// Name reads a proxy's name as mihomo does: from "name", or else from a key that folds to it
+// ("Name", "NAME"), which Normalize renames.
+func Name(p model.Object) string {
+	value, set := p.Get("name")
+	for index := 0; !set && index < len(p); index++ {
+		if strings.ReplaceAll(strings.ToLower(strings.TrimSpace(p[index].Key)), "_", "-") == "name" {
+			value, set = p[index].Value, true
+		}
+	}
+	name, _ := model.Text(value)
+	return name
+}
+
 // Normalize checks a mihomo proxy and repairs what mihomo would refuse but means one thing:
 // the spellings older Clash versions and other clients write, numbers and booleans written as
 // strings, legacy fields and missing defaults. Valid fields keep their value and place. It
@@ -70,7 +83,7 @@ var credentials = map[string][]string{
 	"masque":      {"private-key", "public-key"},
 	"sudoku":      {"key"},
 	"openvpn":     {"ca"},
-	"zerotier":    {"network", "seed", "world"},
+	"zerotier":    {"network"},
 	"shadowquic":  {},
 	"gost-relay":  {},
 	"trusttunnel": {},
@@ -307,8 +320,11 @@ func (n *normalizer) local(kind string) {
 	n.p = stripFiles(n.p, func(key string) {
 		n.removed = append(n.removed, key+" is a local file")
 	}, keyed, 0)
-	if kind == "tailscale" {
+	if kind == "tailscale" || kind == "zerotier" {
 		n.remove("state-dir", "is the client's setting")
+	}
+	if kind == "zerotier" {
+		n.remove("planet", "is a local file")
 	}
 }
 
@@ -396,7 +412,12 @@ func (n *normalizer) legacy(kind string) {
 			reality.Set("short-id", strconv.FormatFloat(id, 'f', -1, 64))
 		}
 		p.Set("reality-opts", reality)
-		if _, set := p.Get("client-fingerprint"); !set {
+		// mihomo takes REALITY without a public-key as plain TLS (reality.go), but AnyTLS refuses
+		// a short-id or ML-KEM setting without one, which validate reports.
+		mlkem, _ := model.Bool(reality.Value("support-x25519mlkem768"))
+		if text(reality.Value("public-key")) == "" && (kind != "anytls" || text(reality.Value("short-id")) == "" && !mlkem) {
+			n.remove("reality-opts", "has no public-key, so mihomo does not use REALITY")
+		} else if _, set := p.Get("client-fingerprint"); !set {
 			p.Set("client-fingerprint", "chrome") // REALITY needs a uTLS fingerprint
 		}
 	}
@@ -543,6 +564,7 @@ func (n *normalizer) typed(kind string) *Problem {
 		for _, key := range []string{"client-fingerprint", "fingerprint", "alpn", "name-cert-verify"} {
 			n.remove(key, "is Cronet's own")
 		}
+		n.remove("private-key", "is a client key, which Cronet does not present")
 		if udp, _ := model.Bool(p.Value("udp")); udp {
 			if over, _ := model.Bool(p.Value("udp-over-tcp")); !over {
 				n.remove("udp", "needs udp-over-tcp")
@@ -551,7 +573,7 @@ func (n *normalizer) typed(kind string) *Problem {
 	case "wireguard":
 		return n.wireguard()
 	case "tuic":
-		if p.String("token") == "" && p.String("uuid") == "" {
+		if text(p.Value("token")) == "" && text(p.Value("uuid")) == "" {
 			return invalid("no token or UUID")
 		}
 	}

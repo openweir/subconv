@@ -1,8 +1,11 @@
 package proxy
 
 import (
+	"crypto/mlkem"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"net/netip"
 	"regexp"
 	"strconv"
@@ -40,7 +43,7 @@ func (n *normalizer) validate(kind string) *Problem {
 	case "ss":
 		cipher := p.String("cipher")
 		if size, ok := ss2022[cipher]; ok {
-			keys := strings.Split(p.String("password"), ":")
+			keys := strings.Split(n.text("password"), ":")
 			if len(keys) > 1 && strings.Contains(cipher, "chacha") {
 				return invalid(cipher + " takes one key")
 			}
@@ -73,28 +76,38 @@ func (n *normalizer) validate(kind string) *Problem {
 		if flow := p.String("flow"); len(flow) >= 16 && flow[:16] != "xtls-rprx-vision" {
 			return &Problem{model.WarnUnsupportedOption, "flow " + flow}
 		}
+		if problem := n.vlessEncryption(); problem != nil {
+			return problem
+		}
 	case "snell":
 		if problem := n.snell(); problem != nil {
 			return problem
 		}
 	case "hysteria":
+		// mihomo reads a bare number as Mbps and refuses a speed it reads as zero.
 		for _, key := range []string{"up", "down"} {
-			if speed := p.String(key); !bandwidth(speed) {
+			if speed := n.text(key); bps(speed) == 0 {
 				return invalid(key + " " + speed)
 			}
 		}
 		if protocol := p.String("protocol"); protocol != "" && protocol != "udp" && protocol != "wechat-video" && protocol != "faketcp" {
 			return invalid("protocol " + protocol)
 		}
+		if auth := n.text("auth"); auth != "" && !base64Std(auth) {
+			return &Problem{model.WarnInvalidCredential, "auth is not Base64"}
+		}
 	case "hysteria2":
-		switch obfs := p.String("obfs"); {
-		case obfs != "" && obfs != "salamander":
+		switch obfs := n.text("obfs"); {
+		case obfs == "":
+		case obfs != "salamander" && obfs != "gecko":
 			return &Problem{model.WarnUnsupportedOption, "obfs " + obfs}
-		case obfs == "salamander" && p.String("obfs-password") == "":
+		case n.text("obfs-password") == "":
 			return &Problem{model.WarnInvalidCredential, "no obfs-password"}
+		case obfs == "gecko":
+			n.geckoSizes()
 		}
 		for _, key := range []string{"up", "down"} {
-			if speed := p.String(key); speed != "" && !bandwidth(speed) {
+			if speed := n.text(key); speed != "" && !bandwidth(speed) {
 				n.remove(key, "is not a bandwidth")
 			}
 		}
@@ -109,11 +122,14 @@ func (n *normalizer) validate(kind string) *Problem {
 			return problem
 		}
 	case "naive":
-		if strings.Contains(p.String("username"), ":") {
+		if strings.Contains(n.text("username"), ":") {
 			return &Problem{model.WarnInvalidCredential, "a username with ':'"}
 		}
-		n.oneOf("udp-over-tcp-version", "1", "2")
-		n.oneOf("quic-congestion-control", "bbr", "bbr2", "cubic", "reno")
+		n.naive()
+	case "zerotier":
+		if problem := n.zerotier(); problem != nil {
+			return problem
+		}
 	case "mieru":
 		if transport := p.String("transport"); transport != "TCP" && transport != "UDP" {
 			return invalid("transport " + transport)
@@ -175,7 +191,11 @@ func (n *normalizer) tls(kind string) *Problem {
 	if reality == nil {
 		return nil
 	}
-	key := reality.String("public-key")
+	key := text(reality.Value("public-key"))
+	if key == "" {
+		// legacy removed REALITY without a key, which mihomo ignores, except where AnyTLS refuses it.
+		return &Problem{model.WarnInvalidCredential, "AnyTLS REALITY options without a public-key"}
+	}
 	decoded, err := base64.RawURLEncoding.DecodeString(key)
 	if err != nil {
 		// Standard Base64, or padded: the same key in another spelling.
@@ -239,13 +259,13 @@ func (n *normalizer) snell() *Problem {
 		}
 	case 3, 4, 5:
 	case 6:
-		if psk := p.String("psk"); len(psk) < 12 || len(psk) > 255 {
+		if psk := n.text("psk"); len(psk) < 12 || len(psk) > 255 {
 			return &Problem{model.WarnInvalidCredential, "a Snell v6 psk of " + strconv.Itoa(len(psk)) + " bytes, not 12 to 255"}
 		}
 		if mode := model.AsObject(p.Value("obfs-opts")).String("mode"); mode == "http" || mode == "tls" {
 			return &Problem{model.WarnUnsupportedOption, "Snell v6 has no obfs"}
 		}
-		if len(p.String("userkey")) > 255 {
+		if len(n.text("userkey")) > 255 {
 			return &Problem{model.WarnInvalidCredential, "a userkey over 255 bytes"}
 		}
 		n.oneOf("mode", "default", "unshaped", "unsafe-raw")
@@ -313,6 +333,250 @@ func (n *normalizer) nowhere() *Problem {
 	return nil
 }
 
+// vlessEncryption checks VLESS encryption as transport/vless/encryption's NewClient reads it:
+// none, or mlkem768x25519plus with a mode, an RTT, keys and padding. "auto" is VMess's word,
+// which some clients write for VLESS's none.
+func (n *normalizer) vlessEncryption() *Problem {
+	encryption := n.text("encryption")
+	switch encryption {
+	case "", "none":
+		return nil
+	case "auto":
+		n.remove("encryption", "auto is VMess's; VLESS has none")
+		return nil
+	}
+	parts := strings.Split(encryption, ".")
+	if parts[0] != "mlkem768x25519plus" {
+		return &Problem{model.WarnUnsupportedOption, "VLESS encryption " + encryption}
+	}
+	bad := &Problem{model.WarnInvalidCredential, "VLESS encryption is not mlkem768x25519plus.<mode>.<rtt>.<keys>"}
+	if len(parts) < 4 || (parts[1] != "native" && parts[1] != "xorpub" && parts[1] != "random") ||
+		(parts[2] != "1rtt" && parts[2] != "0rtt") {
+		return bad
+	}
+	var keys int
+	var paddings []string
+	for _, part := range parts[3:] {
+		if len(part) < 20 {
+			paddings = append(paddings, part)
+			continue
+		}
+		key, err := base64.RawURLEncoding.DecodeString(part)
+		switch {
+		case err != nil:
+			return bad
+		case len(key) == 32: // any 32 bytes are an X25519 key
+		case len(key) == mlkem.EncapsulationKeySize768:
+			if _, err := mlkem.NewEncapsulationKey768(key); err != nil {
+				return bad
+			}
+		default:
+			return bad
+		}
+		keys++
+	}
+	if keys == 0 || !vlessPadding(strings.Join(paddings, ".")) {
+		return bad
+	}
+	return nil
+}
+
+// vlessPadding reports padding ParsePadding reads: lengths and gaps of three numbers each, the
+// first at least 100-35-35, at most 65553 bytes in all.
+func vlessPadding(padding string) bool {
+	if padding == "" {
+		return true
+	}
+	total := 0
+	for index, part := range strings.Split(padding, ".") {
+		fields := strings.Split(part, "-")
+		if len(fields) < 3 || fields[0] == "" || fields[1] == "" || fields[2] == "" {
+			return false
+		}
+		var y [3]int
+		for i := range y {
+			var err error
+			if y[i], err = strconv.Atoi(fields[i]); err != nil {
+				return false
+			}
+		}
+		if index == 0 && (y[0] < 100 || y[1] < 35 || y[2] < 35) {
+			return false
+		}
+		if index%2 == 0 {
+			total += max(y[1], y[2])
+		}
+	}
+	return total <= 18+65535
+}
+
+// geckoSizes removes Gecko packet sizes sing-quic refuses: the range (512 to 1200 when unset)
+// must be positive and end at 2048 at most.
+func (n *normalizer) geckoSizes() {
+	sizes := [2]int{512, 1200}
+	for index, key := range []string{"obfs-min-packet-size", "obfs-max-packet-size"} {
+		if size, ok := model.Int(n.p.Value(key)); ok && size != 0 {
+			sizes[index] = size
+		}
+	}
+	if sizes[0] <= 0 || sizes[0] > sizes[1] || sizes[1] > 2048 {
+		n.remove("obfs-min-packet-size", "is outside Gecko's packet sizes")
+		n.remove("obfs-max-packet-size", "is outside Gecko's packet sizes")
+	}
+}
+
+// naive removes what naive_options.go refuses but the proxy works without.
+func (n *normalizer) naive() {
+	p := &n.p
+	n.oneOf("udp-over-tcp-version", "1", "2")
+	if over, _ := model.Bool(p.Value("udp-over-tcp")); !over {
+		n.remove("udp-over-tcp-version", "needs udp-over-tcp")
+	}
+	n.oneOf("quic-congestion-control", "bbr", "bbr2", "cubic", "reno")
+	quic, _ := model.Bool(p.Value("quic"))
+	if !quic {
+		n.remove("quic-congestion-control", "needs quic")
+		n.remove("quic-session-receive-window", "needs quic")
+	}
+	limit := uint64(1<<31 - 1) // HTTP/2's
+	if quic {
+		limit = 1<<62 - 1
+	}
+	for _, key := range []string{"stream-receive-window", "quic-session-receive-window"} {
+		if value, set := p.Get(key); set {
+			if window, ok := unsigned(value); !ok || window > limit {
+				n.remove(key, "is not a window of 0 to "+strconv.FormatUint(limit, 10)+" bytes")
+			}
+		}
+	}
+	if concurrency, ok := model.Int(p.Value("insecure-concurrency")); ok && concurrency < 0 {
+		n.remove("insecure-concurrency", "is negative")
+	}
+	n.naiveHeaders()
+	// Naive's certificate is the CA to trust; anything but PEM certificates is read as a path.
+	if certificate := n.text("certificate"); certificate != "" &&
+		(!strings.Contains(certificate, "-----BEGIN CERTIFICATE-----") || !x509.NewCertPool().AppendCertsFromPEM([]byte(certificate))) {
+		n.remove("certificate", "is not PEM CA certificates")
+	}
+}
+
+// naiveHeaders keeps the extra headers Naive may send: HTTP tokens for names, no line breaks in
+// values, none of the headers the transport writes itself, each once.
+func (n *normalizer) naiveHeaders() {
+	value, set := n.p.Get("headers")
+	if !set {
+		return
+	}
+	headers, ok := value.(model.Object)
+	if !ok {
+		n.remove("headers", "is not a mapping")
+		return
+	}
+	kept := make(model.Object, 0, len(headers))
+	seen := map[string]bool{}
+	drop := func(name, why string) { n.removed = append(n.removed, "headers "+name+" "+why) }
+	for _, field := range headers {
+		name, folded := field.Key, strings.ToLower(field.Key)
+		text, scalar := model.Text(field.Value)
+		switch {
+		case !headerName(name):
+			drop(strconv.Quote(name), "is not a header name")
+		case !scalar || strings.ContainsAny(text, "\r\n\x00"):
+			drop(name, "is not a header value")
+		case managedHeaders[folded]:
+			drop(name, "is written by the transport")
+		case seen[folded]:
+			drop(name, "repeats a header")
+		default:
+			seen[folded] = true
+			if _, isBool := field.Value.(bool); isBool {
+				field.Value = text // mihomo decodes header values as strings
+			}
+			kept = append(kept, field)
+		}
+	}
+	if len(kept) == 0 {
+		n.p.Delete("headers")
+	} else {
+		n.p.Set("headers", kept)
+	}
+}
+
+var managedHeaders = set("padding proxy-authorization host connection proxy-connection transfer-encoding content-length upgrade")
+
+// headerName reports an HTTP token that is not one of Cronet's private "-" controls.
+func headerName(name string) bool {
+	if name == "" || name[0] == '-' {
+		return false
+	}
+	for _, ch := range name {
+		if !('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || '0' <= ch && ch <= '9' || strings.ContainsRune("!#$%&'*+-.^_`|~", ch)) {
+			return false
+		}
+	}
+	return true
+}
+
+// zerotier checks the network ID and orbits NewZeroTier parses; everything else is optional.
+func (n *normalizer) zerotier() *Problem {
+	if id := n.text("network"); !zeroTierNetwork(id) {
+		return invalid("ZeroTier network " + id + ", not a 16-digit network ID")
+	}
+	value, set := n.p.Get("orbit")
+	if !set {
+		return nil
+	}
+	var kept []any
+	worlds := map[string]bool{}
+	for _, item := range model.AsList(value) {
+		orbit := model.AsObject(item)
+		world, seed := strings.ToLower(text(orbit.Value("world"))), text(orbit.Value("seed"))
+		if id, err := strconv.ParseUint(world, 16, 64); len(world) != 16 || err != nil || id == 0 || !zeroTierAddress(seed) {
+			n.removed = append(n.removed, fmt.Sprintf("orbit %s/%s is not a world ID and seed node", world, seed))
+			continue
+		}
+		if worlds[world] {
+			n.removed = append(n.removed, "orbit "+world+"/"+seed+" repeats its world")
+			continue
+		}
+		worlds[world] = true
+		kept = append(kept, orbit)
+	}
+	if len(kept) == 0 {
+		n.p.Delete("orbit")
+	} else {
+		n.p.Set("orbit", kept)
+	}
+	return nil
+}
+
+// zeroTierNetwork reports a network ID ZT.ParseNetworkID reads: 16 hexadecimal digits, not zero,
+// with a controller address that is not reserved unless the network is ad hoc (0xff…).
+func zeroTierNetwork(id string) bool {
+	raw, err := hex.DecodeString(id)
+	if len(id) != 16 || err != nil {
+		return false
+	}
+	var network uint64
+	for _, b := range raw {
+		network = network<<8 | uint64(b)
+	}
+	controller := network >> 24 & 0xffffffffff
+	return network != 0 && (network>>56 == 0xff || controller != 0 && controller>>32 != 0xff)
+}
+
+// zeroTierAddress reports a node address ZT.ParseAddress reads: 10 hexadecimal digits, not zero
+// and not 0xff….
+func zeroTierAddress(address string) bool {
+	raw, err := hex.DecodeString(address)
+	return len(address) == 10 && err == nil && raw[0] != 0xff && strings.Trim(address, "0") != ""
+}
+
+// text reads an option as mihomo decodes it into a string; numbers count.
+func (n *normalizer) text(key string) string {
+	return text(n.p.Value(key))
+}
+
 // oneOf removes an option whose value is none of values.
 func (n *normalizer) oneOf(key string, values ...string) {
 	value, set := n.p.Get(key)
@@ -333,6 +597,55 @@ func bandwidth(speed string) bool {
 		return true
 	}
 	return rate.MatchString(speed)
+}
+
+// bps reads a speed as mihomo's utils.StringToBps does, in bytes per second: a bare number is
+// Mbps, and 0 is a speed it cannot read.
+func bps(speed string) uint64 {
+	if mbps, err := strconv.Atoi(speed); err == nil {
+		speed = strconv.Itoa(mbps) + " Mbps"
+	}
+	m := rate.FindStringSubmatch(speed)
+	if m == nil {
+		return 0
+	}
+	n := uint64(1)
+	switch m[2] {
+	case "T":
+		n *= 1000
+		fallthrough
+	case "G":
+		n *= 1000
+		fallthrough
+	case "M":
+		n *= 1000
+		fallthrough
+	case "K":
+		n *= 1000
+	}
+	v, _ := strconv.ParseUint(m[1], 10, 64)
+	n *= v
+	if m[3] == "b" {
+		n /= 8
+	}
+	return n
+}
+
+// unsigned reads a value as mihomo's decoder reads it into a uint64; a negative number wraps.
+func unsigned(value any) (uint64, bool) {
+	switch v := value.(type) {
+	case int:
+		return uint64(v), true
+	case float64:
+		if v < 0 {
+			return 1 << 63, true // past any limit, as a wrapped negative is
+		}
+		return uint64(v), true
+	case string:
+		u, err := strconv.ParseUint(v, 0, 64)
+		return u, err == nil
+	}
+	return 0, false
 }
 
 // portRanges reports ranges mihomo reads: ports and ranges of them, separated by "," or "/".
