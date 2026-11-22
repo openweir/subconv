@@ -1,0 +1,230 @@
+{
+  "format": "clash",
+  "proxies": [
+    {
+      "name": "HK 01",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p"
+    },
+    {
+      "name": "Landing",
+      "type": "ss",
+      "server": "l1.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p",
+      "dialer-proxy": "Front"
+    },
+    {
+      "name": "Landing by type",
+      "type": "vmess",
+      "server": "l2.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000001",
+      "alterId": 0,
+      "cipher": "auto",
+      "dialer-proxy": "Front by type"
+    },
+    {
+      "name": "Landing ss type",
+      "type": "ss",
+      "server": "l3.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p"
+    },
+    {
+      "name": "Landing loop",
+      "type": "ss",
+      "server": "l4.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p"
+    },
+    {
+      "name": "Landing fallback",
+      "type": "ss",
+      "server": "l5.example.com",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "p"
+    }
+  ],
+  "proxy-providers": {
+    "Airport": {
+      "type": "http",
+      "url": "https://example.com/airport.yaml",
+      "exclude-filter": "(?i)expire|traffic"
+    }
+  },
+  "proxy-groups": [
+    {
+      "name": "Proxy",
+      "type": "select",
+      "proxies": [
+        "Front",
+        "Everything",
+        "Nothing left",
+        "HK",
+        "Not expired",
+        "Python",
+        "Quoted",
+        "Landing",
+        "Landing by type",
+        "Landing ss type",
+        "Landing loop",
+        "Landing fallback"
+      ]
+    },
+    {
+      "name": "Front",
+      "type": "select",
+      "include-all-proxies": true,
+      "exclude-filter": "^Landing"
+    },
+    {
+      "name": "Front by type",
+      "type": "select",
+      "include-all-proxies": true,
+      "filter": "^(HK 01|Landing by type)$",
+      "exclude-type": "Vmess"
+    },
+    {
+      "name": "Front ss",
+      "type": "select",
+      "include-all-proxies": true,
+      "filter": "^(HK 01|Landing ss type)$",
+      "exclude-type": "ss"
+    },
+    {
+      "name": "Everything",
+      "type": "select",
+      "include-all-proxies": true
+    },
+    {
+      "name": "Nothing left",
+      "type": "select",
+      "proxies": [
+        "HK 01"
+      ],
+      "exclude-filter": "HK",
+      "empty-fallback": "Landing fallback"
+    },
+    {
+      "name": "HK",
+      "type": "url-test",
+      "include-all-proxies": true,
+      "filter": "(?i)\\bhk\\b|香港|\\pL{2}\\d",
+      "url": "https://cp.cloudflare.com",
+      "interval": 300
+    },
+    {
+      "name": "Not expired",
+      "type": "select",
+      "include-all-proxies": true,
+      "filter": "^(?!.*(?:expire|到期)).*$"
+    },
+    {
+      "name": "Python",
+      "type": "select",
+      "proxies": [
+        "HK 01"
+      ]
+    },
+    {
+      "name": "Quoted",
+      "type": "select",
+      "proxies": [
+        "HK 01"
+      ]
+    }
+  ],
+  "rule-providers": {
+    "reject": {
+      "type": "http",
+      "behavior": "domain",
+      "url": "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt",
+      "interval": 86400
+    },
+    "lan": {
+      "type": "http",
+      "behavior": "classical",
+      "url": "https://example.com/rules/lan.list",
+      "interval": 86400
+    },
+    "text": {
+      "type": "http",
+      "behavior": "classical",
+      "format": "text",
+      "url": "https://example.com/rules/direct.txt",
+      "interval": 86400
+    },
+    "cn": {
+      "type": "http",
+      "behavior": "ipcidr",
+      "url": "https://example.com/rules/cn.mrs",
+      "interval": 86400,
+      "format": "mrs"
+    },
+    "blocked": {
+      "type": "inline",
+      "behavior": "domain",
+      "payload": []
+    }
+  },
+  "rules": [
+    "RULE-SET,reject,REJECT",
+    "RULE-SET,blocked,REJECT",
+    "RULE-SET,lan,DIRECT",
+    "RULE-SET,text,DIRECT",
+    "RULE-SET,cn,DIRECT",
+    "DOMAIN-REGEX,^ads?\\.(?!keep\\.),REJECT",
+    "MATCH,Proxy"
+  ],
+  "warnings": [
+    {
+      "code": "ignored_option",
+      "detail": "Airport: filter is not a valid regular expression"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Python: filter is not a valid regular expression"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Python: exclude-filter is not a valid regular expression"
+    },
+    {
+      "code": "ignored_option",
+      "detail": "Quoted: filter is not a valid regular expression"
+    },
+    {
+      "code": "cyclic_reference",
+      "detail": "Landing ss type: dialer-proxy Front ss leads back to it"
+    },
+    {
+      "code": "cyclic_reference",
+      "detail": "Landing loop: dialer-proxy Everything leads back to it"
+    },
+    {
+      "code": "cyclic_reference",
+      "detail": "Landing fallback: dialer-proxy Nothing left leads back to it"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "DOMAIN-REGEX,[z-a],REJECT: regular expression [z-a]"
+    },
+    {
+      "code": "unsupported_rule",
+      "detail": "PROCESS-NAME-REGEX,(?P\u003cn\u003echrome),Proxy: regular expression (?P\u003cn\u003echrome)"
+    }
+  ],
+  "rule_stats": {
+    "total": 9,
+    "dropped": 2,
+    "match": true
+  }
+}
