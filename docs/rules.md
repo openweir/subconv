@@ -158,7 +158,8 @@ Anything else (ports, `mode`, `dns`, `tun`, `external-controller`, `secret`, `pr
 Because the groups use mihomo's own fields, the template loads in mihomo as it is. When
 `subconv.Build` fills the nodes in, it instead:
 
-1. validate the template (`rules.Validate`);
+1. validate the template (`rules.Validate`), and hold the rule providers' paths to
+   `./rules/openweir/` once more as it puts them in;
 2. add the converted `proxies` (and `proxy-providers`, if any). The template's group names
    win: a node or proxy provider with one is renamed with a number (`renamed`), and every
    `dialer-proxy`, provider `proxy`, group member and `use` that named it follows, so the

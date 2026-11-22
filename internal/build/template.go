@@ -50,6 +50,13 @@ func Apply(result *model.Result, template *rules.Template, options model.Options
 	}
 	config := model.AsObject(value)
 	providers := model.AsObject(config.Value("rule-providers"))
+	for _, field := range providers {
+		// The paths go to mihomo as written, so they are held to the template's directory here
+		// too, whatever validated them.
+		if path := model.AsObject(field.Value).String("path"); !rules.ValidProviderPath(path) {
+			return fmt.Errorf("%w: rule provider %s: path %q is not under %s", rules.ErrInvalidTemplate, field.Key, path, rules.ProviderDir)
+		}
+	}
 	var templateGroups []model.Object
 	names := map[string]bool{}
 	for _, item := range model.AsList(config.Value("proxy-groups")) {

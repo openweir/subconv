@@ -1,7 +1,10 @@
 package build
 
 import (
+	"errors"
+	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/openweir/subconv/internal/convert"
@@ -211,5 +214,32 @@ rules:
 	}
 	if !slices.Equal(result.Rules, []string{"RULE-SET,LAN,DIRECT", "DOMAIN-SUFFIX,hk.example,🇭🇰 Hong Kong", "GEOIP,CN,🎯 Domestic", "MATCH,🚀 Proxy"}) {
 		t.Errorf("rules %q", result.Rules)
+	}
+}
+
+// A template whose rule provider would write outside its directory is refused, and the result
+// stays as it was.
+func TestApplyProviderPath(t *testing.T) {
+	const subscription = "proxies:\n  - {name: HK 01, server: hk.example.com, " + ss + "}\n"
+	for _, path := range []string{"./geoip.dat", "./rules/lan.txt", "./rules/openweir/../../config.yaml"} {
+		result, err := convert.Subscription([]byte(subscription), model.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := *result
+		before.Proxies = cloneAll(result.Proxies)
+		template := strings.Replace(testTemplate, "./rules/openweir/dler/lan.classical.txt", path, 1)
+		err = Apply(result, &rules.Template{YAML: []byte(template), Base: "https://rules.example.com/branch"}, model.Options{})
+		if !errors.Is(err, rules.ErrInvalidTemplate) {
+			t.Errorf("%s: err %v", path, err)
+		}
+		if !reflect.DeepEqual(*result, before) {
+			t.Errorf("%s: the result changed: %+v", path, result)
+		}
+	}
+
+	result := apply(t, subscription, testTemplate)
+	if path := model.AsObject(result.RuleProviders.Value("LAN")).String("path"); path != "./rules/openweir/dler/lan.classical.txt" {
+		t.Errorf("path %q", path)
 	}
 }
