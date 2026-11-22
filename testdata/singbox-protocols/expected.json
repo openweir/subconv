@@ -195,6 +195,29 @@
       "port": 1080
     },
     {
+      "name": "SSR",
+      "type": "ssr",
+      "server": "r.example.com",
+      "port": 8389,
+      "cipher": "aes-128-cfb",
+      "password": "p",
+      "obfs": "plain",
+      "protocol": "origin",
+      "udp": true
+    },
+    {
+      "name": "SSR auth",
+      "type": "ssr",
+      "server": "r.example.com",
+      "port": 8390,
+      "cipher": "chacha20-ietf",
+      "password": "p",
+      "obfs": "tls1.2_ticket_auth",
+      "obfs-param": "cover.example.com",
+      "protocol": "auth_aes128_md5",
+      "protocol-param": "1234:key"
+    },
+    {
       "name": "VMess ECH",
       "type": "vmess",
       "server": "e.example.com",
@@ -276,11 +299,11 @@
     },
     {
       "code": "unsupported_proxy",
-      "detail": "SSR: type shadowsocksr"
+      "detail": "ShadowTLS: ShadowTLS on its own; mihomo adds it to the proxy that dials through it"
     },
     {
-      "code": "unsupported_proxy",
-      "detail": "ShadowTLS: ShadowTLS on its own; mihomo adds it to the proxy that dials through it"
+      "code": "invalid_proxy",
+      "detail": "SSR AEAD: cipher aes-128-gcm, not a stream cipher"
     },
     {
       "code": "unknown_reference",

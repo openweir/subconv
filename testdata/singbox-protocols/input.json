@@ -62,6 +62,11 @@
     { "type": "socks", "tag": "SOCKS", "server": "127.0.0.1", "server_port": 1080, "version": "5", "network": "tcp" },
     { "type": "socks", "tag": "SOCKS4", "server": "127.0.0.1", "server_port": 1081, "version": "4" },
     { "type": "shadowsocksr", "tag": "SSR", "server": "r.example.com", "server_port": 8389, "method": "aes-128-cfb", "password": "p", "obfs": "plain", "protocol": "origin" },
+    {
+      "type": "shadowsocksr", "tag": "SSR auth", "server": "r.example.com", "server_port": 8390, "method": "chacha20-ietf", "password": "p",
+      "obfs": "tls1.2_ticket_auth", "obfs_param": "cover.example.com", "protocol": "auth_aes128_md5", "protocol_param": "1234:key", "network": "tcp"
+    },
+    { "type": "shadowsocksr", "tag": "SSR AEAD", "server": "r.example.com", "server_port": 8391, "method": "aes-128-gcm", "password": "p", "obfs": "plain", "protocol": "origin" },
     { "type": "shadowtls", "tag": "ShadowTLS", "server": "s.example.com", "server_port": 443, "version": 3, "password": "st" },
     {
       "type": "vmess", "tag": "VMess ECH", "server": "e.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000005",

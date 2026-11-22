@@ -32,6 +32,17 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 	switch o.String("type") {
 	case "shadowsocks":
 		out, reason = shadowsocks(base, o)
+	case "shadowsocksr": // sing-box's legacy outbound, which forks and older configs still carry
+		out = proxy.Merge(base, model.New(
+			"type", "ssr",
+			"cipher", o.String("method"),
+			"password", o.String("password"),
+			"obfs", o.String("obfs"),
+			"obfs-param", o.String("obfs_param"),
+			"protocol", o.String("protocol"),
+			"protocol-param", o.String("protocol_param"),
+			"udp", o.String("network") != "tcp",
+		))
 	case "vmess":
 		out = proxy.Merge(base, model.New(
 			"type", "vmess",

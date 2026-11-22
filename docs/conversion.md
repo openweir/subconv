@@ -160,11 +160,11 @@ may fall back to a routing template when there are no rules, no `Match`, or too 
 
 ### sing-box
 
-- **Proxies**: shadowsocks (obfs-local, v2ray-plugin, UDP over TCP), vmess, vless (REALITY,
-  OpenWeir's XHTTP), trojan, hysteria2 (port hopping), hysteria, tuic, anytls, naive, http,
-  socks5, wireguard (outbound and endpoint, several peers), ssh, tailscale endpoints and snell.
-  Transports ws, httpupgrade, grpc and http/h2; multiplex as smux (with brutal); `detour` as
-  `dialer-proxy`; `tcp_fast_open` and `tcp_multi_path`.
+- **Proxies**: shadowsocks (obfs-local, v2ray-plugin, UDP over TCP), the legacy shadowsocksr,
+  vmess, vless (REALITY, OpenWeir's XHTTP), trojan, hysteria2 (port hopping), hysteria, tuic,
+  anytls, naive, http, socks5, wireguard (outbound and endpoint, several peers), ssh, tailscale
+  endpoints and snell. Transports ws, httpupgrade, grpc and http/h2; multiplex as smux (with
+  brutal); `detour` as `dialer-proxy`; `tcp_fast_open` and `tcp_multi_path`.
 - **ShadowTLS**: a proxy that dials through a shadowtls outbound becomes one proxy with
   mihomo's `shadow-tls` plugin (Shadowsocks), obfs (Snell) or `shadow-tls-opts` (VMess, VLESS,
   Trojan, AnyTLS).
