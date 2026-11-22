@@ -77,6 +77,8 @@ func TestDetect(t *testing.T) {
 		"[Proxy]\na = ss, h, 1, encrypt-method=none\n":                              FormatSurge,
 		"shadowsocks=h:1, method=none, tag=a\n":                                     FormatQuantumultX,
 		"\xff\xfev\x00l\x00e\x00s\x00s\x00:\x00/\x00/\x00u\x00@\x00h\x00:\x001\x00": FormatLinks,
+		`{"outbounds":[{"tag":"proxy","protocol":"vless","settings":{}}]}`:          FormatXray,
+		`{"outbounds":[{"type":"shadowsocksr","protocol":"origin"}]}`:               FormatSingBox,
 	} {
 		if got, err := Detect([]byte(input)); err != nil || got != want {
 			t.Errorf("Detect(%q) = %q, %v; want %q", input, got, err, want)

@@ -61,6 +61,7 @@
     { "type": "http", "tag": "HTTPS", "server": "p.example.com", "server_port": 443, "username": "u", "password": "p", "tls": { "enabled": true, "server_name": "p.example.com" } },
     { "type": "socks", "tag": "SOCKS", "server": "127.0.0.1", "server_port": 1080, "version": "5", "network": "tcp" },
     { "type": "socks", "tag": "SOCKS4", "server": "127.0.0.1", "server_port": 1081, "version": "4" },
+    { "type": "shadowsocksr", "tag": "SSR", "server": "r.example.com", "server_port": 8389, "method": "aes-128-cfb", "password": "p", "obfs": "plain", "protocol": "origin" },
     { "type": "shadowtls", "tag": "ShadowTLS", "server": "s.example.com", "server_port": 443, "version": 3, "password": "st" },
     {
       "type": "vmess", "tag": "VMess ECH", "server": "e.example.com", "server_port": 443, "uuid": "7c8c8c0e-0000-4000-8000-000000000005",

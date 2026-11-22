@@ -276,6 +276,10 @@
     },
     {
       "code": "unsupported_proxy",
+      "detail": "SSR: type shadowsocksr"
+    },
+    {
+      "code": "unsupported_proxy",
       "detail": "ShadowTLS: ShadowTLS on its own; mihomo adds it to the proxy that dials through it"
     },
     {

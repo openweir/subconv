@@ -16,10 +16,11 @@ import (
 
 var errNotAConfig = errors.New("not an Xray config")
 
-// Is reports a decoded config whose outbounds are Xray's: a protocol and settings.
+// Is reports a decoded config whose outbounds are Xray's: a protocol and no type. sing-box's
+// outbounds have a type, and some a protocol of their own (ShadowsocksR's).
 func Is(value any) bool {
 	for _, item := range model.AsList(model.AsObject(value).Value("outbounds")) {
-		if outbound := model.AsObject(item); outbound.String("protocol") != "" {
+		if outbound := model.AsObject(item); outbound.String("protocol") != "" && outbound.Value("type") == nil {
 			return true
 		}
 	}

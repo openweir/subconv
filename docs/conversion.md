@@ -15,7 +15,7 @@ name.
 | `FormatClash` | `clash` | YAML or JSON with `proxies` or `proxy-providers` (also `Proxy`, Clash's early name) | `clash`, `openweir` |
 | `FormatStash` | `stash` | Clash with `benchmark-url` health checks, `script` or `http.rewrite` | `stash` |
 | `FormatSingBox` | `sing-box` | JSON (comments allowed) with `outbounds` or `endpoints` | `sing-box` |
-| `FormatXray` | `xray` | JSON whose outbounds have `protocol` | `xray` |
+| `FormatXray` | `xray` | JSON whose outbounds have `protocol` and no `type` | `xray` |
 | `FormatLinks` | `links` | a line that starts with `scheme://` | `uri` |
 | `FormatSurge` | `surge` | `[Proxy]`, `[Proxy Group]`, `[Rule]` or `[General]` sections | `surge` |
 | `FormatSurfboard` | `surfboard` | a Surge config with `[Panel]` or a Surfboard comment | `surfboard` |
