@@ -93,3 +93,14 @@ func PortRanges(ranges []string) string {
 	}
 	return strings.Join(out, ",")
 }
+
+// VLESSEncryption returns a VLESS encryption as mihomo takes it: "" for none, which other
+// clients also write "none", or "auto" as VMess's ciphers are written (VLESS has no such mode,
+// and mihomo refuses it). Anything else stays, for the normalization to check.
+func VLESSEncryption(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "none", "auto":
+		return ""
+	}
+	return value
+}

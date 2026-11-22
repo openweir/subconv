@@ -54,7 +54,7 @@ func (c *singBox) proxy(o model.Object) (model.Object, string) {
 			"flow", o.String("flow"),
 			"udp", o.String("network") != "tcp",
 			"packet-encoding", o.String("packet_encoding"),
-			"encryption", o.String("encryption"),
+			"encryption", proxy.VLESSEncryption(o.String("encryption")),
 		))
 		if out, reason = c.withStream(out, tls, o.Value("transport"), "servername"); out != nil {
 			out = withMux(out, o)

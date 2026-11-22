@@ -104,13 +104,13 @@ func (c *converter) outbound(index int, o model.Object) {
 				if kind == "vmess" {
 					fields = proxy.Merge(fields, model.New("alterId", model.AsInt(user.Value("alterId")), "cipher", or(user.String("security"), "auto")))
 				} else {
-					fields = proxy.Merge(fields, model.New("flow", user.String("flow"), "encryption", none(user.String("encryption"))))
+					fields = proxy.Merge(fields, model.New("flow", user.String("flow"), "encryption", proxy.VLESSEncryption(user.String("encryption"))))
 				}
 				c.add(tag, o, server.String("address"), server.Value("port"), fields)
 			}
 		}
 		if vless := settings.String("address"); vless != "" { // Xray's flat VLESS settings
-			fields := model.New("type", kind, "uuid", settings.String("id"), "flow", settings.String("flow"), "encryption", none(settings.String("encryption")), "udp", true)
+			fields := model.New("type", kind, "uuid", settings.String("id"), "flow", settings.String("flow"), "encryption", proxy.VLESSEncryption(settings.String("encryption")), "udp", true)
 			c.add(tag, o, vless, settings.Value("port"), fields)
 		}
 	case "trojan", "shadowsocks", "socks", "http":
@@ -583,13 +583,6 @@ func contains(list []any, name string) bool {
 		}
 	}
 	return false
-}
-
-func none(value string) string {
-	if value == "none" {
-		return ""
-	}
-	return value
 }
 
 func or(values ...string) string {

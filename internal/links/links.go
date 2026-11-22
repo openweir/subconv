@@ -134,7 +134,7 @@ func parse(scheme, line string) (model.Object, string) {
 			"uuid", u.User.Username(),
 			"flow", q.Get("flow"),
 			"udp", true,
-			"encryption", noneEmpty(q.Get("encryption")),
+			"encryption", proxy.VLESSEncryption(q.Get("encryption")),
 		))
 		out, reason = stream(out, q, "servername", "")
 	case "trojan":
@@ -776,13 +776,6 @@ func list(text string) []string {
 		}
 	}
 	return out
-}
-
-func noneEmpty(value string) string {
-	if value == "none" {
-		return ""
-	}
-	return value
 }
 
 func mbps(value string) string {
