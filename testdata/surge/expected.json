@@ -77,6 +77,22 @@
       }
     },
     {
+      "name": "NL VMess ShadowTLS",
+      "type": "vmess",
+      "server": "nl.example.com",
+      "port": 443,
+      "uuid": "7c8c8c0e-0000-4000-8000-000000000003",
+      "alterId": 64,
+      "cipher": "auto",
+      "udp": true,
+      "tls": true,
+      "servername": "cover.example.com",
+      "shadow-tls-opts": {
+        "password": "st",
+        "version": 3
+      }
+    },
+    {
       "name": "SG Snell v6",
       "type": "snell",
       "server": "sg.example.com",
@@ -94,6 +110,7 @@
       "port": 443,
       "password": "hy",
       "ports": "20000-30000,40000",
+      "hop-interval": 30,
       "down": "200 Mbps",
       "sni": "tw.example.com"
     },
@@ -154,6 +171,7 @@
         2,
         3
       ],
+      "mtu": 1280,
       "udp": true
     }
   ],

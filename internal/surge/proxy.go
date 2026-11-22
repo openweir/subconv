@@ -173,7 +173,7 @@ func (c *converter) proxy(n node) (model.Object, string) {
 		out = proxy.Merge(base, model.New(
 			"type", "vmess",
 			"uuid", uuid,
-			"alterId", model.AsInt(n.opt("alterid")),
+			"alterId", number(n.opt("alterid")),
 			"cipher", or(strings.ToLower(cipher), "auto"),
 			"udp", udp,
 		))
@@ -234,7 +234,7 @@ func (c *converter) proxy(n node) (model.Object, string) {
 			"type", "hysteria2",
 			"password", n.arg(0, "password", "auth"),
 			"ports", strings.ReplaceAll(strings.ReplaceAll(n.opt("port-hopping"), ";", ","), ":", "-"),
-			"hop-interval", model.AsInt(n.opt("port-hopping-interval")),
+			"hop-interval", number(n.opt("port-hopping-interval")),
 			"up", mbps(n.opt("upload-bandwidth")),
 			"down", mbps(n.opt("download-bandwidth")),
 			"sni", n.opt("sni", "tls-name", "tls-host"),
@@ -354,7 +354,7 @@ func (c *converter) stream(n node, out model.Object, nameKey string) model.Objec
 			out.Set("tls", true)
 		}
 		out = proxy.Merge(out, model.New(nameKey, n.opt("shadow-tls-sni"), "shadow-tls-opts", model.New(
-			"password", password, "version", model.AsInt(n.opt("shadow-tls-version")))))
+			"password", password, "version", number(n.opt("shadow-tls-version")))))
 	}
 	return out
 }
@@ -431,7 +431,7 @@ func (c *converter) wireguardNode(n node) (model.Object, string) {
 			"pre-shared-key", peer.Value("pre-shared-key"),
 			"allowed-ips", peer.Value("allowed-ips"),
 			"reserved", peer.Value("reserved"),
-			"mtu", model.AsInt(get("mtu")),
+			"mtu", number(get("mtu")),
 			"udp", true,
 		), ""
 	}
@@ -442,7 +442,7 @@ func (c *converter) wireguardNode(n node) (model.Object, string) {
 		"ipv6", get("self-ip-v6", "interface-ipv6"),
 		"private-key", get("private-key"),
 		"peers", entries,
-		"mtu", model.AsInt(get("mtu")),
+		"mtu", number(get("mtu")),
 		"udp", true,
 	)
 	return out, ""
@@ -500,6 +500,12 @@ func insecure(n node) bool {
 		return !n.flag("tls-verification")
 	}
 	return n.flag("skip-cert-verify", "allow-insecure", "insecure")
+}
+
+// number reads a numeric option; 0, which leaves it out, when it is none.
+func number(value string) int {
+	n, _ := model.Int(value)
+	return n
 }
 
 func mbps(value string) string {
