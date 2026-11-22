@@ -39,7 +39,8 @@ order of preference before any was timed ([`rules.DefaultHosts`](../rules/rules.
 | `https://raw.githubusercontent.com/openweir/subconv/rules` | GitHub | 0 |
 
 The template never names a host: rule provider URLs start with the placeholder `{rules}`, which
-the client replaces with the base URL of the host it picked (`rules.Fill`).
+the client replaces with the base URL of a host serving the version it chose (`rules.Fill`; see
+below for which).
 
 Caching: jsDelivr caches a branch for up to 12 hours, browsers for 7 days; the workflow purges
 every changed file through `purge.jsdelivr.net`, which clears all jsDelivr hostnames, the
@@ -54,21 +55,35 @@ Third-party mirrors are not trusted, and the manifest is not signed, so a client
 hosts ([`Client.Latest`](../rules/client.go)):
 
 1. It asks every host for `manifest.json` at once (at most `Parallel`, default 6, requests in
-   flight; each bounded by `Timeout`, default 10 s, and 1 MiB).
-2. It waits for every host, or for `Settle` (default 1.5 s) after the first valid manifest,
-   whichever comes first, and cancels the rest.
-3. Manifests older than the last version the client saw (`MinVersion`, or the cached manifest's)
-   are rollbacks and never accepted.
-4. It takes the newest manifest that at least two operators serve byte for byte. jsDelivr's
+   flight; each bounded by `Timeout`, default 10 s, and 1 MiB). A manifest that lists a
+   template over 1 MiB (`MaxTemplateSize`) is invalid.
+2. It refuses a version more than a day (`MaxAhead`) ahead of its clock: versions are build
+   times, and no host may set one that later builds never reach. A client whose clock is a day
+   or more behind refuses every manifest, and uses its cached template, until its clock is set.
+3. It refuses rollbacks. The floor holds for every host: `MinVersion`, or the cache's `floor`,
+   the newest version that two operators or GitHub served (`Snapshot.Trusted`; `Snapshot.Save`
+   records it). The cached manifest's version holds only for a single operator other than
+   GitHub, which may have set it alone: two operators, or GitHub, may go below it, down to the
+   floor. A mirror that once answered alone, with whatever version, cannot shut the others out.
+4. It waits for every host, or for `Settle` (default 1.5 s) after the first manifest it can
+   accept on its own, whichever comes first, and cancels the rest. A rollback starts no wait.
+5. It takes the newest manifest that at least two operators serve byte for byte. jsDelivr's
    hostnames are one operator: they share a cache.
-5. Failing agreement, it takes the newest manifest of the operator fewest hops from the branch
+6. Failing agreement, it takes the newest manifest of the operator fewest hops from the branch
    (GitHub, then jsDelivr, then jsdmirror), which must have come over HTTPS. A lone answer is
-   accepted the same way.
+   accepted the same way, for this call; it raises no floor.
 
 The hosts that served the chosen manifest are ranked by response time; hosts that had not
 answered follow, then hosts serving another version. `Snapshot.Fetch` downloads a file from the
 first of them that serves it with the manifest's size and SHA-256, so a stale or tampered mirror
 costs a retry, not a wrong file.
+
+`{rules}` gets another host: of those serving the chosen manifest, the one fewest hops from the
+branch (GitHub, then jsDelivr, then jsdmirror), the fastest of them on a tie (`Snapshot.Base`).
+mihomo refreshes the rule sets from it on its own and checks nothing against the manifest, so
+the URL names the most direct host rather than the fastest. A client that wants every rule set
+checked downloads them with `Snapshot.Fetch` and points the providers at its copies, as the
+OpenWrt plugin does. A cached template gets the configured host fewest hops away.
 
 ## The template
 
@@ -159,21 +174,23 @@ client := &rules.Client{
 	Cache: cache,              // rules.Cache: Get/Put by branch path; keeps the last good files
 }
 tpl, err := client.Template(ctx)
-// err: ctx's error, or rules.ErrNoTemplate when no host serves the template and the cache has
-// none.
-// tpl.YAML has {rules}; tpl.Base is the fastest host serving tpl.Version.
-// tpl.Origin is FromNetwork, or FromCache when no host served it (tpl.Err says why).
+// err: ctx's error, or rules.ErrNoTemplate when no host serves a template that passes
+// rules.Validate and the cache has none.
+// tpl.YAML has {rules}; tpl.Base is snap.Base() for tpl.Version.
+// tpl.Origin is FromNetwork, or FromCache when no host served a valid one (tpl.Err says why).
 filled, err := tpl.Filled()
 
 snap, err := client.Latest(ctx)              // the manifest and ranked hosts
 data, err := snap.Fetch(ctx, "providers/dler/lan.classical.txt")
-snap.Save()                                  // after the files: the cache's new minimum version
+snap.Save()                                  // after the files: the versions the cache accepts
 ```
 
-The cache holds `manifest.json` and files under their branch paths; the client checks whatever
-it reads from it against a manifest, and the cached manifest's version is the rollback floor.
-`Template` saves the manifest only after the template, so the cache never holds a manifest
-whose template it lacks.
+The cache holds `manifest.json` and files under their branch paths, and the floor under
+`floor` (`rules.FloorKey`); the client checks whatever it reads from it against a manifest.
+`Template` validates the template before it caches it and saves the manifest, so the cache never
+holds a manifest whose template it lacks, and a template this client refuses (one a newer
+schema allows, say) never replaces the last good one. A caller that keeps `MinVersion` itself
+keeps only versions of `Trusted` snapshots: the cached manifest's version is no floor.
 
 ## The generator
 

@@ -87,8 +87,8 @@ write configs and the vectors compare byte for byte.
    `RulesTemplate` always, `RulesSubscription` never, `RulesAuto` when the subscription has no
    rules, its final rule did not survive, or more than a tenth of its rules were left out.
 3. Gets the template from `Options.Client` (`rules.Client.Template`: the agreed manifest, the
-   template checked against it, the cache when no host answers). Without one, the plain
-   conversion comes back with `template_unavailable`.
+   template checked against it and validated, the cache when no host serves a valid one).
+   Without one, the plain conversion comes back with `template_unavailable`.
 4. `build.Apply` validates the template, fills in the host, expands every `include-all` group
    into its members and the nodes its filters let through (in subscription order, with the
    proxy providers as `use`), puts its groups, rule providers and rules in place of the
