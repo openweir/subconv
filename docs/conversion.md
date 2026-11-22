@@ -69,17 +69,27 @@ repaired; what cannot be repaired is left out with a warning, and the rest conve
   Mieru `transport`, a Shadowsocks password for `none`, Hysteria `up`/`down` from Stash's
   `up-speed`/`down-speed`, REALITY's uTLS fingerprint.
 - Removed with `ignored_option`: `interface-name` and `routing-mark` (the client's), local files
-  (`*-path`, `*-file`, certificates and keys that are paths rather than PEM), Naive options
-  Cronet refuses.
+  (`*-path`, `*-file`, certificates and keys that are paths rather than PEM, ZeroTier's `planet`),
+  Tailscale's and ZeroTier's `state-dir`, Naive options Cronet refuses (fingerprints, ALPN, a
+  client `private-key`, a `certificate` that is not PEM CA certificates), Naive QUIC options
+  without `quic` and `udp-over-tcp-version` without `udp-over-tcp`, and Naive `headers` the
+  transport writes itself (`Host`, `Padding`, `Proxy-Authorization`…) or that are not HTTP
+  headers. VLESS `encryption: auto`, VMess's word, is VLESS's none and goes too; REALITY without
+  a `public-key` is plain TLS to mihomo, so its `reality-opts` go as well.
 - What mihomo's constructors refuse at load, which would take the whole config down
   (`TestVectorsLoadInMihomo` checks every vector with a mihomo binary): REALITY public keys (32
   bytes of URL-safe Base64; other spellings of the same key are rewritten) and short IDs,
-  REALITY implying TLS; Shadowsocks methods, 2022 key lengths, obfs modes and UDP-over-TCP
-  versions; ShadowsocksR stream ciphers, obfs and protocols; VMess ciphers; VLESS's legacy XTLS
-  flows; Snell versions and their options; Hysteria bandwidths and protocols; Hysteria 2 obfs;
-  WireGuard keys, reserved bytes and addresses; certificate pins; ECH configs; Nowhere, Naive
-  and Mieru options; SSH host keys; mux protocols. An optional value is removed
-  (`ignored_option`), anything else leaves the proxy out.
+  REALITY implying TLS, and AnyTLS REALITY options without a key; Shadowsocks methods, 2022 key
+  lengths, obfs modes and UDP-over-TCP versions; ShadowsocksR stream ciphers, obfs and
+  protocols; VMess ciphers; VLESS's legacy XTLS flows and `encryption` (none or
+  `mlkem768x25519plus` with its keys and padding); Trojan transports (TCP, `ws`, `grpc`); Snell
+  versions and their options; Hysteria bandwidths (a bare number is Mbps; one mihomo reads as
+  zero is refused), `auth` and protocols; Hysteria 2 obfs (salamander, and gecko with its packet
+  sizes); ZeroTier network IDs and orbits; WireGuard keys, reserved bytes and addresses;
+  certificate pins; ECH configs; Nowhere, Naive and Mieru options; SSH host keys; mux protocols.
+  Values are checked the way mihomo's decoder reads them, so a number where it takes text (a
+  Hysteria `up: 100`, a TUIC `token`, an `obfs-password`) counts as that text. An optional value
+  is removed (`ignored_option`), anything else leaves the proxy out.
 - Left out: a missing or invalid server or port (`invalid_proxy`), missing credentials
   (`invalid_credential`; also a Snell `password` without a `psk`), a type mihomo lacks
   (`unsupported_proxy`).
@@ -94,7 +104,9 @@ filters are checked; a provider named like a group, or `default`, is renamed.
 **Groups**
 
 - Types in any case and other names (`urltest`, `static`, `available`, `loadbalance`); options
-  checked (`interval` as seconds, `strategy`, `expected-status`, filters, `empty-fallback`).
+  checked (`interval` as seconds, `strategy`, filters, `empty-fallback`, and `expected-status`
+  as mihomo parses it: `*`, or up to 28 statuses and closed ranges separated by `/` or `,`; an
+  open range such as `200-` would take the whole config down, so it is removed).
   `dialer-proxy`, `routing-mark` and `interface-name` are proxies' options and are removed.
 - Members and `use` that do not exist are removed (`unknown_reference`); members left out
   earlier go quietly.
@@ -312,6 +324,9 @@ What OpenWeir mihomo cannot express, and why, by its source:
 - **Naive that skips certificate verification**: `naive_options.go` refuses `skip-cert-verify`,
   `alpn` and fingerprints, which Chromium's TLS does not take.
 - **XHTTP on VMess or Trojan**: `xhttp-opts` is VLESS's (`vless.go`).
+- **Trojan over h2 or HTTP**: `trojan.go` dials `ws` and `grpc` and takes any other `network` as
+  plain TLS, which a server expecting HTTP/2 or HTTP framing does not speak; such a proxy is left
+  out (`unsupported_option`).
 - **TLS inside ShadowTLS, and ShadowTLS around QUIC protocols**: `shadow-tls-opts` replaces the
   proxy's TLS (`transport/vmess/tls.go`).
 - **WireGuard with more than one IPv4 or IPv6 address**: `ip` and `ipv6` are single values.
