@@ -243,3 +243,30 @@ func TestApplyProviderPath(t *testing.T) {
 		t.Errorf("path %q", path)
 	}
 }
+
+// The normalization sees the subscription's proxies and providers again under the template;
+// what it said about them is said once.
+func TestApplyWarnsOnce(t *testing.T) {
+	result := apply(t, `proxies:
+  - {name: JP 01, server: jp.example.com, `+ss+`, interface-name: eth0}
+proxy-providers:
+  local: {type: file, path: ./providers/local.yaml}
+  inline:
+    type: inline
+    payload:
+      - {name: Twin, server: a.example.com, `+ss+`}
+      - {name: Twin, server: b.example.com, `+ss+`}
+`, testTemplate)
+	seen := map[model.Warning]bool{}
+	for _, w := range result.Warnings {
+		if seen[w] {
+			t.Errorf("warned twice: %v", w)
+		}
+		seen[w] = true
+	}
+	for _, code := range []string{model.WarnLocalProvider, model.WarnIgnoredOption, model.WarnRenamed} {
+		if len(codes(result, code)) != 1 {
+			t.Errorf("%s: %q", code, codes(result, code))
+		}
+	}
+}

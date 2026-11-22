@@ -88,8 +88,11 @@ func Apply(result *model.Result, template *rules.Template, options model.Options
 	result.Rules = model.AsStrings(config.Value("rules"))
 	result.Warnings = append(result.Warnings, sub.warnings...)
 	// Groups the template leaves empty go, with their references; the proxies come through
-	// unchanged, having been normalized already.
+	// unchanged, having been normalized already, and what the normalization says about them
+	// again is not repeated.
+	before := len(result.Warnings)
 	normalize.Result(result, options)
+	result.Warnings = dedupe(result.Warnings, before)
 	// The statistics stay the subscription's, and the template's providers as it writes them:
 	// their paths keep the rule sets' cache when the host changes.
 	result.RuleStats = stats
@@ -245,6 +248,23 @@ func (s *subscription) makeRoom(names map[string]bool) {
 			}
 		}
 	}
+}
+
+// dedupe drops the warnings from index from on that repeat an earlier one: the normalization
+// sees the subscription's proxies and providers a second time.
+func dedupe(warnings []model.Warning, from int) []model.Warning {
+	seen := make(map[model.Warning]bool, len(warnings))
+	for _, w := range warnings[:from] {
+		seen[w] = true
+	}
+	out := warnings[:from]
+	for _, w := range warnings[from:] {
+		if !seen[w] {
+			seen[w] = true
+			out = append(out, w)
+		}
+	}
+	return out
 }
 
 func cloneAll(list []model.Object) []model.Object {

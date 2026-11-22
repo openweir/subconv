@@ -172,7 +172,9 @@ Because the groups use mihomo's own fields, the template loads in mihomo as it i
 4. expand every `include-all` group into explicit `proxies`: its listed members first, then the
    nodes whose names match `filter` and not `exclude-filter`, in subscription order (mihomo's
    `include-all` sorts them by name), adding the providers as `use` with the filters kept;
-5. drop groups left without members, and their references, as the normalization already does;
+5. drop groups left without members, and their references, as the normalization already does
+   (what it says again about the subscription's proxies and providers, such as
+   `local_provider`, is reported once);
 6. replace `{rules}` with the chosen base URL (`rules.Fill`). A client may instead point the
    providers at files it downloaded with `Snapshot.Fetch`, whose content is checked against the
    manifest, which mihomo's own refresh is not.
