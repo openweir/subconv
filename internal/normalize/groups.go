@@ -146,11 +146,11 @@ func (s *state) group(index int, raw model.Object) *group {
 	}
 	if status, set := o.Get("expected-status"); set {
 		text, _ := model.Text(status)
-		if strings.Trim(text, "0123456789/-* ") != "" {
+		if statusRanges(text) {
+			o.Set("expected-status", text)
+		} else {
 			o.Delete("expected-status")
 			s.r.Warn(model.WarnIgnoredOption, "%s: expected-status %s", unique, text)
-		} else {
-			o.Set("expected-status", text)
 		}
 	}
 	if kind == "load-balance" {
@@ -179,6 +179,35 @@ func (s *state) group(index int, raw model.Object) *group {
 		}
 	}
 	return &group{o: o, name: unique, kind: kind, proxies: texts(o.Value("proxies")), use: texts(o.Value("use"))}
+}
+
+// statusRanges reports an expected-status mihomo's utils.NewUnsignedRanges reads: "*", or up to
+// 28 statuses and ranges ("200", "200-299") separated by "/" or ",". An open range ("200-")
+// takes the whole config down.
+func statusRanges(text string) bool {
+	text = strings.TrimSpace(text)
+	if text == "" || text == "*" {
+		return true
+	}
+	parts := strings.Split(strings.ReplaceAll(text, ",", "/"), "/")
+	if len(parts) > 28 {
+		return false
+	}
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part == "" {
+			continue
+		}
+		bounds := strings.Split(part, "-")
+		if len(bounds) > 2 {
+			return false
+		}
+		for _, bound := range bounds {
+			if _, err := strconv.ParseUint(strings.Trim(bound, "[ ]"), 10, 64); err != nil {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // providerNames renames proxy providers that share a group's name or mihomo's own, which mihomo
