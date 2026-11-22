@@ -131,8 +131,9 @@ its end, which would change the filters after it, is refused too. A refused filt
 - A group with nothing to choose from is left out (`empty_group`), and so are references to
   it, which may empty further groups.
 
-**Rule providers**: `http` and `inline` with a behavior and format mihomo reads; the format is
-taken from the URL's extension when missing; `file` is kept with `local_provider`. sing-box's
+**Rule providers**: `http` and `inline` with a behavior and format mihomo reads; `file` is
+kept with `local_provider`. A missing format is mihomo's, YAML, unless the URL ends in `.mrs`,
+`.srs` or `.json`: `.txt` and `.list` sets are often YAML `payload` lists. sing-box's
 `.srs`/`.json` sets are replaced by MetaCubeX's `.mrs` twin when they are a well-known geosite or
 geoip set (SagerNet's sing-geosite and sing-geoip, MetaCubeX's sing branch, or the
 `geosite-*`/`geoip-*` names); other `.json` sets are kept only with `Options.ConvertsRuleSets`.

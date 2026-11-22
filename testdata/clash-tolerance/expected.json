@@ -261,8 +261,7 @@
       "type": "http",
       "behavior": "domain",
       "url": "https://example.com/reject.txt",
-      "interval": 86400,
-      "format": "text"
+      "interval": 86400
     },
     "cn": {
       "type": "http",

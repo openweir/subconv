@@ -145,7 +145,13 @@ func (s *state) ruleProvider(name string, p model.Object) (model.Object, string)
 		}
 		p.Set("url", url)
 		if format == "" {
-			format = ruleset.FormatOf(url)
+			// mihomo reads a provider without a format as YAML, which .txt and .list files
+			// often are (Loyalsoldier's payload lists); only a binary or sing-box extension
+			// says otherwise.
+			switch inferred := ruleset.FormatOf(url); inferred {
+			case "mrs", "srs", "json":
+				format = inferred
+			}
 		}
 		if format == "srs" || format == "json" {
 			// sing-box's formats: a well-known set has a MetaCubeX twin; the plugin converts
