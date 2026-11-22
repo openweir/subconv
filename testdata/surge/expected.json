@@ -77,6 +77,21 @@
       }
     },
     {
+      "name": "HK SS ShadowTLS",
+      "type": "ss",
+      "server": "hk.example.com",
+      "port": 443,
+      "cipher": "2022-blake3-aes-128-gcm",
+      "password": "MDEyMzQ1Njc4OWFiY2RlZg==",
+      "udp": true,
+      "plugin": "shadow-tls",
+      "plugin-opts": {
+        "host": "cover.example.com",
+        "password": "st",
+        "version": 2
+      }
+    },
+    {
       "name": "NL VMess ShadowTLS",
       "type": "vmess",
       "server": "nl.example.com",

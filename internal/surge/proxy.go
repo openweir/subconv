@@ -354,15 +354,22 @@ func (c *converter) stream(n node, out model.Object, nameKey string) model.Objec
 			out.Set("tls", true)
 		}
 		out = proxy.Merge(out, model.New(nameKey, n.opt("shadow-tls-sni"), "shadow-tls-opts", model.New(
-			"password", password, "version", number(n.opt("shadow-tls-version")))))
+			"password", password, "version", shadowTLSVersion(n))))
 	}
 	return out
 }
 
 // shadowTLS returns Surge's ShadowTLS options as mihomo's plugin options.
 func shadowTLS(n node) model.Object {
-	version, _ := strconv.Atoi(or(n.opt("shadow-tls-version"), "3"))
-	return model.New("host", n.opt("shadow-tls-sni"), "password", n.opt("shadow-tls-password"), "version", version)
+	return model.New("host", n.opt("shadow-tls-sni"), "password", n.opt("shadow-tls-password"), "version", shadowTLSVersion(n))
+}
+
+// shadowTLSVersion returns a line's ShadowTLS version: Surge's default is 2.
+func shadowTLSVersion(n node) int {
+	if version := number(n.opt("shadow-tls-version")); version != 0 {
+		return version
+	}
+	return 2
 }
 
 // wireguardNode converts Surge's "wireguard, section-name=X" with its [WireGuard X] section, and
