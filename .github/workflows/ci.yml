@@ -15,6 +15,9 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Under a minute. This leaves room for go test's own 10-minute limit per package to fire
+    # first and print the hung goroutines.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,6 +38,9 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # Seconds. A stalled download takes up to 20 minutes, four 5-minute attempts, before it
+    # fails; this leaves room for that and the rest of the run.
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
@@ -78,5 +84,7 @@ jobs:
             --commit-analyzer default@1.15.0 --changelog-generator default@1.15.0 \
             --plugin-resolver-disable-batch-prefetch --plugin-resolver-endpoint https://registry.invalid \
             || status=$?
-          # As with the action, 65 (nothing to release) and 66 (CI condition not met) are no failure.
-          case $status in 0 | 6[0-9]) ;; *) exit "$status" ;; esac
+          # 65 (nothing to release) and 66 (CI condition not met) are no failure. The action let any
+          # 6x through; v2.31.0 uses only these two and exits with 1 on every other error
+          # (cmd/semantic-release/main.go).
+          case $status in 0 | 65 | 66) ;; *) exit "$status" ;; esac
