@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("base: &base {type: ss, cipher: aes-128-gcm, password: x, port: 8388}\nsrv: &srv {server: 1.1.1.1}\nproxies:\n  - {name: hk, <<: [*base, *srv]}\nproxy-groups:\n  - {name: g, type: select, proxies: [hk]}\nrules:\n  - MATCH,g\n")

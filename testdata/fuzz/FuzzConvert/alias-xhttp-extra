@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("vless://b831381d-6324-4d53-ad4f-8cda48b30811@1.2.3.4:443?type=xhttp&security=tls&sni=a.com&path=%2Fx&extra=%26a%20%7B%22x%22%3A%20%2Aa%7D#x\n")

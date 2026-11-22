@@ -34,7 +34,9 @@ padded or not, wrapped in lines, or padded chunks one after another), JSON with 
 comments and trailing commas, link lists with blank lines, comments and lines that are not
 links. A Clash config whose YAML does not parse is read again with tab indentation taken as
 spaces, then one section at a time and one list item at a time; a broken item is left out with a
-warning.
+warning. YAML anchors and aliases are expanded, and merge keys (`<<: *a`, `<<: [*a, *b]`);
+YAML whose aliases loop, or add more values than a hundred times those it writes (at least
+10,000 and at most a million are allowed), does not parse.
 
 What is not a subscription fails, and every such error is also `ErrUnknownFormat`:
 

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("proxies:\n  - &a {name: a, type: ss, plugin-opts: [*a]}\n")

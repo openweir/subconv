@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -191,49 +192,62 @@ func (o Object) MarshalYAML() (any, error) {
 	return node, nil
 }
 
-// fromNode converts decoded YAML (or JSON, which is YAML) into ordered values.
-func fromNode(node *yaml.Node) (any, error) {
+// Limits on what aliases may make of a document. Decoding into a yaml.Node leaves aliases to
+// us, without go-yaml's own guards: an alias inside the node it names would never end, and
+// aliases of aliases grow a short body into billions of values ("billion laughs").
+const (
+	// Values aliases may add, as a multiple of the values the document writes out, within a
+	// floor and a ceiling.
+	aliasRatio, aliasFloor, aliasCeiling = 100, 10_000, 1_000_000
+	// Nesting, as deep as go-yaml lets a document itself go.
+	maxDepth = 10_000
+)
+
+var errAliases = errors.New("yaml: aliases expand to too many values")
+
+// decoder converts decoded YAML (or JSON, which is YAML) into ordered values.
+type decoder struct {
+	// Anchored nodes being converted; an alias to one of them would repeat it without end.
+	open map[*yaml.Node]bool
+	// Values still allowed.
+	budget int
+}
+
+func (d *decoder) value(node *yaml.Node, depth int) (any, error) {
+	if d.budget--; d.budget < 0 {
+		return nil, errAliases
+	}
+	if depth > maxDepth {
+		return nil, fmt.Errorf("line %d: nested deeper than %d", node.Line, maxDepth)
+	}
+	if node.Anchor != "" {
+		if d.open[node] {
+			return nil, fmt.Errorf("line %d: alias *%s inside the node it names", node.Line, node.Anchor)
+		}
+		d.open[node] = true
+		defer delete(d.open, node)
+	}
 	switch node.Kind {
 	case yaml.DocumentNode:
 		if len(node.Content) == 0 {
 			return nil, nil
 		}
-		return fromNode(node.Content[0])
+		return d.value(node.Content[0], depth+1)
 	case yaml.AliasNode:
-		return fromNode(node.Alias)
-	case yaml.MappingNode:
-		out := make(Object, 0, len(node.Content)/2)
-		for index := 0; index+1 < len(node.Content); index += 2 {
-			key := node.Content[index]
-			if key.Kind != yaml.ScalarNode {
-				return nil, fmt.Errorf("line %d: a key that is not a scalar", key.Line)
-			}
-			if key.Value == "<<" {
-				// A merge key: the merged mapping's fields, unless set here.
-				merged, err := fromNode(node.Content[index+1])
-				if err != nil {
-					return nil, err
-				}
-				if fields, ok := merged.(Object); ok {
-					for _, field := range fields {
-						if _, set := out.Get(field.Key); !set {
-							out = append(out, field)
-						}
-					}
-				}
-				continue
-			}
-			value, err := fromNode(node.Content[index+1])
-			if err != nil {
-				return nil, err
-			}
-			out.Set(key.Value, value)
+		if node.Alias == nil {
+			return nil, fmt.Errorf("line %d: unknown anchor %s", node.Line, node.Value)
 		}
-		return out, nil
+		return d.value(node.Alias, depth+1)
+	case yaml.MappingNode:
+		o, err := d.mapping(node, depth)
+		if err != nil {
+			return nil, err
+		}
+		return o, nil
 	case yaml.SequenceNode:
 		out := make([]any, 0, len(node.Content))
 		for _, item := range node.Content {
-			value, err := fromNode(item)
+			value, err := d.value(item, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -253,13 +267,106 @@ func fromNode(node *yaml.Node) (any, error) {
 	}
 }
 
+// mapping converts a mapping. A later key replaces an earlier one in its place. A merge key
+// ("<<") puts in its place the fields of a mapping, or of a list of them, that are not set
+// yet; a key the mapping sets later replaces the merged value, and the first mapping of a list
+// wins, as YAML has it.
+func (d *decoder) mapping(node *yaml.Node, depth int) (Object, error) {
+	out := fields{o: make(Object, 0, len(node.Content)/2)}
+	for index := 0; index+1 < len(node.Content); index += 2 {
+		key := node.Content[index]
+		if key.Kind != yaml.ScalarNode {
+			return nil, fmt.Errorf("line %d: a key that is not a scalar", key.Line)
+		}
+		value, err := d.value(node.Content[index+1], depth+1)
+		if err != nil {
+			return nil, err
+		}
+		if key.ShortTag() != "!!merge" {
+			out.set(key.Value, value)
+			continue
+		}
+		merged := []any{value}
+		if list, ok := value.([]any); ok {
+			merged = list
+		}
+		for _, item := range merged {
+			for _, field := range AsObject(item) {
+				out.add(field.Key, field.Value)
+			}
+		}
+	}
+	return out.o, nil
+}
+
+// fields builds an Object of many keys in linear time: past a few keys, a map finds them.
+type fields struct {
+	o     Object
+	index map[string]int
+}
+
+func (f *fields) find(key string) int {
+	if f.index != nil {
+		if at, ok := f.index[key]; ok {
+			return at
+		}
+		return -1
+	}
+	for at := range f.o {
+		if f.o[at].Key == key {
+			return at
+		}
+	}
+	return -1
+}
+
+// set replaces the value of key, or appends it.
+func (f *fields) set(key string, value any) {
+	if at := f.find(key); at >= 0 {
+		f.o[at].Value = value
+		return
+	}
+	f.append(key, value)
+}
+
+// add appends key unless it is set.
+func (f *fields) add(key string, value any) {
+	if f.find(key) < 0 {
+		f.append(key, value)
+	}
+}
+
+func (f *fields) append(key string, value any) {
+	f.o = append(f.o, Field{key, value})
+	switch {
+	case f.index != nil:
+		f.index[key] = len(f.o) - 1
+	case len(f.o) > 8:
+		f.index = make(map[string]int, cap(f.o))
+		for at, field := range f.o {
+			f.index[field.Key] = at
+		}
+	}
+}
+
+// nodes counts the nodes a document writes out, aliases once each.
+func nodes(node *yaml.Node) int {
+	n := 1
+	for _, child := range node.Content {
+		n += nodes(child)
+	}
+	return n
+}
+
 // Decode parses YAML or JSON into ordered values.
 func Decode(data []byte) (any, error) {
 	var node yaml.Node
 	if err := yaml.Unmarshal(data, &node); err != nil {
 		return nil, err
 	}
-	return fromNode(&node)
+	written := nodes(&node)
+	d := &decoder{open: map[*yaml.Node]bool{}, budget: written + min(max(aliasRatio*written, aliasFloor), aliasCeiling)}
+	return d.value(&node, 0)
 }
 
 // Accessors for decoded values.
