@@ -4,73 +4,149 @@ name: Rules
 # from the default branch only, so this file lives on main, but it commits only to the rules
 # branch: nothing reaches main's CI or releases, and pushes made with the workflow's token start
 # no workflows.
+#
+# build runs the generator and mihomo, a binary from another repository, so it can read the
+# repository and nothing more: it gets no token, and the one the runner holds for the job (which
+# a hostile binary could dig out of memory) is read-only. It hands the branch over as an
+# artifact. publish holds the write token; it checks out nothing and runs nothing it downloads,
+# only commits the artifact's files, at the paths the branch has, and pushes them.
 on:
   schedule:
     - cron: "37 20 * * *" # 04:37 in China, off the hour when the scheduler is busiest
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: rules
   cancel-in-progress: false
 
 jobs:
-  sync:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GITHUB_TOKEN: ${{ github.token }} # the generator's GitHub API calls, against the rate limit
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          # The cache would be saved after mihomo ran, and restored by main's other workflows.
+          cache: false
 
-      # mihomo compiles the .mrs rule sets: the latest OpenWeir release, checked against its sums.
+      # mihomo compiles the .mrs rule sets: the OpenWeir release cmd/rules/mihomo.pin names, which
+      # must have the SHA-256 pinned there for this runner's platform.
       - name: Download mihomo
         run: |
+          pin=cmd/rules/mihomo.pin
+          platform="$(go env GOOS)/$(go env GOARCH)"
+          tag=$(awk '$1 == "tag" { print $2 }' "$pin")
+          asset=$(awk -v p="$platform" '$1 == p { print $2 }' "$pin")
+          sum=$(awk -v p="$platform" '$1 == p { print $3 }' "$pin")
+          if [ -z "$tag" ] || [ -z "$asset" ] || [ -z "$sum" ]; then
+            echo "::error::$pin pins no mihomo for $platform"
+            exit 1
+          fi
           dir="$RUNNER_TEMP/mihomo"
-          gh release download --repo openweir/mihomo --dir "$dir" \
-            --pattern 'mihomo-linux-amd64-v1-openweir-*.gz' --pattern sha256sums
+          mkdir -p "$dir"
           cd "$dir"
-          archive=$(ls mihomo-linux-amd64-v1-openweir-*.gz)
-          grep -E "  ${archive}\$" sha256sums | sha256sum -c -
-          gunzip -c "$archive" > mihomo
+          curl -fsSL --retry 3 --max-time 300 -o "$asset" \
+            "https://github.com/openweir/mihomo/releases/download/${tag}/${asset}"
+          echo "$sum  $asset" | sha256sum --check --strict -
+          gunzip -c "$asset" > mihomo
           chmod +x mihomo
           ./mihomo -v
 
+      # The repository is public: the branch is fetched without credentials.
       - name: Fetch the current branch's manifest
         run: |
           if git fetch --depth=1 origin rules; then
             git show FETCH_HEAD:manifest.json > "$RUNNER_TEMP/prev.json"
           fi
 
+      # Without a token the generator's one GitHub API request (dler-io/Rules' commit) is
+      # unauthenticated.
       - name: Build
+        id: build
         run: |
-          go run ./cmd/rules -out "$RUNNER_TEMP/out" -mihomo "$RUNNER_TEMP/mihomo/mihomo" \
-            -prev "$RUNNER_TEMP/prev.json" -changed "$RUNNER_TEMP/changed.txt"
+          mkdir -p "$RUNNER_TEMP/artifact"
+          go run ./cmd/rules -out "$RUNNER_TEMP/artifact/branch" -mihomo "$RUNNER_TEMP/mihomo/mihomo" \
+            -prev "$RUNNER_TEMP/prev.json" -changed "$RUNNER_TEMP/artifact/changed.txt"
+          if [ -s "$RUNNER_TEMP/artifact/changed.txt" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing changed."
+          fi
+
+      - name: Upload the branch
+        if: steps.build.outputs.changed == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: rules
+          path: ${{ runner.temp }}/artifact
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    if: needs.build.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: rules
+          path: ${{ runner.temp }}/artifact
 
       # One orphan commit, force-pushed: the rule sets change daily and their history is worth
       # nothing (the manifest records sources and dates), while keeping it would grow the
       # repository by megabytes a day.
       - name: Publish
         id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ ! -s "$RUNNER_TEMP/changed.txt" ]; then
+          art="$RUNNER_TEMP/artifact"
+          if [ ! -s "$art/changed.txt" ]; then
             echo "Nothing changed."
             exit 0
           fi
-          export GIT_INDEX_FILE="$RUNNER_TEMP/rules.index"
+
+          # The artifact comes from a job that ran a downloaded binary: take regular files and
+          # directories named in the branch's characters, at the branch's paths, and nothing else.
+          # changed.txt names such paths too (removed files included); the purge puts them in URLs.
+          cd "$art/branch"
+          export LC_ALL=C
+          paths='^(manifest\.json|template\.yaml|README\.md|NOTICE\.md|(LICENSES|providers)(/[A-Za-z0-9_-][A-Za-z0-9._-]*)+)$'
+          odd=$(find . -mindepth 1 \( \( ! -type f ! -type d \) -o -name '.*' -o -name '*[!A-Za-z0-9._-]*' \) -print)
+          stray=$({ find . -type f -printf '%P\n'; cat ../changed.txt; } | grep -Ev "$paths" || true)
+          missing=$(for f in manifest.json template.yaml; do [ -f "$f" ] || echo "$f (missing)"; done)
+          if [ -n "$odd$stray$missing" ]; then
+            echo "::error::The artifact is not the rules branch:"
+            printf '%s\n' "$odd" "$stray" "$missing" | sed '/^$/d; s/^/  /'
+            exit 1
+          fi
+
+          git init --quiet --bare --initial-branch=rules "$RUNNER_TEMP/rules.git"
+          export GIT_DIR="$RUNNER_TEMP/rules.git" GIT_WORK_TREE="$art/branch"
           export GIT_AUTHOR_NAME="github-actions[bot]" GIT_COMMITTER_NAME="github-actions[bot]"
           export GIT_AUTHOR_EMAIL="41898282+github-actions[bot]@users.noreply.github.com"
           export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
-          git --work-tree="$RUNNER_TEMP/out" add --all
+          git add --all
           tree=$(git write-tree)
           commit=$(git commit-tree "$tree" -m "chore: rules $(date -u +%Y-%m-%d)")
-          git push --force origin "$commit:refs/heads/rules"
+          # The token reaches git through a credential helper that reads it from the environment:
+          # never on a command line, never in a file.
+          git -c credential.helper= \
+            -c credential.helper='!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f' \
+            push --force "https://github.com/${GITHUB_REPOSITORY}.git" "$commit:refs/heads/rules"
           echo "published=true" >> "$GITHUB_OUTPUT"
 
       # purge.jsdelivr.net clears every jsDelivr hostname (cdn, fastly, testingcf, gcore). The
@@ -83,5 +159,4 @@ jobs:
           while IFS= read -r path; do
             url="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@rules/${path}"
             curl -fsS --retry 3 --max-time 30 -o /dev/null "$url" || echo "::warning::purge failed: $path"
-          done < "$RUNNER_TEMP/changed.txt"
-
+          done < "$RUNNER_TEMP/artifact/changed.txt"

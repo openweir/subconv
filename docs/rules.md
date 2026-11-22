@@ -220,8 +220,9 @@ instead of `-mihomo`, to try it without mihomo) builds the branch into an empty 
    IP part (compiled to `.mrs`, which take less memory and need no scan) and a classical part
    for the rest (`DOMAIN-KEYWORD`, `PROCESS-NAME`, …), as consecutive `RULE-SET` rules with the
    same policy; IP ranges that said `no-resolve` keep it. Smaller sets stay whole.
-4. `mihomo convert-ruleset` compiles the parts; the workflow uses the latest OpenWeir mihomo
-   release, checked against its `sha256sums`.
+4. `mihomo convert-ruleset` compiles the parts. mihomo runs with only `PATH`, `HOME` and
+   `TMPDIR` from the generator's environment, never its `GITHUB_TOKEN`; the workflow uses the
+   OpenWeir mihomo release that `cmd/rules/mihomo.pin` names, at the SHA-256 pinned there.
 5. It writes the template, `LICENSES/` (the texts of the licenses in use), `NOTICE.md`, the
    branch README and `manifest.json`, whose `version` is the build's Unix time, above the
    previous one.
@@ -229,6 +230,48 @@ instead of `-mihomo`, to try it without mihomo) builds the branch into an empty 
 With `-prev`, unchanged files keep their `updated` date, a rule set that lost more than half its
 entries fails the build, and `-changed` lists the changed paths, the manifest last, or nothing.
 The output is deterministic, so a day without upstream changes publishes nothing.
+
+## The workflow
+
+`.github/workflows/rules.yml` runs daily, and on demand, in two jobs, so that the code it
+downloads never holds a token that can write to the repository:
+
+- `build` (`contents: read`, no token in its environment) checks out main without keeping
+  credentials, downloads the pinned mihomo, runs the generator against the branch's current
+  manifest, and uploads the branch and the changed paths as an artifact. The generator's one
+  GitHub API request, for dler-io/Rules' commit, goes unauthenticated.
+- `publish` (`contents: write`) runs only when a path changed. It checks out nothing and
+  executes nothing it downloaded: it refuses an artifact holding anything but regular files at
+  the branch's paths (`manifest.json`, `template.yaml`, `README.md`, `NOTICE.md`, `LICENSES/…`,
+  `providers/…`), commits the files as one orphan commit, force-pushes it to `rules` with the
+  token handed to git by a credential helper, and purges the changed paths from jsDelivr.
+
+A hostile mihomo or upstream could still put wrong rule sets on the branch, but not reach main,
+its releases or any other branch.
+
+### Bumping mihomo
+
+`cmd/rules/mihomo.pin` names the OpenWeir mihomo release by tag and, for each platform, its
+archive and SHA-256. The workflow downloads its runner's archive (linux/amd64) from that tag and
+refuses any other bytes, so an asset replaced or a release published later changes nothing
+until the pin moves. To move it:
+
+1. Choose the release, and check that the `.mrs` its `convert-ruleset` writes still load in the
+   mihomo the clients run.
+2. Take the archives' lines from the release's `sha256sums`, and compare them with the digests
+   GitHub computed when the assets were uploaded:
+
+   ```sh
+   tag=openweir-v1.0.0
+   gh release download "$tag" --repo openweir/mihomo --pattern sha256sums --output - \
+     | grep -E 'mihomo-linux-(amd64-v1|arm64)-'
+   gh release view "$tag" --repo openweir/mihomo --json assets \
+     --jq '.assets[] | select(.name | test("^mihomo-linux-(amd64-v1|arm64)-.*\\.gz$")) | "\(.digest) \(.name)"'
+   ```
+
+3. Write the tag and the two lines into `cmd/rules/mihomo.pin` (`go test ./cmd/rules` checks its
+   form), commit it as `ci:` or `chore(rules):`, which release nothing, and run the workflow by
+   hand (`gh workflow run rules.yml`) to see a build through.
 
 ## Sources and licenses
 

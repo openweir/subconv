@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -526,5 +527,44 @@ func TestMihomoEnv(t *testing.T) {
 	}
 	if env := read(t, dir, "out.mrs"); strings.Contains(env, "secret") || !strings.Contains(env, "PATH=") {
 		t.Errorf("mihomo's environment:\n%s", env)
+	}
+}
+
+// TestMihomoPin checks the form of mihomo.pin, which the rules workflow reads with awk: one tag,
+// then for each platform at most once the release's archive and its SHA-256. The workflow runs
+// on linux/amd64, and an archive that does not name the tag is left over from an earlier bump.
+func TestMihomoPin(t *testing.T) {
+	data, err := os.ReadFile("mihomo.pin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+	platform := regexp.MustCompile(`^[a-z0-9]+/[a-z0-9]+$`)
+	sum := regexp.MustCompile(`^[0-9a-f]{64}$`)
+	var tag string
+	archives := map[string]string{}
+	for i, line := range strings.Split(string(data), "\n") {
+		f := strings.Fields(line)
+		switch {
+		case len(f) == 0 || strings.HasPrefix(line, "#"):
+		case len(f) == 2 && f[0] == "tag" && tag == "" && name.MatchString(f[1]):
+			tag = f[1]
+		case len(f) == 3 && platform.MatchString(f[0]) && archives[f[0]] == "" && name.MatchString(f[1]) && sum.MatchString(f[2]):
+			archives[f[0]] = f[1]
+		default:
+			t.Errorf("mihomo.pin:%d: unexpected %q", i+1, line)
+		}
+	}
+	if tag == "" {
+		t.Fatal("mihomo.pin names no tag")
+	}
+	if archives["linux/amd64"] == "" {
+		t.Error("mihomo.pin pins no linux/amd64 archive, the workflow runner's")
+	}
+	for p, archive := range archives {
+		goos, goarch, _ := strings.Cut(p, "/")
+		if !strings.HasPrefix(archive, "mihomo-"+goos+"-"+goarch+"-") || !strings.HasSuffix(archive, "-"+tag+".gz") {
+			t.Errorf("mihomo.pin: %s: %s is not mihomo-%s-%s-…-%s.gz", p, archive, goos, goarch, tag)
+		}
 	}
 }
