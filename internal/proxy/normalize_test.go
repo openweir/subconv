@@ -56,6 +56,12 @@ func TestNormalizeLoadChecks(t *testing.T) {
 		{name: "vless mlkem bad key", input: vless + "encryption: mlkem768x25519plus.random.1rtt." + badMLKEM + "}", problem: model.WarnInvalidCredential},
 		{name: "vless mlkem padding", input: vless + "encryption: mlkem768x25519plus.native.1rtt.50-10-10." + x25519 + "}", problem: model.WarnInvalidCredential},
 
+		// Trojan carries TCP, ws and grpc; anything else would load as plain TLS.
+		{name: "trojan ws", input: "{name: t, type: trojan, server: t.example.com, port: 443, password: p, network: ws, ws-opts: {path: /t}}"},
+		{name: "trojan tcp", input: "{name: t, type: trojan, server: t.example.com, port: 443, password: p, network: tcp}"},
+		{name: "trojan h2", input: "{name: t, type: trojan, server: t.example.com, port: 443, password: p, network: h2, h2-opts: {host: [t.example.com]}}", problem: model.WarnUnsupportedOption},
+		{name: "trojan http", input: "{name: t, type: trojan, server: t.example.com, port: 443, password: p, network: http}", problem: model.WarnUnsupportedOption},
+
 		// Hysteria reads bare numbers as Mbps, and numbers as text wherever it takes text.
 		{name: "hysteria numbers", input: "{name: h, type: hysteria, server: h.example.com, port: 443, auth-str: a, up: 100, down: 200}", want: `{"up":100,"down":200}`},
 		{name: "hysteria units", input: "{name: h, type: hysteria, server: h.example.com, port: 443, up: 30 Mbps, down: 1 GBps}"},

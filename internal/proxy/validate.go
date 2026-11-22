@@ -79,6 +79,14 @@ func (n *normalizer) validate(kind string) *Problem {
 		if problem := n.vlessEncryption(); problem != nil {
 			return problem
 		}
+	case "trojan":
+		// trojan.go dials ws and grpc, and TLS for anything else: an h2 or HTTP transport would
+		// load as plain TLS, which the server does not speak.
+		switch network := p.String("network"); network {
+		case "", "tcp", "ws", "grpc":
+		default:
+			return &Problem{model.WarnUnsupportedOption, "Trojan over " + network + ", which mihomo's Trojan does not carry"}
+		}
 	case "snell":
 		if problem := n.snell(); problem != nil {
 			return problem
