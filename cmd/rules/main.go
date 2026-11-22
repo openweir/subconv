@@ -102,10 +102,14 @@ func run(ctx context.Context, configPath, out, mihomo, prevPath, changedPath str
 	return nil
 }
 
-// mihomoConverter compiles rule sets with mihomo's convert-ruleset.
+// mihomoConverter compiles rule sets with mihomo's convert-ruleset. mihomo is a binary from
+// another repository: it runs in [mihomoEnv], not in the generator's environment, which may hold
+// GITHUB_TOKEN.
 func mihomoConverter(bin string) converter {
 	return func(ctx context.Context, behavior, src, dst string) error {
-		output, err := exec.CommandContext(ctx, bin, "convert-ruleset", behavior, "text", src, dst).CombinedOutput()
+		cmd := exec.CommandContext(ctx, bin, "convert-ruleset", behavior, "text", src, dst)
+		cmd.Env = mihomoEnv()
+		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("mihomo convert-ruleset %s: %v: %s", filepath.Base(src), err, tail(output))
 		}
@@ -114,6 +118,17 @@ func mihomoConverter(bin string) converter {
 		}
 		return nil
 	}
+}
+
+// mihomoEnv is the environment mihomo runs in: what a program needs to start, and nothing else.
+func mihomoEnv() []string {
+	env := []string{}
+	for _, k := range []string{"PATH", "HOME", "TMPDIR"} {
+		if v, ok := os.LookupEnv(k); ok {
+			env = append(env, k+"="+v)
+		}
+	}
+	return env
 }
 
 func tail(output []byte) string {

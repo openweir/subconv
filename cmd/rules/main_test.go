@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -504,4 +505,26 @@ func termsInOrder(filter string) bool {
 		last, start = c, i+1
 	}
 	return true
+}
+
+// TestMihomoEnv checks that mihomo, a binary from another repository, does not see the
+// generator's environment and its GitHub token.
+func TestMihomoEnv(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in for mihomo is a shell script")
+	}
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "mihomo")
+	// convert-ruleset BEHAVIOR text SRC DST, writing its environment to DST.
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\nenv > \"$5\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GITHUB_TOKEN", "secret")
+	t.Setenv("GH_TOKEN", "secret")
+	if err := mihomoConverter(bin)(t.Context(), "domain", filepath.Join(dir, "in.txt"), filepath.Join(dir, "out.mrs")); err != nil {
+		t.Fatal(err)
+	}
+	if env := read(t, dir, "out.mrs"); strings.Contains(env, "secret") || !strings.Contains(env, "PATH=") {
+		t.Errorf("mihomo's environment:\n%s", env)
+	}
 }
