@@ -145,8 +145,10 @@ enforces it, and the generator validates every template it writes):
   (`(?i)expire|remaining|traffic|website|剩余|到期|过期|流量|官网|套餐|重置`), the pseudo-nodes
   that show traffic and expiry; clients can reuse the constant.
 - `rule-providers`: `type: http`, `behavior` domain, ipcidr or classical, `format` mrs (domain
-  and ipcidr only), text or yaml, `url` `{rules}/` and a path on the branch, `path` under
-  `./rules/openweir/` so the cache survives a change of host, `interval` 86400.
+  and ipcidr only), text or yaml, `url` `{rules}/` and a path on the branch, `path` a file
+  under `./rules/openweir/` (`rules.ProviderDir`), so the cache survives a change of host and a
+  template writes nowhere else in mihomo's home (not over `geoip.dat` or `config.yaml`),
+  `interval` 86400.
 - `rules`: mihomo rules, sending traffic only to the template's groups and the built-in
   policies, ending with `MATCH`.
 

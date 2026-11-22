@@ -40,7 +40,7 @@ type Group struct {
 }
 
 // Provider is a rule provider of a template. Its URL is [Placeholder] followed by a path on the
-// branch.
+// branch; its Path is a file under [ProviderDir].
 type Provider struct {
 	Type     string `yaml:"type"`
 	Behavior string `yaml:"behavior"`
@@ -48,6 +48,18 @@ type Provider struct {
 	URL      string `yaml:"url"`
 	Path     string `yaml:"path,omitempty"`
 	Interval int    `yaml:"interval,omitempty"`
+}
+
+// ProviderDir is the directory, relative to mihomo's home, that a template's rule providers keep
+// their files in. Their paths do not depend on the host, so the cache survives a change of host.
+const ProviderDir = "./rules/openweir/"
+
+// ValidProviderPath reports whether a rule provider's path is a file under [ProviderDir], the
+// only place in mihomo's home a template may write to: not over geoip.dat, config.yaml or
+// another program's rule sets.
+func ValidProviderPath(path string) bool {
+	rest, ok := strings.CutPrefix(path, ProviderDir)
+	return ok && ValidPath(rest)
 }
 
 type templateDoc struct {
@@ -78,9 +90,9 @@ func IsRuleType(kind string) bool { return ruleTypes[kind] }
 var groupTypes = map[string]bool{"select": true, "url-test": true, "fallback": true, "load-balance": true}
 
 // Validate checks a template against the schema of the branch's templates: only proxy-groups,
-// rule-providers and rules; groups that reach nodes only through
-// include-all with portable filters; providers on the branch; rules that end in MATCH and send
-// traffic only to the template's groups and the built-in policies.
+// rule-providers and rules; groups that reach nodes only through include-all with portable
+// filters; providers on the branch that keep their files under [ProviderDir]; rules that end in
+// MATCH and send traffic only to the template's groups and the built-in policies.
 func Validate(template []byte) error {
 	invalid := func(format string, args ...any) error {
 		return fmt.Errorf("%w: %s", ErrInvalidTemplate, fmt.Sprintf(format, args...))
@@ -142,8 +154,8 @@ func Validate(template []byte) error {
 			return invalid("rule provider %s: format %q", name, p.Format)
 		case !onBranch || !ValidPath(path):
 			return invalid("rule provider %s: url %q is not on the branch", name, p.URL)
-		case p.Path != "" && !(strings.HasPrefix(p.Path, "./") && ValidPath(strings.TrimPrefix(p.Path, "./"))):
-			return invalid("rule provider %s: path %q", name, p.Path)
+		case !ValidProviderPath(p.Path):
+			return invalid("rule provider %s: path %q is not under %s", name, p.Path, ProviderDir)
 		}
 	}
 
