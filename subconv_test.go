@@ -470,3 +470,11 @@ func FuzzConvertProxies(f *testing.F) {
 		}
 	})
 }
+
+// mihomo reads a proxy's keys case-insensitively, so a capitalised Name keeps the node's name.
+func TestCapitalisedNameKeepsTheName(t *testing.T) {
+	r, err := Convert([]byte("proxies:\n  - {Name: B, type: ss, server: 1.2.3.4, port: 8388, cipher: aes-128-gcm, password: p}\n"))
+	if err != nil || len(r.Proxies) != 1 || r.Proxies[0].String("name") != "B" {
+		t.Fatal(err, r.Proxies)
+	}
+}

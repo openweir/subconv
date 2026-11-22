@@ -61,7 +61,7 @@ func Result(r *model.Result, options model.Options) {
 func (s *state) proxyList(list []model.Object, label string, names map[string]model.Object) []model.Object {
 	out := make([]model.Object, 0, len(list))
 	for index, raw := range list {
-		name, _ := model.Text(raw.Value("name"))
+		name := proxy.Name(raw)
 		at := name
 		if at == "" {
 			at = fmt.Sprintf("%s %d", label, index+1)
