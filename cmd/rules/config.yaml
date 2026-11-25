@@ -69,11 +69,14 @@ template:
     Apple Push: 🔔 Apple Push
     Apple TV: 📺 Apple TV
     CN Mainland TV: 🏮 CN Mainland TV
-  # Entries the layout's rule sets lack, merged into them before they are split: SSH among the
-  # direct exceptions, Anthropic's endpoints for AI Suite.
+  # Rules the layout lacks: SSH stays direct, ahead of every rule set. Policies as in the layout.
+  extra:
+    - before: AdBlock
+      rules:
+        - DST-PORT,22,DIRECT
+  # Entries the layout's rule sets lack, merged into them before they are split: Anthropic's
+  # endpoints for AI Suite.
   additions:
-    Special:
-      - DST-PORT,22
     AI Suite:
       - DOMAIN,servd-anthropic-website.b-cdn.net
       - DOMAIN,anthropic.com.cdn.cloudflare.net
