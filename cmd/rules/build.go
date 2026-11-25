@@ -129,23 +129,10 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 		}
 		return fields
 	}
-	before, after := map[string][]string{}, map[string][]string{}
-	for _, e := range t.Extra {
-		if e.Before != "" {
-			before[e.Before] = append(before[e.Before], e.Rules...)
-		} else {
-			after[e.After] = append(after[e.After], e.Rules...)
-		}
+	for _, rule := range t.Rules {
+		ruleList = append(ruleList, strings.Join(policy(rule), ","))
 	}
-	placed, added := map[string]bool{}, map[string]bool{}
-	extra := func(set string, list map[string][]string) {
-		if _, ok := list[set]; ok {
-			placed[set] = true
-		}
-		for _, rule := range list[set] {
-			ruleList = append(ruleList, strings.Join(policy(rule), ","))
-		}
-	}
+	added := map[string]bool{}
 	for _, rule := range layout.Rules {
 		fields := policy(rule)
 		if !strings.EqualFold(fields[0], "RULE-SET") {
@@ -165,7 +152,6 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 		if err != nil {
 			return fmt.Errorf("rule provider %s: %w", fields[1], err)
 		}
-		extra(fields[1], before)
 		for _, p := range set.parts {
 			name := providerName(fields[1], set, p)
 			if f, ok := files[name]; ok && f != p.file {
@@ -191,12 +177,6 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 				r = append(r, "no-resolve")
 			}
 			ruleList = append(ruleList, strings.Join(r, ","))
-		}
-		extra(fields[1], after)
-	}
-	for _, e := range t.Extra {
-		if set := e.Before + e.After; !placed[set] {
-			return fmt.Errorf("the layout has no rule set %s for extra rules", set)
 		}
 	}
 	for set := range t.Additions {

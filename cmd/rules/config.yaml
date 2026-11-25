@@ -69,11 +69,9 @@ template:
     Apple Push: 🔔 Apple Push
     Apple TV: 📺 Apple TV
     CN Mainland TV: 🏮 CN Mainland TV
-  # Rules the layout lacks: SSH stays direct, ahead of every rule set. Policies as in the layout.
-  extra:
-    - before: AdBlock
-      rules:
-        - DST-PORT,22,DIRECT
+  # OpenWeir's own rules, ahead of the layout's: SSH stays direct. Policies as in the layout.
+  rules:
+    - DST-PORT,22,DIRECT
   # Entries the layout's rule sets lack, merged into them before they are split: Anthropic's
   # endpoints for AI Suite.
   additions:

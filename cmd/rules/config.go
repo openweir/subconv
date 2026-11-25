@@ -86,20 +86,13 @@ type tmpl struct {
 	// Policies sends the layout's rules for one policy to a group of the template: one named
 	// otherwise, or one that takes several of the layout's groups.
 	Policies map[string]string `yaml:"policies"`
-	// Extra adds rules the layout lacks, around one of its rule sets.
-	Extra []extraRules `yaml:"extra"`
+	// Rules are OpenWeir's own rules: the template starts with them, ahead of the layout's.
+	// Their policies go through Policies like the layout's.
+	Rules []string `yaml:"rules"`
 	// Additions are entries OpenWeir adds to the layout's rule sets, by the name the layout
 	// gives a set; they are merged into its content before it is split.
 	Additions map[string][]string `yaml:"additions"`
 	Groups    []rules.Group       `yaml:"groups"`
-}
-
-// extraRules are rules placed right before or right after (past every part of) the layout's rule
-// set of that name. Their policies go through Policies like the layout's own.
-type extraRules struct {
-	Before string   `yaml:"before"`
-	After  string   `yaml:"after"`
-	Rules  []string `yaml:"rules"`
 }
 
 func loadConfig(path string) (*config, error) {
@@ -141,14 +134,9 @@ func parseConfig(data []byte) (*config, error) {
 	if t == nil || t.Layout == "" || len(t.Groups) == 0 {
 		return nil, fmt.Errorf("config: the template needs a layout and groups")
 	}
-	for _, e := range t.Extra {
-		if (e.Before == "") == (e.After == "") || len(e.Rules) == 0 {
-			return nil, fmt.Errorf("config: every extra needs rules and either before or after")
-		}
-		for _, r := range e.Rules {
-			if f := rules.SplitRule(r); len(f) < 2 || strings.EqualFold(f[0], "RULE-SET") || strings.EqualFold(f[0], "MATCH") {
-				return nil, fmt.Errorf("config: extra rule %q: rule sets and MATCH come from the layout", r)
-			}
+	for _, r := range t.Rules {
+		if f := rules.SplitRule(r); len(f) < 3 || strings.EqualFold(f[0], "RULE-SET") || strings.EqualFold(f[0], "MATCH") {
+			return nil, fmt.Errorf("config: rule %q: rule sets and MATCH come from the layout, and a rule needs a policy", r)
 		}
 	}
 	for set, entries := range t.Additions {

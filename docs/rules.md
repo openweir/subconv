@@ -97,9 +97,9 @@ same order, with the same rules.
 Entries the layout's rule sets lack come from `additions` in the config, by the layout's name
 for the set: they are merged into its content before it is split, so the files on the branch
 carry them (their header says so) and everything that loads the set gets them, OpenWeir's
-api-edge included. Anthropic's endpoints join AI Suite this way. A rule that belongs to no set
-goes in `extra`, before or after one of the layout's rule sets, with a policy mapped like the
-layout's own: `DST-PORT,22,DIRECT` comes first, so SSH never goes through a proxy.
+api-edge included. Anthropic's endpoints join AI Suite this way. Rules that belong to no set go
+in the config's `rules`: the template starts with them, ahead of the layout's, with policies
+mapped like the layout's own. `DST-PORT,22,DIRECT` is one, so SSH never goes through a proxy.
 
 | Rule providers | Entries | Rule set files | Template |
 | --- | --- | --- | --- |
