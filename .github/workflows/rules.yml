@@ -12,7 +12,7 @@ name: Rules
 # only commits the artifact's files, at the paths the branch has, and pushes them.
 on:
   schedule:
-    - cron: "37 20 * * *" # 04:37 in China, off the hour when the scheduler is busiest
+    - cron: "0 0 * * *" # 00:00 UTC; api-edge checks the branch from 02:00 UTC
   workflow_dispatch:
 
 permissions: {}
