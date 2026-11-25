@@ -69,19 +69,35 @@ template:
     Apple Push: 🔔 Apple Push
     Apple TV: 📺 Apple TV
     CN Mainland TV: 🏮 CN Mainland TV
+  # Rules the layout lacks: SSH stays direct, Anthropic's endpoints and shared playback CDNs
+  # reach their services. Policies as in the layout.
+  extra:
+    - before: AdBlock
+      rules:
+        - DST-PORT,22,DIRECT
+    - after: Soundcloud
+      rules:
+        - DOMAIN-SUFFIX,uplynk.com,Global TV
+    - after: AI Suite
+      rules:
+        - DOMAIN,servd-anthropic-website.b-cdn.net,AI Suite
+        - DOMAIN,anthropic.com.cdn.cloudflare.net,AI Suite
+        - DOMAIN,anthropic.auth0.com,AI Suite
+        - DOMAIN,anthropic-com.ghost.io,AI Suite
+        - DOMAIN-SUFFIX,claudemcpclient.com,AI Suite
+        - DOMAIN-SUFFIX,claudemcpcontent.com,AI Suite
+        - DOMAIN-KEYWORD,anthropic,AI Suite
+        - DOMAIN-KEYWORD,claude,AI Suite
+        - IP-CIDR,160.79.104.0/21,AI Suite,no-resolve
+        - IP-CIDR6,2607:6bc0::/32,AI Suite,no-resolve
+        - GEOSITE,category-ai-!cn,AI Suite
+  # In the order clients list them: the main groups, then the services, ♻️ Auto last.
   groups:
     - name: 🚀 Proxy
       type: select
       proxies: [♻️ Auto, DIRECT]
       include-all: true
       exclude-filter: &info "{info}" # rules.InfoFilter: the pseudo-nodes showing traffic and expiry
-    - name: ♻️ Auto
-      type: url-test
-      include-all: true
-      exclude-filter: *info
-      url: https://www.gstatic.com/generate_204
-      interval: 300
-      tolerance: 50
     - name: 🎯 Domestic
       type: select
       proxies: [DIRECT, 🚀 Proxy]
@@ -102,18 +118,6 @@ template:
     - {<<: *service, name: 📹 YouTube}
     - {<<: *service, name: 🎬 Max}
     - {<<: *service, name: 🎧 Spotify}
-    - {<<: *service, name: 🌍 Streaming}
-    - {<<: *service, name: ✈️ Telegram}
-    - {<<: *service, name: 💰 Crypto}
-    - {<<: *service, name: 💬 Discord}
-    - {<<: *service, name: 📢 Google FCM}
-    - {<<: *service, name: 🤖 AI Suite}
-    - {<<: *service, name: 💳 PayPal}
-    - {<<: *service, name: 🎓 Scholar}
-    - {<<: *service, name: 📶 Speedtest}
-    - {<<: *service, name: 🎮 Steam}
-    - {<<: *service, name: 🎵 TikTok}
-    - {<<: *service, name: 📺 Apple TV}
     # Services reachable from mainland China: DIRECT first.
     - &local
       name: 🏮 CN Mainland TV
@@ -121,10 +125,29 @@ template:
       proxies: [DIRECT, 🚀 Proxy, ♻️ Auto]
       include-all: true
       exclude-filter: *info
-    - {<<: *local, name: Ⓜ️ Microsoft}
+    - {<<: *service, name: 🌍 Streaming}
     - {<<: *local, name: 🔔 Apple Push}
     - {<<: *local, name: 🍎 Apple Services}
+    - {<<: *service, name: 📺 Apple TV}
+    - {<<: *service, name: ✈️ Telegram}
+    - {<<: *service, name: 📢 Google FCM}
+    - {<<: *service, name: 💰 Crypto}
+    - {<<: *service, name: 💬 Discord}
+    - {<<: *local, name: Ⓜ️ Microsoft}
+    - {<<: *service, name: 🤖 AI Suite}
+    - {<<: *service, name: 💳 PayPal}
+    - {<<: *service, name: 🎓 Scholar}
+    - {<<: *service, name: 📶 Speedtest}
+    - {<<: *service, name: 🎮 Steam}
+    - {<<: *service, name: 🎵 TikTok}
     - {<<: *local, name: 🕹️ miHoYo}
+    - name: ♻️ Auto
+      type: url-test
+      include-all: true
+      exclude-filter: *info
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+      tolerance: 50
 
 notice: |
   # Notices

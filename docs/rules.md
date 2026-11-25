@@ -89,7 +89,16 @@ OpenWrt plugin does. A cached template gets the configured host fewest hops away
 
 The template mirrors dler-io/Rules' layout `Clash/Rule.yaml`: its rules in their order, every
 rule set mirrored on the branch. The proxy groups are ours (`cmd/rules/config.yaml`, the only
-place their names come from); there are no region groups.
+place their names come from); there are no region groups. They are listed as clients show
+them, which is not the order rules match in: 🚀 Proxy, 🎯 Domestic and 🐟 Others first, then
+🛑 AdBlock and the services, ♻️ Auto last. OpenWeir's api-edge installs the same groups, in the
+same order, with the same rules.
+
+A few rules the layout lacks come from `extra` in the config, each placed before or after one of
+the layout's rule sets and sent to a group through `policies` like the layout's own:
+`DST-PORT,22,DIRECT` first, so SSH never goes through a proxy; `DOMAIN-SUFFIX,uplynk.com` after
+Soundcloud, a playback CDN the streaming services share; and Anthropic's endpoints after
+AI Suite.
 
 | Rule providers | Entries | Rule set files | Template |
 | --- | --- | --- | --- |

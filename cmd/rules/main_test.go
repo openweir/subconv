@@ -373,6 +373,43 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestBuildExtra(t *testing.T) {
+	u := newUpstream(t)
+	u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", `policies: {Local: DIRECT}
+  extra:
+    - {before: Reject, rules: ["DST-PORT,22,DIRECT"]}
+    - {after: Big, rules: ["DOMAIN,extra.example,Proxy", "IP-CIDR,192.0.2.0/24,Proxy,no-resolve"]}
+    - {after: LAN, rules: ["DOMAIN,lan.example,Local"]}`, 1)
+	out, _, err := u.build(t, time.Now(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	template := read(t, out, rules.TemplatePath)
+	// After a rule set means past every part of it; extra rules take the layout's policies.
+	wantRules := `rules:
+  - DST-PORT,22,DIRECT
+  - RULE-SET,Reject,REJECT
+  - RULE-SET,Reject IP,REJECT
+  - RULE-SET,Big,Proxy
+  - RULE-SET,Big (classical),Proxy
+  - RULE-SET,Big (IP),Proxy,no-resolve
+  - DOMAIN,extra.example,Proxy
+  - IP-CIDR,192.0.2.0/24,Proxy,no-resolve
+  - RULE-SET,China IP,Domestic
+  - DOMAIN,apps.apple.com,Proxy
+  - RULE-SET,LAN,DIRECT
+  - DOMAIN,lan.example,DIRECT
+  - GEOIP,CN,Domestic
+  - MATCH,Others
+`
+	if !strings.HasSuffix(template, wantRules) {
+		t.Errorf("rules:\n%s", template)
+	}
+	if err := rules.Validate([]byte(template)); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestBuildRefuses(t *testing.T) {
 	for name, tc := range map[string]struct {
 		edit func(u *upstream)
@@ -396,6 +433,9 @@ func TestBuildRefuses(t *testing.T) {
 		"stale policy": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT, Gone: Proxy}", 1)
 		}, "no rule sends traffic to Gone"},
+		"extra without its rule set": {func(u *upstream) {
+			u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT}\n  extra: [{after: Gone, rules: [\"DOMAIN,a.example,Proxy\"]}]", 1)
+		}, "no rule set Gone for extra rules"},
 		"foreign rule set": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "refs: [https://sukka.example/]", "refs: [https://other.example/]", 1)
 		}, "not from a configured source"},
@@ -457,6 +497,21 @@ func TestParseRuleSet(t *testing.T) {
 }
 
 // The real config loads, and its groups follow the template schema.
+func TestConfigExtra(t *testing.T) {
+	for extra, want := range map[string]string{
+		`[{after: Big, rules: ["RULE-SET,Big,Proxy"]}]`:                  "rule sets and MATCH come from the layout",
+		`[{after: Big, rules: ["MATCH,Proxy"]}]`:                         "rule sets and MATCH come from the layout",
+		`[{before: Big, after: Big, rules: ["DOMAIN,a.example,Proxy"]}]`: "either before or after",
+		`[{after: Big}]`: "either before or after",
+	} {
+		config := strings.ReplaceAll(testConfig, "{{server}}", "http://127.0.0.1")
+		config = strings.Replace(config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT}\n  extra: "+extra, 1)
+		if _, err := parseConfig([]byte(config)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: err %v, want %q", extra, err, want)
+		}
+	}
+}
+
 func TestConfig(t *testing.T) {
 	cfg, err := loadConfig("config.yaml")
 	if err != nil {
