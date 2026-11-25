@@ -410,6 +410,30 @@ func TestBuildExtra(t *testing.T) {
 	}
 }
 
+func TestBuildAdditions(t *testing.T) {
+	u := newUpstream(t)
+	u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", `policies: {Local: DIRECT}
+  additions:
+    Big: ["DOMAIN,added.example", "IP-CIDR,192.0.2.0/24,no-resolve", "DOMAIN-KEYWORD,added"]`, 1)
+	out, _, err := u.build(t, time.Now(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Additions join the set's own parts, so its rules in the template stay as they were.
+	for file, want := range map[string]string{
+		"providers/dler/big-one.domain.txt":    "\nadded.example\n",
+		"providers/dler/big-one.ipcidr.txt":    "\n192.0.2.0/24\n",
+		"providers/dler/big-one.classical.txt": "\nDOMAIN-KEYWORD,added\n",
+	} {
+		if got := read(t, out, file); !strings.Contains(got, want) || !strings.Contains(got, "# With OpenWeir's additions") {
+			t.Errorf("%s:\n%s", file, got)
+		}
+	}
+	if got := read(t, out, "providers/sukka/domainset/reject.domain.txt"); strings.Contains(got, "additions") {
+		t.Errorf("a set without additions mentions them:\n%s", got)
+	}
+}
+
 func TestBuildRefuses(t *testing.T) {
 	for name, tc := range map[string]struct {
 		edit func(u *upstream)
@@ -433,6 +457,9 @@ func TestBuildRefuses(t *testing.T) {
 		"stale policy": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT, Gone: Proxy}", 1)
 		}, "no rule sends traffic to Gone"},
+		"additions without their rule set": {func(u *upstream) {
+			u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT}\n  additions: {Gone: [\"DOMAIN,a.example\"]}", 1)
+		}, "no rule set Gone for additions"},
 		"extra without its rule set": {func(u *upstream) {
 			u.config = strings.Replace(u.config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT}\n  extra: [{after: Gone, rules: [\"DOMAIN,a.example,Proxy\"]}]", 1)
 		}, "no rule set Gone for extra rules"},
@@ -476,7 +503,7 @@ func TestBuildRefusesShrinking(t *testing.T) {
 }
 
 func TestParseRuleSet(t *testing.T) {
-	parts, whole, dropped, err := parseRuleSet([]byte("payload:\n  - DOMAIN-SUFFIX,.a.com\n  - IP-CIDR,10.0.0.0/8\n  - IP-CIDR,11.0.0.0/8,no-resolve\n  - IP-CIDR,12.0.0.0/8,no-resolve,src\n  - DOMAIN,bad host\n  - URL-REGEX,^http\n"), "classical", "yaml")
+	parts, whole, dropped, err := parseRuleSet([]byte("payload:\n  - DOMAIN-SUFFIX,.a.com\n  - IP-CIDR,10.0.0.0/8\n  - IP-CIDR,11.0.0.0/8,no-resolve\n  - IP-CIDR,12.0.0.0/8,no-resolve,src\n  - DOMAIN,bad host\n  - URL-REGEX,^http\n"), "classical", "yaml", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -497,6 +524,20 @@ func TestParseRuleSet(t *testing.T) {
 }
 
 // The real config loads, and its groups follow the template schema.
+func TestConfigAdditions(t *testing.T) {
+	for addition, want := range map[string]string{
+		`{Big: ["MATCH"]}`:                  "is not a rule a rule set holds",
+		`{Big: ["RULE-SET,Big"]}`:           "is not a rule a rule set holds",
+		`{Big: ["DOMAIN,a.example,Proxy"]}`: "is not a rule a rule set holds",
+	} {
+		config := strings.ReplaceAll(testConfig, "{{server}}", "http://127.0.0.1")
+		config = strings.Replace(config, "policies: {Local: DIRECT}", "policies: {Local: DIRECT}\n  additions: "+addition, 1)
+		if _, err := parseConfig([]byte(config)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: err %v, want %q", addition, err, want)
+		}
+	}
+}
+
 func TestConfigExtra(t *testing.T) {
 	for extra, want := range map[string]string{
 		`[{after: Big, rules: ["RULE-SET,Big,Proxy"]}]`:                  "rule sets and MATCH come from the layout",

@@ -69,28 +69,23 @@ template:
     Apple Push: 🔔 Apple Push
     Apple TV: 📺 Apple TV
     CN Mainland TV: 🏮 CN Mainland TV
-  # Rules the layout lacks: SSH stays direct, Anthropic's endpoints and shared playback CDNs
-  # reach their services. Policies as in the layout.
-  extra:
-    - before: AdBlock
-      rules:
-        - DST-PORT,22,DIRECT
-    - after: Soundcloud
-      rules:
-        - DOMAIN-SUFFIX,uplynk.com,Global TV
-    - after: AI Suite
-      rules:
-        - DOMAIN,servd-anthropic-website.b-cdn.net,AI Suite
-        - DOMAIN,anthropic.com.cdn.cloudflare.net,AI Suite
-        - DOMAIN,anthropic.auth0.com,AI Suite
-        - DOMAIN,anthropic-com.ghost.io,AI Suite
-        - DOMAIN-SUFFIX,claudemcpclient.com,AI Suite
-        - DOMAIN-SUFFIX,claudemcpcontent.com,AI Suite
-        - DOMAIN-KEYWORD,anthropic,AI Suite
-        - DOMAIN-KEYWORD,claude,AI Suite
-        - IP-CIDR,160.79.104.0/21,AI Suite,no-resolve
-        - IP-CIDR6,2607:6bc0::/32,AI Suite,no-resolve
-        - GEOSITE,category-ai-!cn,AI Suite
+  # Entries the layout's rule sets lack, merged into them before they are split: SSH among the
+  # direct exceptions, Anthropic's endpoints for AI Suite.
+  additions:
+    Special:
+      - DST-PORT,22
+    AI Suite:
+      - DOMAIN,servd-anthropic-website.b-cdn.net
+      - DOMAIN,anthropic.com.cdn.cloudflare.net
+      - DOMAIN,anthropic.auth0.com
+      - DOMAIN,anthropic-com.ghost.io
+      - DOMAIN-SUFFIX,claudemcpclient.com
+      - DOMAIN-SUFFIX,claudemcpcontent.com
+      - DOMAIN-KEYWORD,anthropic
+      - DOMAIN-KEYWORD,claude
+      - IP-CIDR,160.79.104.0/21,no-resolve
+      - IP-CIDR6,2607:6bc0::/32,no-resolve
+      - GEOSITE,category-ai-!cn
   # In the order clients list them: the main groups, then the services, ♻️ Auto last.
   groups:
     - name: 🚀 Proxy

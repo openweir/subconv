@@ -87,8 +87,11 @@ type tmpl struct {
 	// otherwise, or one that takes several of the layout's groups.
 	Policies map[string]string `yaml:"policies"`
 	// Extra adds rules the layout lacks, around one of its rule sets.
-	Extra  []extraRules  `yaml:"extra"`
-	Groups []rules.Group `yaml:"groups"`
+	Extra []extraRules `yaml:"extra"`
+	// Additions are entries OpenWeir adds to the layout's rule sets, by the name the layout
+	// gives a set; they are merged into its content before it is split.
+	Additions map[string][]string `yaml:"additions"`
+	Groups    []rules.Group       `yaml:"groups"`
 }
 
 // extraRules are rules placed right before or right after (past every part of) the layout's rule
@@ -145,6 +148,16 @@ func parseConfig(data []byte) (*config, error) {
 		for _, r := range e.Rules {
 			if f := rules.SplitRule(r); len(f) < 2 || strings.EqualFold(f[0], "RULE-SET") || strings.EqualFold(f[0], "MATCH") {
 				return nil, fmt.Errorf("config: extra rule %q: rule sets and MATCH come from the layout", r)
+			}
+		}
+	}
+	for set, entries := range t.Additions {
+		for _, e := range entries {
+			// Entries name no policy: the set's rules in the layout give it.
+			f := rules.SplitRule(e)
+			policy := len(f) > 3 || len(f) == 3 && !strings.EqualFold(f[2], "no-resolve")
+			if _, _, ok := splitClassical(e); !ok || policy {
+				return nil, fmt.Errorf("config: addition %q to %s is not a rule a rule set holds", e, set)
 			}
 		}
 	}

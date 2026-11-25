@@ -94,11 +94,12 @@ them, which is not the order rules match in: 🚀 Proxy, 🎯 Domestic and 🐟 
 🛑 AdBlock and the services, ♻️ Auto last. OpenWeir's api-edge installs the same groups, in the
 same order, with the same rules.
 
-A few rules the layout lacks come from `extra` in the config, each placed before or after one of
-the layout's rule sets and sent to a group through `policies` like the layout's own:
-`DST-PORT,22,DIRECT` first, so SSH never goes through a proxy; `DOMAIN-SUFFIX,uplynk.com` after
-Soundcloud, a playback CDN the streaming services share; and Anthropic's endpoints after
-AI Suite.
+Entries the layout's rule sets lack come from `additions` in the config, by the layout's name
+for the set: they are merged into its content before it is split, so the files on the branch
+carry them (their header says so) and everything that loads the set gets them, OpenWeir's
+api-edge included. `DST-PORT,22` joins Special, the direct exceptions, so SSH never goes through
+a proxy; Anthropic's endpoints join AI Suite. A rule that belongs to no set can go in `extra`,
+before or after one of the layout's rule sets, with a policy mapped like the layout's own.
 
 | Rule providers | Entries | Rule set files | Template |
 | --- | --- | --- | --- |

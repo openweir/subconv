@@ -34,6 +34,8 @@ type ruleSet struct {
 	behavior string
 	parts    []*part
 	dropped  map[string]int // rules left out, by type
+	// additions are OpenWeir's entries merged into the upstream ones.
+	additions []string
 }
 
 type part struct {
@@ -46,13 +48,15 @@ type part struct {
 	format string
 }
 
-// parseRuleSet reads an upstream rule set in mihomo's yaml or text format. For a classical set,
-// whole is the set unsplit: its rules that mihomo can load, normalized.
-func parseRuleSet(body []byte, behavior, format string) (parts []*part, whole *part, dropped map[string]int, err error) {
+// parseRuleSet reads an upstream rule set in mihomo's yaml or text format, followed by the
+// classical rules in additions. For a classical set, whole is the set unsplit: its rules that
+// mihomo can load, normalized.
+func parseRuleSet(body []byte, behavior, format string, additions []string) (parts []*part, whole *part, dropped map[string]int, err error) {
 	entries, err := payload(body, format)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	entries = append(entries, additions...)
 	dropped = map[string]int{}
 	collect := map[string][]string{}
 	seen := map[string]map[string]bool{}
@@ -287,6 +291,9 @@ func ruleText(set *ruleSet, p *part) []byte {
 	fmt.Fprintf(&b, "# %s: %s, %s rules\n", set.src.Name, set.path, p.kind)
 	fmt.Fprintf(&b, "# From %s\n", set.ref)
 	fmt.Fprintf(&b, "# License: %s. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).\n", set.license.ID)
+	if len(set.additions) > 0 {
+		b.WriteString("# With OpenWeir's additions from cmd/rules/config.yaml.\n")
+	}
 	for _, e := range p.entries {
 		b.WriteString(e)
 		b.WriteByte('\n')

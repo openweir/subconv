@@ -137,7 +137,7 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 			after[e.After] = append(after[e.After], e.Rules...)
 		}
 	}
-	placed := map[string]bool{}
+	placed, added := map[string]bool{}, map[string]bool{}
 	extra := func(set string, list map[string][]string) {
 		if _, ok := list[set]; ok {
 			placed[set] = true
@@ -159,7 +159,9 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 		if !ok {
 			return fmt.Errorf("rule %q: no rule provider %s", rule, fields[1])
 		}
-		set, err := b.ruleSet(ctx, lp)
+		additions, ok := t.Additions[fields[1]]
+		added[fields[1]] = added[fields[1]] || ok
+		set, err := b.ruleSet(ctx, lp, additions)
 		if err != nil {
 			return fmt.Errorf("rule provider %s: %w", fields[1], err)
 		}
@@ -195,6 +197,11 @@ func (b *builder) template(ctx context.Context, t *tmpl) error {
 	for _, e := range t.Extra {
 		if set := e.Before + e.After; !placed[set] {
 			return fmt.Errorf("the layout has no rule set %s for extra rules", set)
+		}
+	}
+	for set := range t.Additions {
+		if !added[set] {
+			return fmt.Errorf("the layout has no rule set %s for additions", set)
 		}
 	}
 
@@ -236,11 +243,15 @@ func parseLayout(body []byte) (*layoutDoc, error) {
 	return &doc, nil
 }
 
-// ruleSet downloads and converts a rule set once, however many rules use it.
-func (b *builder) ruleSet(ctx context.Context, lp layoutProvider) (*ruleSet, error) {
+// ruleSet downloads and converts a rule set once, however many rules use it, with OpenWeir's
+// additions merged into its entries.
+func (b *builder) ruleSet(ctx context.Context, lp layoutProvider, additions []string) (*ruleSet, error) {
 	if set, ok := b.sets[lp.URL]; ok {
 		if set.behavior != lp.Behavior {
 			return nil, fmt.Errorf("%s: behavior %s here, %s elsewhere", lp.URL, lp.Behavior, set.behavior)
+		}
+		if !slices.Equal(set.additions, additions) {
+			return nil, fmt.Errorf("%s: different additions where layouts name it differently", lp.URL)
 		}
 		return set, nil
 	}
@@ -262,7 +273,7 @@ func (b *builder) ruleSet(ctx context.Context, lp layoutProvider) (*ruleSet, err
 			return nil, fmt.Errorf("%s: unknown license %q", fetchURL, name)
 		}
 	}
-	parts, whole, dropped, err := parseRuleSet(body, lp.Behavior, lp.Format)
+	parts, whole, dropped, err := parseRuleSet(body, lp.Behavior, lp.Format, additions)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fetchURL, err)
 	}
@@ -277,7 +288,7 @@ func (b *builder) ruleSet(ctx context.Context, lp layoutProvider) (*ruleSet, err
 		return nil, fmt.Errorf("%s and %s both go to %s", other, lp.URL, base)
 	}
 	b.bases[base] = lp.URL
-	set := &ruleSet{ref: lp.URL, src: src, path: file, base: base, license: lic, behavior: lp.Behavior, parts: parts, dropped: dropped}
+	set := &ruleSet{ref: lp.URL, src: src, path: file, base: base, license: lic, behavior: lp.Behavior, parts: parts, dropped: dropped, additions: additions}
 
 	for _, p := range parts {
 		meta := rules.File{Kind: "rule-set", Behavior: p.behavior, Entries: len(p.entries), Source: fetchURL, License: lic.ID}
