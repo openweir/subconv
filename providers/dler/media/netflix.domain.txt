@@ -1,0 +1,10 @@
+# dler-io/Rules: Clash/Provider/Media/Netflix.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Netflix.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.netflix.com
++.netflix.net
++.nflxext.com
++.nflximg.com
++.nflximg.net
++.nflxso.net
++.nflxvideo.net

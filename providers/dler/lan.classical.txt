@@ -1,0 +1,12 @@
+# dler-io/Rules: Clash/Provider/LAN.yaml, classical rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/LAN.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
+DOMAIN-SUFFIX,local
+IP-CIDR,10.0.0.0/8
+IP-CIDR,100.64.0.0/10
+IP-CIDR,127.0.0.0/8
+IP-CIDR,172.16.0.0/12
+IP-CIDR,192.168.0.0/16
+IP-CIDR6,::1/128
+IP-CIDR6,fc00::/7
+IP-CIDR6,fe80::/10

@@ -1,0 +1,6 @@
+# dler-io/Rules: Clash/Provider/Media/KKBOX.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/KKBOX.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.kfs.io
++.kkbox.com
++.kkbox.com.tw

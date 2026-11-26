@@ -1,0 +1,11 @@
+# dler-io/Rules: Clash/Provider/Media/Japonx.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Japonx.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.japonx.com
++.japonx.net
++.japonx.tv
++.japonx.vip
++.japronx.com
++.japronx.net
++.japronx.tv
++.japronx.vip

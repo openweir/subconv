@@ -1,0 +1,37 @@
+# dler-io/Rules: Clash/Provider/Media/IQIYI.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/IQIYI.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.71.am
++.71.am.com
++.71edge.com
++.71edge.net
++.aianno.cn
++.aianno.com
++.aiqiyicloud-mgmt.com
++.aiqiyicloud.com
++.aiqiyicloud.net
++.baiying.com
++.gitv.cn
++.gitv.tv
++.ibkstore.com
++.iq.com
++.iqiyi.com
++.iqiyi.demo.uwp
++.iqiyiedge.com
++.iqiyiedge.net
++.iqiyipic.com
++.jiangbing.cn
++.pps.tv
++.ppsimg.com
++.ppstream.cn
++.ppstream.com
++.ppstream.com.cn
++.ppstream.net
++.ppstream.net.cn
++.ppsurl.com
++.qiyi.cn
++.qiyi.com
++.qiyipic.com
++.qy.com
++.qy.net
++.suike.cn

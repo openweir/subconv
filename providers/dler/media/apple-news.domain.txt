@@ -1,0 +1,6 @@
+# dler-io/Rules: Clash/Provider/Media/Apple News.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Apple%20News.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.apple.comscoreresearch.com
++.apple.news
+gspe1-ssl.ls.apple.com

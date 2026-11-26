@@ -1,0 +1,12 @@
+# dler-io/Rules: Clash/Provider/Media/Niconico.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Niconico.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.dmc.nico
++.nicodic.jp
++.nicomanga.jp
++.niconico.com
++.nicoseiga.jp
++.nicovideo.jp
++.nimg.jp
++.simg.jp
++.socdm.com

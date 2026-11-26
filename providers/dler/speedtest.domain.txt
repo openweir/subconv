@@ -1,0 +1,10 @@
+# dler-io/Rules: Clash/Provider/Speedtest.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Speedtest.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.fast.com
++.speed.cloudflare.com
++.ooklaserver.net
+speed.dler.io
++.speedtest.co
++.speedtest.net
++.speedtestcustom.com

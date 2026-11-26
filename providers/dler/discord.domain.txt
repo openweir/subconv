@@ -1,0 +1,12 @@
+# dler-io/Rules: Clash/Provider/Discord.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Discord.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.discord.com
++.dis.gd
++.discord.gift
++.discordsays.com
++.discord.gg
++.discord.media
++.discordapp.com
++.discordapp.net
++.discordstatus.com

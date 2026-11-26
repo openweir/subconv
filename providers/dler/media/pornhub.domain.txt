@@ -1,0 +1,7 @@
+# dler-io/Rules: Clash/Provider/Media/Pornhub.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Pornhub.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.phncdn.com
++.phprcdn.com
++.pornhub.com
++.pornhubpremium.com

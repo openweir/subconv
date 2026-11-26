@@ -1,0 +1,5 @@
+# dler-io/Rules: Clash/Provider/Media/YouTube.yaml, classical rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/YouTube.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
+PROCESS-NAME,com.google.android.youtube
+PROCESS-NAME,com.google.android.youtube.tv

@@ -1,0 +1,10 @@
+# dler-io/Rules: Clash/Provider/miHoYo.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/miHoYo.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.bh3.com
++.hoyolab.com
++.hoyoverse.com
++.mihayo.com
++.mihoyo.com
++.miyoushe.com
++.yuanshen.com

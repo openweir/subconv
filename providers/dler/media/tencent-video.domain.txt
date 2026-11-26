@@ -1,0 +1,5 @@
+# dler-io/Rules: Clash/Provider/Media/Tencent Video.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Tencent%20Video.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.v.smtcdns.com
++.vv.video.qq.com

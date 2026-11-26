@@ -1,0 +1,5 @@
+# dler-io/Rules: Clash/Provider/Media/ABC.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/ABC.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.edgedatg.com
++.go.com

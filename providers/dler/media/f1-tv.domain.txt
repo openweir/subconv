@@ -1,0 +1,11 @@
+# dler-io/Rules: Clash/Provider/Media/F1 TV.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/F1%20TV.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.bitmovin.com
+d2n9h2wits23hf.cloudfront.net
++.f1esports.com
++.f1manager.com
++.f1play.com
+f1prodlive.akamaized.net
++.formula1.com
+mobile-collector.newrelic.com

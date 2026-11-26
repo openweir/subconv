@@ -1,0 +1,5 @@
+# dler-io/Rules: Clash/Provider/Media/Netease Music.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Netease%20Music.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.music.126.net
++.music.163.com

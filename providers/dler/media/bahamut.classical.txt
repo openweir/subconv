@@ -1,0 +1,9 @@
+# dler-io/Rules: Clash/Provider/Media/Bahamut.yaml, classical rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Bahamut.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
+DOMAIN,bahamut.akamaized.net
+DOMAIN-SUFFIX,bahamut.com.tw
+DOMAIN,gamer-cds.cdn.hinet.net
+DOMAIN-SUFFIX,gamer.com.tw
+DOMAIN,gamer2-cds.cdn.hinet.net
+PROCESS-NAME,tw.com.gamer.android.animad

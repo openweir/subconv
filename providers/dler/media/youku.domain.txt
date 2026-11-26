@@ -1,0 +1,6 @@
+# dler-io/Rules: Clash/Provider/Media/Youku.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Youku.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.soku.com
++.ykimg.com
++.youku.com

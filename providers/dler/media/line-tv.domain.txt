@@ -1,0 +1,6 @@
+# dler-io/Rules: Clash/Provider/Media/Line TV.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Line%20TV.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.d3c7rimkq79yfu.cloudfront.net
++.linetv.tw
++.profile.line-scdn.net

@@ -1,0 +1,13 @@
+# dler-io/Rules: Clash/Provider/Domestic.yaml, ipcidr rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Domestic.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
+1.255.62.0/24
+185.188.32.0/24
+185.188.33.0/24
+185.188.34.0/24
+185.188.35.0/24
+2a0b:b580::/48
+2a0b:b581::/48
+2a0b:b582::/48
+2a0b:b583::/48
+182.254.116.0/24

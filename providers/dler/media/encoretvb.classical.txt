@@ -1,0 +1,7 @@
+# dler-io/Rules: Clash/Provider/Media/encoreTVB.yaml, classical rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/encoreTVB.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
+DOMAIN,content.jwplatform.com
+DOMAIN-SUFFIX,encoretvb.com
+DOMAIN,videos-f.jwpsrv.com
+PROCESS-NAME,com.tvbusa.encore

@@ -1,0 +1,7 @@
+# dler-io/Rules: Clash/Provider/Media/Soundcloud.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Soundcloud.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.sndcdn.com
++.soundcloud.app.goo.gl
++.soundcloud.com
++.soundcloudmail.com

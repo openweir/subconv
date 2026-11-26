@@ -1,0 +1,10 @@
+# dler-io/Rules: Clash/Provider/Media/DMM.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/DMM.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.dmm-extension.com
++.dmm.co.jp
++.dmm.com
++.img.vm-movie.jp
++.p-smith.com
++.videomarket.jp
++.vmdash-cenc.akamaized.net

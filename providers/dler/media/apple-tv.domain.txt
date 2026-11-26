@@ -1,0 +1,7 @@
+# dler-io/Rules: Clash/Provider/Media/Apple TV.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Apple%20TV.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
+np-edge.itunes.apple.com
+play-edge.itunes.apple.com
++.tv.apple.com
+uts-api.itunes.apple.com

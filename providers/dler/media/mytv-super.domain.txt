@@ -1,0 +1,6 @@
+# dler-io/Rules: Clash/Provider/Media/myTV SUPER.yaml, domain rules
+# From https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/myTV%20SUPER.yaml
+# License: LicenseRef-dler-io-Rules. See NOTICE.md. Converted by github.com/openweir/subconv (cmd/rules).
++.mytvsuper.com
+rthklive2-lh.akamaihd.net
++.tvb.com
